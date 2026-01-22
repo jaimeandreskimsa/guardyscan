@@ -1,41 +1,40 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Shield } from "lucide-react";
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <Link href="/" className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-6">
-            <ArrowLeft className="h-4 w-4" />
-            Volver al inicio
-          </Link>
-          <div className="flex items-center gap-4">
-            <Image
-              src="/logo.png"
-              alt="GuardyScan"
-              width={150}
-              height={40}
-              className="h-10 w-auto"
-            />
+          <div className="flex items-center justify-between">
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+              <Shield className="h-8 w-8 text-blue-600" />
+              <span className="text-xl font-bold text-gray-900 dark:text-white">GuardyScan</span>
+            </Link>
+            <Link href="/" className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+              <ArrowLeft className="h-4 w-4" />
+              Volver
+            </Link>
           </div>
         </div>
       </header>
 
       {/* Content */}
       <main className="max-w-4xl mx-auto px-4 py-12">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-          Política de Privacidad
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400 mb-8">
-          Última actualización: 17 de enero de 2026
-        </p>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 md:p-12">
+          <div className="mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+              Política de Privacidad
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400">
+              Última actualización: 21 de enero de 2026
+            </p>
+          </div>
 
-        <div className="prose prose-gray dark:prose-invert max-w-none">
+          <div className="prose prose-gray dark:prose-invert max-w-none">
           <section className="mb-8">
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
               1. Introducción
@@ -198,8 +197,12 @@ export default function PrivacyPage() {
         </div>
       </main>
 
+          </div>
+        </div>
+      </main>
+
       {/* Footer */}
-      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-8">
+      <footer className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 py-8 mt-12\">
         <div className="max-w-4xl mx-auto px-4 text-center text-gray-500 dark:text-gray-400 text-sm">
           <p>© 2026 GuardyScan. Todos los derechos reservados.</p>
           <div className="mt-2 space-x-4">

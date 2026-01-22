@@ -1023,17 +1023,14 @@ export default function HomePage() {
             <div>
               <h4 className="text-white font-semibold mb-4">Empresa</h4>
               <ul className="space-y-3 text-sm">
-                <li><Link href="/about" className="hover:text-white transition-colors">Sobre nosotros</Link></li>
-                <li><Link href="/blog" className="hover:text-white transition-colors">Blog</Link></li>
-                <li><Link href="/contact" className="hover:text-white transition-colors">Contacto</Link></li>
+                <li><a href="https://wa.me/56934401855" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Contacto</a></li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-4">Legal</h4>
               <ul className="space-y-3 text-sm">
                 <li><Link href="/privacy" className="hover:text-white transition-colors">Privacidad</Link></li>
-                <li><Link href="/terms" className="hover:text-white transition-colors">Terminos</Link></li>
-                <li><Link href="/security" className="hover:text-white transition-colors">Seguridad</Link></li>
+                <li><Link href="/terms" className="hover:text-white transition-colors">Términos</Link></li>
               </ul>
             </div>
           </div>
