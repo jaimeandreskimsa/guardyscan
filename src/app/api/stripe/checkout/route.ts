@@ -42,6 +42,15 @@ export async function POST(req: Request) {
 
     // Create checkout session
     const planConfig = PLANS[plan as keyof typeof PLANS];
+    
+    // Validar que el plan tenga priceId
+    if (!planConfig.priceId) {
+      return NextResponse.json(
+        { error: "Plan no válido para checkout" },
+        { status: 400 }
+      );
+    }
+    
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",

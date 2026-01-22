@@ -1,7 +1,7 @@
 import Stripe from "stripe";
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-12-18.acacia",
+  apiVersion: "2023-10-16",
   typescript: true,
 });
 
@@ -9,6 +9,7 @@ export const PLANS = {
   FREE: {
     name: "Free",
     price: 0,
+    priceId: "", // Plan gratuito sin priceId
     scansLimit: 3,
     features: [
       "3 escaneos por mes",
@@ -18,7 +19,7 @@ export const PLANS = {
   },
   BASIC: {
     name: "Básico",
-    price: 2900, // $29.00
+    price: 10000, // $100.00
     priceId: process.env.STRIPE_PRICE_BASIC!,
     scansLimit: 50,
     features: [
@@ -31,7 +32,7 @@ export const PLANS = {
   },
   PROFESSIONAL: {
     name: "Profesional",
-    price: 9900, // $99.00
+    price: 30000, // $300.00
     priceId: process.env.STRIPE_PRICE_PROFESSIONAL!,
     scansLimit: 200,
     features: [
@@ -45,7 +46,7 @@ export const PLANS = {
   },
   ENTERPRISE: {
     name: "Enterprise",
-    price: 29900, // $299.00
+    price: 90000, // $900.00
     priceId: process.env.STRIPE_PRICE_ENTERPRISE!,
     scansLimit: -1, // unlimited
     features: [

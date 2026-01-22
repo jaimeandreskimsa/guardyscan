@@ -1,0 +1,22 @@
+GUARDYSCAN - URLS DE ACCESO
+============================
+
+Servidor: http://localhost:3000
+
+PAGINAS PRINCIPALES:
+- http://localhost:3000/en (Ingles)
+- http://localhost:3000/es (Espanol)
+
+LOGIN:
+- http://localhost:3000/en/auth/login
+- http://localhost:3000/es/auth/login
+
+REGISTRO:
+- http://localhost:3000/en/auth/register
+- http://localhost:3000/es/auth/register
+
+DASHBOARD:
+- http://localhost:3000/en/dashboard
+- http://localhost:3000/es/dashboard
+
+Selector de idioma: Icono globo en esquina superior derecha

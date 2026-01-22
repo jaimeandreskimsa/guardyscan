@@ -18,28 +18,38 @@ export async function GET(
       where: { email: session.user.email },
     });
 
-    // Check if user has purchased this PDF
-    const purchase = await prisma.pdfPurchase.findFirst({
+    if (!user) {
+      return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+    }
+
+    // Get the scan directly (user must own the scan)
+    const scan = await prisma.scan.findFirst({
       where: {
-        scanId: params.scanId,
-        userId: user!.id,
-      },
-      include: {
-        scan: true,
+        id: params.scanId,
+        userId: user.id,
+        status: "COMPLETED",
       },
     });
 
-    if (!purchase) {
+    if (!scan) {
       return NextResponse.json(
-        { error: "No has comprado este reporte" },
-        { status: 403 }
+        { error: "Escaneo no encontrado o no completado" },
+        { status: 404 }
       );
     }
 
-    // Generate PDF
-    const pdfBuffer = await generatePDF(purchase.scan);
+    // Prepare scan data for PDF generation
+    const scanData = {
+      ...scan,
+      vulnerabilities: (scan.vulnerabilities as any[]) || [],
+      technologies: (scan.technologies as string[]) || [],
+      openPorts: (scan.openPorts as any[]) || [],
+    };
 
-    return new NextResponse(pdfBuffer, {
+    // Generate PDF
+    const pdfBuffer = await generatePDF(scanData as any);
+
+    return new NextResponse(pdfBuffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="GuardyScan-Report-${params.scanId}.pdf"`,

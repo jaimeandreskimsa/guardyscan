@@ -47,7 +47,9 @@ export async function POST(req: Request) {
     });
 
     // Perform scan asynchronously
-    performSecurityScan(scan.id, targetUrl, scanType || "BASIC").catch(console.error);
+    performSecurityScan(scan.id, targetUrl, scanType || "BASIC").catch((error) => {
+      console.error("Error in performSecurityScan:", error);
+    });
 
     // Update scans used
     await prisma.subscription.update({
@@ -82,7 +84,7 @@ export async function GET(req: Request) {
       take: 50,
     });
 
-    return NextResponse.json({ scans });
+    return NextResponse.json(scans);
   } catch (error) {
     console.error("Fetch scans error:", error);
     return NextResponse.json(
