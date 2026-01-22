@@ -25,13 +25,13 @@ export async function POST(request: NextRequest) {
 
     console.log("🔍 Usuario encontrado:", !!user);
 
-    // Por seguridad, siempre respondemos con éxito aunque el usuario no exista
-    // Esto evita que atacantes puedan enumerar emails válidos
+    // Validar que el usuario exista
     if (!user) {
-      console.log("⚠️ Usuario no existe, pero respondemos éxito por seguridad");
-      return NextResponse.json({
-        message: "Si el correo existe, recibirás instrucciones para recuperar tu contraseña",
-      });
+      console.log("⚠️ Usuario no existe");
+      return NextResponse.json(
+        { error: "No existe una cuenta registrada con este correo electrónico" },
+        { status: 404 }
+      );
     }
 
     // Generar token de recuperación

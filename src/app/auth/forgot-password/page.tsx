@@ -124,10 +124,10 @@ export default function ForgotPasswordPage() {
                     ¡Correo Enviado!
                   </h3>
                   <p className="text-green-700 text-sm mb-4">
-                    Hemos enviado instrucciones de recuperación a <strong>{email}</strong>.
+                    Si existe una cuenta con <strong>{email}</strong>, recibirás instrucciones de recuperación.
                   </p>
                   <p className="text-green-600 text-sm mb-4">
-                    Revisa tu bandeja de entrada y sigue las instrucciones. El enlace será válido por 1 hora.
+                    Revisa tu bandeja de entrada (y spam). El enlace será válido por 1 hora.
                   </p>
                   <Link href="/auth/login">
                     <Button variant="outline" className="w-full">
