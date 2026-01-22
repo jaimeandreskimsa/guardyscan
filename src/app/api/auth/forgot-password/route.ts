@@ -5,7 +5,10 @@ import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json();
+    const body = await request.json();
+    const { email } = body;
+
+    console.log("📧 Solicitud de reset recibida para:", email);
 
     if (!email) {
       return NextResponse.json(
@@ -19,9 +22,12 @@ export async function POST(request: NextRequest) {
       where: { email: email.toLowerCase() },
     });
 
+    console.log("🔍 Usuario encontrado:", !!user);
+
     // Por seguridad, siempre respondemos con éxito aunque el usuario no exista
     // Esto evita que atacantes puedan enumerar emails válidos
     if (!user) {
+      console.log("⚠️ Usuario no existe, pero respondemos éxito por seguridad");
       return NextResponse.json({
         message: "Si el correo existe, recibirás instrucciones para recuperar tu contraseña",
       });
@@ -30,6 +36,8 @@ export async function POST(request: NextRequest) {
     // Generar token de recuperación
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hora
+
+    console.log("🔑 Token generado, actualizando BD...");
 
     // Guardar token en la base de datos
     await prisma.user.update({
@@ -40,15 +48,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    console.log("✅ Token guardado en BD");
+
     // Generar enlace de recuperación
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}`;
     
-    // Log para debugging
-    console.log("🔐 Generando enlace de reset para:", email);
+    console.log("🔐 Enlace de reset:", resetUrl);
 
     // Enviar email con SMTP
     try {
       const emailHtml = getPasswordResetEmailTemplate(resetUrl);
+      console.log("📤 Enviando email...");
+      
       const result = await sendEmail({
         to: email,
         subject: "Recuperación de Contraseña - GuardyScan",
@@ -56,24 +67,21 @@ export async function POST(request: NextRequest) {
       });
 
       if (result.success) {
-        console.log("✅ Email de recuperación enviado a:", email);
+        console.log("✅ Email de recuperación enviado exitosamente");
       } else {
         console.error("❌ Error enviando email:", result.error);
-        // Log del enlace en caso de fallo del email (para debugging)
-        console.log("🔐 Password Reset Link (backup):", resetUrl);
       }
-    } catch (emailError) {
-      console.error("Error al enviar email:", emailError);
-      // Log del enlace en caso de error
-      console.log("🔐 Password Reset Link (backup):", resetUrl);
+    } catch (emailError: any) {
+      console.error("❌ Excepción al enviar email:", emailError.message);
       // No retornamos error para no revelar si el email existe
     }
 
     return NextResponse.json({
       message: "Si el correo existe, recibirás instrucciones para recuperar tu contraseña",
     });
-  } catch (error) {
-    console.error("Error en forgot-password:", error);
+  } catch (error: any) {
+    console.error("❌ Error general en forgot-password:", error.message);
+    console.error("Stack:", error.stack);
     return NextResponse.json(
       { error: "Error al procesar la solicitud" },
       { status: 500 }
