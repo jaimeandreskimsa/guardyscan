@@ -166,9 +166,6 @@ export default function TermsPage() {
               <li><strong>Dirección:</strong> Santiago, Chile</li>
             </ul>
           </section>
-        </div>
-      </main>
-
           </div>
         </div>
       </main>
