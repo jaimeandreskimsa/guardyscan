@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sendEmail, getPasswordResetEmailTemplate } from "@/lib/email";
 import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
@@ -39,38 +40,34 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // TODO: Aquí deberías enviar el email con el enlace de recuperación
-    // Por ahora, logueamos el enlace en desarrollo
+    // Generar enlace de recuperación
     const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/auth/reset-password?token=${resetToken}`;
     
-    console.log("🔐 Password Reset Link:", resetUrl);
-    console.log("📧 Email:", email);
+    // Log para debugging
+    console.log("🔐 Generando enlace de reset para:", email);
 
-    // En producción, integrar con servicio de email (Resend, SendGrid, etc.)
-    /*
-    if (process.env.RESEND_API_KEY) {
-      await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        },
-        body: JSON.stringify({
-          from: process.env.EMAIL_FROM || "noreply@guardyscan.com",
-          to: email,
-          subject: "Recuperación de Contraseña - GuardyScan",
-          html: `
-            <h2>Recuperación de Contraseña</h2>
-            <p>Has solicitado restablecer tu contraseña.</p>
-            <p>Haz clic en el siguiente enlace para crear una nueva contraseña:</p>
-            <a href="${resetUrl}">${resetUrl}</a>
-            <p>Este enlace expirará en 1 hora.</p>
-            <p>Si no solicitaste este cambio, ignora este correo.</p>
-          `,
-        }),
+    // Enviar email con SMTP
+    try {
+      const emailHtml = getPasswordResetEmailTemplate(resetUrl);
+      const result = await sendEmail({
+        to: email,
+        subject: "Recuperación de Contraseña - GuardyScan",
+        html: emailHtml,
       });
+
+      if (result.success) {
+        console.log("✅ Email de recuperación enviado a:", email);
+      } else {
+        console.error("❌ Error enviando email:", result.error);
+        // Log del enlace en caso de fallo del email (para debugging)
+        console.log("🔐 Password Reset Link (backup):", resetUrl);
+      }
+    } catch (emailError) {
+      console.error("Error al enviar email:", emailError);
+      // Log del enlace en caso de error
+      console.log("🔐 Password Reset Link (backup):", resetUrl);
+      // No retornamos error para no revelar si el email existe
     }
-    */
 
     return NextResponse.json({
       message: "Si el correo existe, recibirás instrucciones para recuperar tu contraseña",
