@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { sendEmail, getPasswordResetEmailTemplate } from "@/lib/email";
 import crypto from "crypto";
 
+// Force rebuild to clear Prisma cache - v2
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
