@@ -1,15 +1,33 @@
 import nodemailer from 'nodemailer';
 
 // Configuración del transporter SMTP
-const transporter = nodemailer.createTransport({
+const smtpPort = parseInt(process.env.SMTP_PORT || '465');
+const isSecure = smtpPort === 465; // SSL para 465, TLS para 587
+
+const transportConfig = {
   host: process.env.SMTP_HOST || 'mail.guardyscan.com',
-  port: parseInt(process.env.SMTP_PORT || '465'),
-  secure: true, // true para puerto 465, false para otros puertos
+  port: smtpPort,
+  secure: isSecure,
   auth: {
     user: process.env.SMTP_USER || 'noreply@guardyscan.com',
     pass: process.env.SMTP_PASSWORD,
   },
+  // Configuraciones adicionales para compatibilidad
+  tls: {
+    rejectUnauthorized: false, // Útil para certificados autofirmados
+  },
+  debug: true, // Logs detallados
+  logger: true, // Logger de nodemailer
+};
+
+console.log('📧 Configuración SMTP:', {
+  host: transportConfig.host,
+  port: transportConfig.port,
+  secure: transportConfig.secure,
+  user: transportConfig.auth.user,
 });
+
+const transporter = nodemailer.createTransport(transportConfig);
 
 interface EmailOptions {
   to: string;
