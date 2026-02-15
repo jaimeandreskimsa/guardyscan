@@ -10,6 +10,7 @@ import {
   Calendar, Bell, Layers, Network, HardDrive, Code, UserPlus, Mail
 } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SecurityTrendChart } from "@/components/dashboard/security-trend-chart";
 import { IncidentPieChart } from "@/components/dashboard/incident-pie-chart";
@@ -19,8 +20,12 @@ import { MonthlyReportButton } from "@/components/dashboard/MonthlyReportButton"
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   
+  if (!session?.user?.email) {
+    redirect("/auth/login");
+  }
+
   const user = await prisma.user.findUnique({
-    where: { email: session!.user!.email! },
+    where: { email: session.user.email },
     include: {
       subscription: true,
       scans: {
@@ -34,34 +39,38 @@ export default async function DashboardPage() {
     },
   });
 
+  if (!user) {
+    redirect("/auth/login");
+  }
+
   const stats = {
-    totalScans: await prisma.scan.count({ where: { userId: user!.id } }),
+    totalScans: await prisma.scan.count({ where: { userId: user.id } }),
     completedScans: await prisma.scan.count({ 
-      where: { userId: user!.id, status: "COMPLETED" } 
+      where: { userId: user.id, status: "COMPLETED" } 
     }),
     openIncidents: await prisma.incident.count({ 
-      where: { userId: user!.id, status: "OPEN" } 
+      where: { userId: user.id, status: "OPEN" } 
     }),
     criticalIncidents: await prisma.incident.count({ 
-      where: { userId: user!.id, severity: "CRITICAL", status: "OPEN" } 
+      where: { userId: user.id, severity: "CRITICAL", status: "OPEN" } 
     }),
   };
 
   const averageScore = await prisma.scan.aggregate({
-    where: { userId: user!.id, status: "COMPLETED", score: { not: null } },
+    where: { userId: user.id, status: "COMPLETED", score: { not: null } },
     _avg: { score: true },
   });
 
   // Get incidents by severity for pie chart
   const incidentsBySeverity = await prisma.incident.groupBy({
     by: ['severity'],
-    where: { userId: user!.id, status: 'OPEN' },
+    where: { userId: user.id, status: 'OPEN' },
     _count: { severity: true },
   });
 
   // Get unique domains count (assets)
   const allScans = await prisma.scan.findMany({
-    where: { userId: user!.id },
+    where: { userId: user.id },
     select: { targetUrl: true },
   });
   const uniqueDomains = Array.from(new Set(allScans.map(s => {
@@ -74,21 +83,21 @@ export default async function DashboardPage() {
 
   // Get vulnerabilities stats
   const totalVulnerabilities = await prisma.vulnerability.count({
-    where: { userId: user!.id },
+    where: { userId: user.id },
   });
 
   const closedVulnerabilities = await prisma.vulnerability.count({
-    where: { userId: user!.id, status: "RESOLVED" },
+    where: { userId: user.id, status: "RESOLVED" },
   });
 
   const criticalVulnerabilities = await prisma.vulnerability.count({
-    where: { userId: user!.id, severity: "CRITICAL" },
+    where: { userId: user.id, severity: "CRITICAL" },
   });
 
   // Get recent critical incidents for threat intelligence
   const recentThreats = await prisma.incident.findMany({
     where: { 
-      userId: user!.id,
+      userId: user.id,
       createdAt: {
         gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
       }
@@ -100,7 +109,7 @@ export default async function DashboardPage() {
   // Get recent vulnerabilities
   const recentVulnerabilities = await prisma.vulnerability.findMany({
     where: { 
-      userId: user!.id,
+      userId: user.id,
       createdAt: {
         gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
       }
@@ -112,7 +121,7 @@ export default async function DashboardPage() {
   // Calculate response time (average time to close incidents)
   const closedIncidents = await prisma.incident.findMany({
     where: { 
-      userId: user!.id,
+      userId: user.id,
       status: "RESOLVED",
       resolvedAt: { not: null }
     },
@@ -133,7 +142,7 @@ export default async function DashboardPage() {
   // Get total incidents processed in last 30 days
   const processedIncidents = await prisma.incident.count({
     where: {
-      userId: user!.id,
+      userId: user.id,
       createdAt: {
         gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
       }
@@ -142,25 +151,25 @@ export default async function DashboardPage() {
 
   // Get SIEM alerts count
   const openAlerts = await prisma.securityAlert.count({
-    where: { userId: user!.id, status: "OPEN" }
+    where: { userId: user.id, status: "OPEN" }
   }).catch(() => 0);
 
   const highRiskEvents = await prisma.securityEvent.count({
     where: { 
-      userId: user!.id, 
+      userId: user.id, 
       severity: { in: ["HIGH", "CRITICAL"] },
       timestamp: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
     }
   }).catch(() => 0);
 
   const activeThreats = await prisma.incident.count({
-    where: { userId: user!.id, status: "OPEN", severity: "CRITICAL" }
+    where: { userId: user.id, status: "OPEN", severity: "CRITICAL" }
   }).catch(() => 0);
 
   // Most recent high-risk event for urgent action block
   const urgentEvent = await prisma.securityEvent.findFirst({
     where: { 
-      userId: user!.id, 
+      userId: user.id, 
       severity: { in: ["HIGH", "CRITICAL"] },
     },
     orderBy: { timestamp: "desc" },
@@ -169,7 +178,7 @@ export default async function DashboardPage() {
   // Get open vulnerabilities for suggested incidents
   const openCriticalVulns = await prisma.vulnerability.findMany({
     where: { 
-      userId: user!.id, 
+      userId: user.id, 
       status: { in: ["OPEN", "IN_PROGRESS"] },
       severity: { in: ["CRITICAL", "HIGH"] }
     },
@@ -200,7 +209,7 @@ export default async function DashboardPage() {
       
       const count = await prisma.scan.count({
         where: {
-          userId: user!.id,
+          userId: user.id,
           createdAt: {
             gte: date,
             lt: nextDay,
