@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, XCircle, Clock, Shield, FileText, AlertTriangle } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Shield, FileText, AlertTriangle, Upload, Link as LinkIcon, FileEdit, User, CalendarDays } from "lucide-react";
 
 // Controles ISO 27001:2022 - Anexo A
 const ISO27001_CONTROLS = [
@@ -356,8 +356,45 @@ export default function CompliancePage() {
 
                   {control.evidence && (
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md mb-2">
-                      <p className="text-sm font-medium mb-1">Evidencia:</p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">{control.evidence}</p>
+                      <p className="text-sm font-medium mb-1">
+                        {control.docType === "link" ? "📎 Enlace:" : control.docType === "upload" ? "📄 Documento:" : "📝 Evidencia:"}
+                      </p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
+                        {control.docType === "link" ? (
+                          <a href={control.evidence} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center gap-1">
+                            <LinkIcon className="h-3 w-3" />{control.evidence}
+                          </a>
+                        ) : control.evidence}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Status, Responsible, Target Date row */}
+                  {(control.responsible || control.targetDate || control.implementationStatus) && (
+                    <div className="flex flex-wrap gap-3 mb-2 text-xs">
+                      {control.implementationStatus && (
+                        <span className={`px-2 py-1 rounded-full font-medium ${
+                          control.implementationStatus === "IMPLEMENTED" ? "bg-green-100 text-green-700" :
+                          control.implementationStatus === "IN_PROGRESS" ? "bg-yellow-100 text-yellow-700" :
+                          control.implementationStatus === "NOT_APPLICABLE" ? "bg-blue-100 text-blue-700" :
+                          "bg-gray-100 text-gray-700"
+                        }`}>
+                          {control.implementationStatus === "IMPLEMENTED" ? "✅ Implementado" :
+                           control.implementationStatus === "IN_PROGRESS" ? "🔄 En progreso" :
+                           control.implementationStatus === "NOT_APPLICABLE" ? "➖ No aplica" :
+                           "⬜ No iniciado"}
+                        </span>
+                      )}
+                      {control.responsible && (
+                        <span className="flex items-center gap-1 text-gray-600">
+                          <User className="h-3 w-3" /> {control.responsible}
+                        </span>
+                      )}
+                      {control.targetDate && (
+                        <span className="flex items-center gap-1 text-gray-600">
+                          <CalendarDays className="h-3 w-3" /> Objetivo: {new Date(control.targetDate).toLocaleDateString('es-ES')}
+                        </span>
+                      )}
                     </div>
                   )}
 
@@ -402,17 +439,174 @@ export default function CompliancePage() {
                   </p>
                 </div>
 
+                {/* Implementation Status */}
                 <div>
                   <label className="block text-sm font-medium mb-2">
-                    Evidencia de Implementación
+                    Estado de Implementación
                   </label>
-                  <Textarea
-                    value={editingControl.evidence || ""}
-                    onChange={(e) => setEditingControl({ ...editingControl, evidence: e.target.value })}
-                    placeholder="Describa cómo se implementó este control, incluya referencias a políticas, procedimientos, herramientas, etc."
-                    rows={5}
-                  />
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {[
+                      { value: "NOT_STARTED", label: "No iniciado", color: "border-gray-300 bg-gray-50 text-gray-700" },
+                      { value: "IN_PROGRESS", label: "En progreso", color: "border-yellow-300 bg-yellow-50 text-yellow-700" },
+                      { value: "IMPLEMENTED", label: "Implementado", color: "border-green-300 bg-green-50 text-green-700" },
+                      { value: "NOT_APPLICABLE", label: "No aplica", color: "border-blue-300 bg-blue-50 text-blue-700" },
+                    ].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setEditingControl({ ...editingControl, implementationStatus: opt.value })}
+                        className={`p-2 rounded-lg border-2 text-xs font-medium transition-all ${
+                          editingControl.implementationStatus === opt.value
+                            ? opt.color + " ring-2 ring-offset-1 ring-blue-500"
+                            : "border-gray-200 bg-white dark:bg-gray-800 hover:border-gray-300"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Responsible + Target Date */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2 flex items-center gap-1">
+                      <User className="h-4 w-4" />
+                      Responsable
+                    </label>
+                    <Input
+                      value={editingControl.responsible || ""}
+                      onChange={(e) => setEditingControl({ ...editingControl, responsible: e.target.value })}
+                      placeholder="Nombre del responsable"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2 flex items-center gap-1">
+                      <CalendarDays className="h-4 w-4" />
+                      Fecha Objetivo
+                    </label>
+                    <Input
+                      type="date"
+                      value={editingControl.targetDate || ""}
+                      onChange={(e) => setEditingControl({ ...editingControl, targetDate: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                {/* Documentation Type */}
+                <div>
+                  <label className="block text-sm font-medium mb-3">
+                    Tipo de Documentación
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setEditingControl({ ...editingControl, docType: "upload" })}
+                      className={`p-3 border-2 rounded-lg flex flex-col items-center gap-2 transition-all ${
+                        editingControl.docType === "upload"
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <Upload className="h-5 w-5 text-blue-600" />
+                      <span className="text-xs font-medium">Subir documento</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingControl({ ...editingControl, docType: "link" })}
+                      className={`p-3 border-2 rounded-lg flex flex-col items-center gap-2 transition-all ${
+                        editingControl.docType === "link"
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <LinkIcon className="h-5 w-5 text-green-600" />
+                      <span className="text-xs font-medium">Enlace a documento</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditingControl({ ...editingControl, docType: "manual" })}
+                      className={`p-3 border-2 rounded-lg flex flex-col items-center gap-2 transition-all ${
+                        editingControl.docType === "manual"
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <FileEdit className="h-5 w-5 text-purple-600" />
+                      <span className="text-xs font-medium">Descripción manual</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Conditional fields based on docType */}
+                {editingControl.docType === "upload" && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      <Upload className="inline h-4 w-4 mr-1" />
+                      Subir Documento
+                    </label>
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 transition-colors">
+                      <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">Arrastre un archivo aquí o haga clic para seleccionar</p>
+                      <p className="text-xs text-gray-400 mt-1">PDF, DOCX, XLSX (máx. 10MB)</p>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.docx,.xlsx,.doc,.xls"
+                      />
+                    </div>
+                    {editingControl.evidence && (
+                      <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> Referencia guardada: {editingControl.evidence}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {editingControl.docType === "link" && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      <LinkIcon className="inline h-4 w-4 mr-1" />
+                      Enlace al Documento
+                    </label>
+                    <Input
+                      type="url"
+                      value={editingControl.evidence || ""}
+                      onChange={(e) => setEditingControl({ ...editingControl, evidence: e.target.value })}
+                      placeholder="https://docs.empresa.com/politica-seguridad.pdf"
+                    />
+                  </div>
+                )}
+
+                {editingControl.docType === "manual" && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      <FileEdit className="inline h-4 w-4 mr-1" />
+                      Descripción de Implementación
+                    </label>
+                    <Textarea
+                      value={editingControl.evidence || ""}
+                      onChange={(e) => setEditingControl({ ...editingControl, evidence: e.target.value })}
+                      placeholder="Describa cómo se implementó este control, incluya referencias a políticas, procedimientos, herramientas, etc."
+                      rows={5}
+                    />
+                  </div>
+                )}
+
+                {/* Fallback if no docType selected */}
+                {!editingControl.docType && (
+                  <div>
+                    <label className="block text-sm font-medium mb-2">
+                      Evidencia de Implementación
+                    </label>
+                    <Textarea
+                      value={editingControl.evidence || ""}
+                      onChange={(e) => setEditingControl({ ...editingControl, evidence: e.target.value })}
+                      placeholder="Describa cómo se implementó este control..."
+                      rows={4}
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium mb-2">
@@ -421,7 +615,7 @@ export default function CompliancePage() {
                   <Textarea
                     value={editingControl.notes || ""}
                     onChange={(e) => setEditingControl({ ...editingControl, notes: e.target.value })}
-                    placeholder="Observaciones, mejoras planificadas, responsables, fechas, etc."
+                    placeholder="Observaciones, mejoras planificadas, etc."
                     rows={3}
                   />
                 </div>

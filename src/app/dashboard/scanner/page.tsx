@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { 
   Shield, 
   Package, 
@@ -33,47 +33,53 @@ interface ScanResult {
   error?: string
 }
 
-const SCAN_TYPES = [
+interface RecentScan {
+  id: string
+  targetUrl: string
+  status: string
+  score: number | null
+  createdAt: string
+}
+
+const SCAN_CATEGORIES = [
   {
-    id: 'dependencies' as ScanType,
-    name: 'Dependencias',
-    icon: Package,
-    description: 'Escanea package.json, requirements.txt o go.mod',
-    source: 'OSV (Google)',
-    color: 'from-green-500 to-emerald-600'
+    id: 'server',
+    name: 'Mi Servidor',
+    emoji: '🌐',
+    description: 'Puertos + CVE',
+    scanTypes: ['ports', 'nvd'] as ScanType[],
+    bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+    color: 'from-blue-500 to-cyan-500',
   },
   {
-    id: 'ports' as ScanType,
-    name: 'Puertos',
-    icon: Network,
-    description: 'Escanea puertos abiertos en IP o dominio',
-    source: 'Scanner Nativo',
-    color: 'from-blue-500 to-cyan-600'
+    id: 'code',
+    name: 'Mi Código',
+    emoji: '💻',
+    description: 'Código + Dependencias',
+    scanTypes: ['code', 'dependencies'] as ScanType[],
+    bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+    color: 'from-purple-500 to-violet-500',
   },
   {
-    id: 'code' as ScanType,
-    name: 'Código (SAST)',
-    icon: Code,
-    description: 'Análisis estático de seguridad del código',
-    source: 'OWASP Patterns',
-    color: 'from-purple-500 to-violet-600'
+    id: 'app',
+    name: 'Mi Aplicación',
+    emoji: '📦',
+    description: 'Docker + Dependencias',
+    scanTypes: ['docker', 'dependencies'] as ScanType[],
+    bgColor: 'bg-orange-50 dark:bg-orange-900/20',
+    color: 'from-orange-500 to-red-500',
   },
-  {
-    id: 'nvd' as ScanType,
-    name: 'CVE/NVD',
-    icon: Database,
-    description: 'Buscar vulnerabilidades en NVD',
-    source: 'NIST NVD',
-    color: 'from-orange-500 to-red-600'
-  },
-  {
-    id: 'docker' as ScanType,
-    name: 'Docker',
-    icon: Container,
-    description: 'Analizar Dockerfile o imagen',
-    source: 'Trivy / Local',
-    color: 'from-sky-500 to-blue-600'
-  }
+]
+
+const RECOMMENDED_SCANS = [
+  { id: 'ports' as ScanType, name: 'Puertos Básicos', emoji: '🌐', description: 'Detecta servicios expuestos', time: '2–5 min', input: 'IP/Dominio' },
+  { id: 'dependencies' as ScanType, name: 'Dependencias Básicas', emoji: '📦', description: 'Analiza librerías inseguras', time: '1–3 min', input: 'package.json' },
+  { id: 'code' as ScanType, name: 'Código Intermedio', emoji: '💻', description: 'Revisa vulnerabilidades', time: '1–7 min', input: 'Repositorio' },
+]
+
+const ADVANCED_SCANS = [
+  { id: 'docker' as ScanType, name: 'Docker Avanzado', emoji: '🌐', description: 'Analiza imágenes y Dockerfiles', time: '3–10 min', input: 'Dockerfile' },
+  { id: 'nvd' as ScanType, name: 'CVE / NVD Avanzado', emoji: '📦', description: 'Busca vulnerabilidades conocidas (NIST)', time: '1–2 min', input: 'Manual' },
 ]
 
 const SEVERITY_COLORS = {
@@ -88,6 +94,15 @@ export default function SecurityScannerPage() {
   const [selectedScan, setSelectedScan] = useState<ScanType | null>(null)
   const [scanning, setScanning] = useState(false)
   const [result, setResult] = useState<ScanResult | null>(null)
+  const [recentScans, setRecentScans] = useState<RecentScan[]>([])
+
+  // Fetch recent scans
+  useEffect(() => {
+    fetch('/api/scans')
+      .then(res => res.json())
+      .then(data => { if (Array.isArray(data)) setRecentScans(data.slice(0, 5)) })
+      .catch(() => {})
+  }, [])
 
   // Form states for each scan type
   const [depContent, setDepContent] = useState('')
@@ -514,44 +529,96 @@ export default function SecurityScannerPage() {
     )
   }
 
+  const getScanName = (id: ScanType) => {
+    const names: Record<ScanType, string> = { ports: 'Puertos', dependencies: 'Dependencias', code: 'Código (SAST)', nvd: 'CVE/NVD', docker: 'Docker' }
+    return names[id]
+  }
+
   return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-          <Shield className="h-8 w-8 text-indigo-600" />
-          Security Scanner
+    <div className="p-8 space-y-8">
+      {/* Header */}
+      <div className="text-center max-w-3xl mx-auto">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-full text-sm text-indigo-700 dark:text-indigo-300 font-medium mb-4">
+          <Shield className="h-4 w-4" />
+          ESCANEA SERVIDORES, CÓDIGO Y APLICACIONES EN MINUTOS
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          ¿Qué quieres analizar hoy?
         </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Escanea dependencias, puertos, código, CVEs y contenedores Docker
-        </p>
       </div>
 
-      {/* Scan Type Selection */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
-        {SCAN_TYPES.map(scan => (
+      {/* Category Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+        {SCAN_CATEGORIES.map((cat) => (
           <button
-            key={scan.id}
-            onClick={() => {
-              setSelectedScan(scan.id)
-              setResult(null)
-            }}
-            className={`relative overflow-hidden rounded-xl p-4 transition-all ${
-              selectedScan === scan.id
-                ? 'ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-gray-900'
-                : 'hover:scale-105'
-            }`}
+            key={cat.id}
+            onClick={() => { setSelectedScan(cat.scanTypes[0]); setResult(null) }}
+            className={`relative overflow-hidden rounded-2xl p-8 text-center transition-all hover:scale-105 hover:shadow-xl border-2 ${
+              cat.scanTypes.includes(selectedScan!) ? 'border-indigo-500 shadow-lg' : 'border-transparent'
+            } ${cat.bgColor}`}
           >
-            <div className={`absolute inset-0 bg-gradient-to-br ${scan.color} opacity-10`} />
+            <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-5`} />
             <div className="relative">
-              <scan.icon className={`h-8 w-8 mb-2 ${
-                selectedScan === scan.id ? 'text-indigo-600' : 'text-gray-600 dark:text-gray-400'
-              }`} />
-              <h3 className="font-semibold text-gray-900 dark:text-white">{scan.name}</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{scan.description}</p>
-              <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-2">{scan.source}</p>
+              <div className="text-5xl mb-4">{cat.emoji}</div>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{cat.name}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">({cat.description})</p>
             </div>
           </button>
         ))}
+      </div>
+
+      {/* Recommended Scans */}
+      <div>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <CheckCircle className="h-5 w-5 text-green-500" />
+          Escaneos recomendados
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {RECOMMENDED_SCANS.map((scan) => (
+            <div key={scan.id} className={`rounded-xl border-2 p-5 transition-all cursor-pointer hover:shadow-lg ${
+              selectedScan === scan.id ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+            }`} onClick={() => { setSelectedScan(scan.id); setResult(null) }}>
+              <div className="text-2xl mb-2">{scan.emoji}</div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">{scan.name}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{scan.description}</p>
+              <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
+                <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {scan.time}</span>
+                <span>⚙️ {scan.input}</span>
+              </div>
+              <button onClick={(e) => { e.stopPropagation(); setSelectedScan(scan.id); setResult(null) }}
+                className={`mt-3 w-full py-2 rounded-lg text-sm font-medium transition-colors ${
+                  selectedScan === scan.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}>Iniciar</button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Advanced Scans */}
+      <div>
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <Server className="h-5 w-5 text-orange-500" />
+          Escaneos avanzados
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {ADVANCED_SCANS.map((scan) => (
+            <div key={scan.id} className={`rounded-xl border-2 p-5 transition-all cursor-pointer hover:shadow-lg ${
+              selectedScan === scan.id ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+            }`} onClick={() => { setSelectedScan(scan.id); setResult(null) }}>
+              <div className="text-2xl mb-2">{scan.emoji}</div>
+              <h3 className="font-semibold text-gray-900 dark:text-white">{scan.name}</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{scan.description}</p>
+              <div className="flex items-center gap-3 mt-3 text-xs text-gray-500">
+                <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {scan.time}</span>
+                <span>⚙️ {scan.input}</span>
+              </div>
+              <button onClick={(e) => { e.stopPropagation(); setSelectedScan(scan.id); setResult(null) }}
+                className={`mt-3 w-full py-2 rounded-lg text-sm font-medium transition-colors ${
+                  selectedScan === scan.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                }`}>Iniciar</button>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Scan Configuration */}
@@ -560,31 +627,14 @@ export default function SecurityScannerPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
               <Server className="h-5 w-5" />
-              Configuración del Escaneo
+              Configuración: {getScanName(selectedScan)}
             </h2>
-            
             {renderScanForm()}
-
-            <button
-              onClick={runScan}
-              disabled={scanning}
-              className="mt-6 w-full px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-            >
-              {scanning ? (
-                <>
-                  <RefreshCw className="h-5 w-5 animate-spin" />
-                  Escaneando...
-                </>
-              ) : (
-                <>
-                  <Play className="h-5 w-5" />
-                  Ejecutar Escaneo
-                </>
-              )}
+            <button onClick={runScan} disabled={scanning}
+              className="mt-6 w-full px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-medium hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 transition-all flex items-center justify-center gap-2">
+              {scanning ? (<><RefreshCw className="h-5 w-5 animate-spin" />Escaneando...</>) : (<><Play className="h-5 w-5" />Ejecutar Escaneo</>)}
             </button>
           </div>
-
-          {/* Results */}
           <div>
             {scanning && (
               <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-8 text-center">
@@ -593,76 +643,47 @@ export default function SecurityScannerPage() {
                 <p className="text-gray-500">Esto puede tomar unos segundos</p>
               </div>
             )}
-            
             {!scanning && result && renderResults()}
-            
             {!scanning && !result && (
               <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-8 text-center">
                 <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="font-semibold text-gray-600 dark:text-gray-400">
-                  Configura y ejecuta el escaneo
-                </h3>
-                <p className="text-gray-500 text-sm mt-1">
-                  Los resultados aparecerán aquí
-                </p>
+                <h3 className="font-semibold text-gray-600 dark:text-gray-400">Configura y ejecuta el escaneo</h3>
+                <p className="text-gray-500 text-sm mt-1">Los resultados aparecerán aquí</p>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Help Section */}
-      {!selectedScan && (
-        <div className="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-8">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-            Tipos de Escaneo Disponibles
+      {/* Recent Scans */}
+      {recentScans.length > 0 && (
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <Clock className="h-5 w-5 text-blue-500" />
+            Últimos escaneos
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex gap-3">
-              <Package className="h-6 w-6 text-green-600 flex-shrink-0" />
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white">Dependencias</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Pega tu package.json, requirements.txt o go.mod para encontrar vulnerabilidades en librerías.
-                </p>
+          <div className="space-y-3">
+            {recentScans.map((scan) => (
+              <div key={scan.id} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-4">
+                  <div className="text-2xl">🌐</div>
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">{scan.targetUrl}</p>
+                    <p className="text-sm text-gray-500">{new Date(scan.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  {scan.score != null && (
+                    <span className={`text-sm font-medium ${scan.score >= 80 ? 'text-green-600' : scan.score >= 60 ? 'text-amber-600' : 'text-red-600'}`}>
+                      Riesgo {scan.score >= 80 ? 'bajo' : scan.score >= 60 ? 'medio' : 'alto'}
+                    </span>
+                  )}
+                  <a href="/dashboard/scans" className="px-3 py-1.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors">
+                    Ver reporte
+                  </a>
+                </div>
               </div>
-            </div>
-            <div className="flex gap-3">
-              <Network className="h-6 w-6 text-blue-600 flex-shrink-0" />
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white">Puertos</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Escanea puertos abiertos en servidores para detectar servicios expuestos.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Code className="h-6 w-6 text-purple-600 flex-shrink-0" />
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white">Código (SAST)</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Análisis estático que detecta SQL Injection, XSS, secretos hardcodeados y más.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Database className="h-6 w-6 text-orange-600 flex-shrink-0" />
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white">CVE/NVD</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Busca vulnerabilidades en la base de datos nacional de EEUU (NIST).
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <Container className="h-6 w-6 text-sky-600 flex-shrink-0" />
-              <div>
-                <h3 className="font-medium text-gray-900 dark:text-white">Docker</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Analiza Dockerfiles y verifica imágenes por vulnerabilidades conocidas.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}

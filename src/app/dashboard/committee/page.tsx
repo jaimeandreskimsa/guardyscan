@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, Edit, Trash2, Shield, Building, Mail, Phone, Calendar } from "lucide-react";
+import { Users, UserPlus, Edit, Trash2, Shield, Building, Mail, Phone, Calendar, Clock, FileText, Plus, CheckCircle } from "lucide-react";
 
 const ROLES = [
   "CISO - Chief Information Security Officer",
@@ -40,8 +40,22 @@ export default function CommitteePage() {
     notes: "",
   });
 
+  // Sessions state
+  const [sessions, setSessions] = useState<any[]>([]);
+  const [showSessionForm, setShowSessionForm] = useState(false);
+  const [sessionForm, setSessionForm] = useState({
+    date: new Date().toISOString().split("T")[0],
+    time: "10:00",
+    topic: "",
+    description: "",
+    decisions: "",
+    attendees: "",
+    status: "SCHEDULED",
+  });
+
   useEffect(() => {
     loadMembers();
+    loadSessions();
   }, []);
 
   const loadMembers = async () => {
@@ -55,6 +69,42 @@ export default function CommitteePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadSessions = async () => {
+    try {
+      const response = await fetch("/api/committee/sessions");
+      const data = await response.json();
+      setSessions(Array.isArray(data) ? data : []);
+    } catch (error) {
+      // Sessions API may not exist yet, that's fine
+      setSessions([]);
+    }
+  };
+
+  const handleSessionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch("/api/committee/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sessionForm),
+      });
+      if (response.ok) {
+        setShowSessionForm(false);
+        setSessionForm({ date: new Date().toISOString().split("T")[0], time: "10:00", topic: "", description: "", decisions: "", attendees: "", status: "SCHEDULED" });
+        loadSessions();
+      }
+    } catch (error) {
+      // If the API doesn't exist, store locally
+      setSessions([...sessions, { id: Date.now().toString(), ...sessionForm, createdAt: new Date().toISOString() }]);
+      setShowSessionForm(false);
+      setSessionForm({ date: new Date().toISOString().split("T")[0], time: "10:00", topic: "", description: "", decisions: "", attendees: "", status: "SCHEDULED" });
+    }
+  };
+
+  const handleSessionComplete = (sessionId: string) => {
+    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: "COMPLETED" } : s));
   };
 
   const resetForm = () => {
@@ -466,6 +516,165 @@ export default function CommitteePage() {
           ))
         )}
       </div>
+
+      {/* Sessions Section */}
+      <Card className="border-none shadow-lg">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-indigo-600" />
+                Sesiones del Comité
+              </CardTitle>
+              <p className="text-sm text-gray-500 mt-1">
+                Sesiones: {sessions.length} | Decisiones pendientes: {sessions.filter(s => s.status === "SCHEDULED").length}
+              </p>
+            </div>
+            <Button onClick={() => setShowSessionForm(true)} variant="outline">
+              <Plus className="h-4 w-4 mr-2" />
+              Crear Sesión
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {showSessionForm && (
+            <form onSubmit={handleSessionSubmit} className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800/50 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Fecha</label>
+                  <Input
+                    type="date"
+                    value={sessionForm.date}
+                    onChange={(e) => setSessionForm({ ...sessionForm, date: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Hora</label>
+                  <Input
+                    type="time"
+                    value={sessionForm.time}
+                    onChange={(e) => setSessionForm({ ...sessionForm, time: e.target.value })}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Estado</label>
+                  <select
+                    value={sessionForm.status}
+                    onChange={(e) => setSessionForm({ ...sessionForm, status: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                  >
+                    <option value="SCHEDULED">Programada</option>
+                    <option value="COMPLETED">Completada</option>
+                    <option value="CANCELLED">Cancelada</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Tema Principal *</label>
+                <Input
+                  value={sessionForm.topic}
+                  onChange={(e) => setSessionForm({ ...sessionForm, topic: e.target.value })}
+                  placeholder="Ej: Revisión trimestral de riesgos"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Descripción / Agenda</label>
+                <Textarea
+                  value={sessionForm.description}
+                  onChange={(e: any) => setSessionForm({ ...sessionForm, description: e.target.value })}
+                  placeholder="Agenda de la sesión..."
+                  rows={2}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Asistentes</label>
+                <Input
+                  value={sessionForm.attendees}
+                  onChange={(e) => setSessionForm({ ...sessionForm, attendees: e.target.value })}
+                  placeholder="Nombres separados por coma"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Decisiones / Acuerdos</label>
+                <Textarea
+                  value={sessionForm.decisions}
+                  onChange={(e: any) => setSessionForm({ ...sessionForm, decisions: e.target.value })}
+                  placeholder="Registrar decisiones tomadas..."
+                  rows={2}
+                />
+              </div>
+              <div className="flex gap-3">
+                <Button type="submit">Guardar Sesión</Button>
+                <Button type="button" variant="outline" onClick={() => setShowSessionForm(false)}>Cancelar</Button>
+              </div>
+            </form>
+          )}
+
+          {sessions.length === 0 && !showSessionForm ? (
+            <div className="text-center py-8 text-gray-500">
+              <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No hay sesiones registradas</p>
+              <Button onClick={() => setShowSessionForm(true)} className="mt-4" variant="outline">
+                <Plus className="h-4 w-4 mr-2" />
+                Crear primera sesión
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {sessions
+                .sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime())
+                .map((sess) => (
+                  <div key={sess.id} className="flex items-start justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h4 className="font-medium">{sess.topic}</h4>
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          sess.status === "COMPLETED" ? "bg-green-100 text-green-700" :
+                          sess.status === "CANCELLED" ? "bg-red-100 text-red-700" :
+                          "bg-blue-100 text-blue-700"
+                        }`}>
+                          {sess.status === "COMPLETED" ? "Completada" : sess.status === "CANCELLED" ? "Cancelada" : "Programada"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {sess.date} {sess.time}
+                        </span>
+                        {sess.attendees && (
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {sess.attendees}
+                          </span>
+                        )}
+                      </div>
+                      {sess.decisions && (
+                        <p className="text-sm text-gray-600 mt-2 flex items-start gap-1">
+                          <FileText className="h-3 w-3 mt-0.5 shrink-0" />
+                          {sess.decisions}
+                        </p>
+                      )}
+                    </div>
+                    {sess.status === "SCHEDULED" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleSessionComplete(sess.id)}
+                        className="ml-3"
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Completar
+                      </Button>
+                    )}
+                  </div>
+                ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Info Box */}
       <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">

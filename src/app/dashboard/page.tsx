@@ -140,6 +140,51 @@ export default async function DashboardPage() {
     }
   });
 
+  // Get SIEM alerts count
+  const openAlerts = await prisma.securityAlert.count({
+    where: { userId: user!.id, status: "OPEN" }
+  }).catch(() => 0);
+
+  const highRiskEvents = await prisma.securityEvent.count({
+    where: { 
+      userId: user!.id, 
+      severity: { in: ["HIGH", "CRITICAL"] },
+      createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+    }
+  }).catch(() => 0);
+
+  const activeThreats = await prisma.incident.count({
+    where: { userId: user!.id, status: "OPEN", severity: "CRITICAL" }
+  }).catch(() => 0);
+
+  // Most recent high-risk event for urgent action block
+  const urgentEvent = await prisma.securityEvent.findFirst({
+    where: { 
+      userId: user!.id, 
+      severity: { in: ["HIGH", "CRITICAL"] },
+    },
+    orderBy: { createdAt: "desc" },
+  }).catch(() => null);
+
+  // Get open vulnerabilities for suggested incidents
+  const openCriticalVulns = await prisma.vulnerability.findMany({
+    where: { 
+      userId: user!.id, 
+      status: { in: ["OPEN", "IN_PROGRESS"] },
+      severity: { in: ["CRITICAL", "HIGH"] }
+    },
+    orderBy: { createdAt: "desc" },
+    take: 3,
+  }).catch(() => []);
+
+  // Determine security status level
+  const getSecurityStatus = () => {
+    if (activeThreats > 0 || stats.criticalIncidents > 0) return { level: 'CRITICAL', color: 'red', emoji: '🔴', text: 'Crítico', action: 'Requiere atención inmediata' };
+    if (highRiskEvents > 0 || stats.openIncidents > 0) return { level: 'WARNING', color: 'amber', emoji: '🟡', text: 'Acción requerida', action: `${highRiskEvents} evento${highRiskEvents !== 1 ? 's' : ''} con riesgo ALTO` };
+    return { level: 'OK', color: 'emerald', emoji: '🟢', text: 'Operativo', action: 'Sin amenazas detectadas' };
+  };
+  const securityStatus = getSecurityStatus();
+
   // Get last 7 days of scans for activity chart
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = new Date();
@@ -262,6 +307,112 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Security Status Semaphore - PPT: ESTADO GENERAL DE SEGURIDAD */}
+      <div className={`rounded-2xl border-2 p-6 ${
+        securityStatus.level === 'CRITICAL' 
+          ? 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700' 
+          : securityStatus.level === 'WARNING'
+          ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700'
+          : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700'
+      }`}>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-4">
+            <div className={`text-4xl`}>{securityStatus.emoji}</div>
+            <div>
+              <h2 className={`text-xl font-bold ${
+                securityStatus.level === 'CRITICAL' ? 'text-red-800 dark:text-red-200' :
+                securityStatus.level === 'WARNING' ? 'text-amber-800 dark:text-amber-200' :
+                'text-emerald-800 dark:text-emerald-200'
+              }`}>
+                ESTADO GENERAL DE SEGURIDAD: {securityStatus.text}
+              </h2>
+              <p className={`text-sm mt-1 ${
+                securityStatus.level === 'CRITICAL' ? 'text-red-700 dark:text-red-300' :
+                securityStatus.level === 'WARNING' ? 'text-amber-700 dark:text-amber-300' :
+                'text-emerald-700 dark:text-emerald-300'
+              }`}>{securityStatus.action}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-6 text-sm">
+            <div className="text-center">
+              <div className="font-bold text-lg text-slate-900 dark:text-white">{highRiskEvents}</div>
+              <div className="text-slate-500 text-xs">Eventos alto riesgo</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold text-lg text-slate-900 dark:text-white">{openAlerts}</div>
+              <div className="text-slate-500 text-xs">Alertas abiertas</div>
+            </div>
+            <div className="text-center">
+              <div className="font-bold text-lg text-slate-900 dark:text-white">{activeThreats}</div>
+              <div className="text-slate-500 text-xs">Amenazas activas</div>
+            </div>
+            <Link href="/dashboard/siem">
+              <Button variant="outline" size="sm" className="whitespace-nowrap">
+                Ver resumen diario
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Urgent Action Block - PPT: REQUIERE ACCIÓN INMEDIATA */}
+      {(urgentEvent || openCriticalVulns.length > 0) && (
+        <div className="rounded-2xl bg-gradient-to-r from-red-500 to-orange-500 p-1">
+          <div className="rounded-xl bg-white dark:bg-slate-900 p-6">
+            <div className="flex items-center gap-2 text-red-600 font-bold text-lg mb-4">
+              <AlertTriangle className="h-6 w-6 animate-pulse" />
+              ⚠ REQUIERE ACCIÓN INMEDIATA
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {urgentEvent && (
+                <div className="border border-red-200 dark:border-red-800 rounded-xl p-4 bg-red-50/50 dark:bg-red-900/10">
+                  <div className="text-sm text-slate-500 mb-1">Evento detectado:</div>
+                  <div className="font-semibold text-slate-900 dark:text-white mb-2">
+                    {(urgentEvent as any).message || (urgentEvent as any).eventType || 'Evento de seguridad crítico'}
+                  </div>
+                  <div className="text-sm text-slate-500 mb-1">Detectado por: <span className="font-medium text-slate-700 dark:text-slate-300">SIEM + ML</span></div>
+                  <div className="text-sm text-slate-500 mb-3">Nivel de riesgo: <span className="font-bold text-red-600">ALTO</span></div>
+                  <div className="flex gap-2">
+                    <Link href="/dashboard/incidents">
+                      <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white">
+                        Crear incidente
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard/siem">
+                      <Button size="sm" variant="outline">
+                        Investigar evento
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
+              {openCriticalVulns.slice(0, 2).map((vuln) => (
+                <div key={vuln.id} className="border border-orange-200 dark:border-orange-800 rounded-xl p-4 bg-orange-50/50 dark:bg-orange-900/10">
+                  <div className="text-sm text-slate-500 mb-1">Incidente sugerido:</div>
+                  <div className="font-semibold text-slate-900 dark:text-white mb-2">
+                    {vuln.cveId || vuln.title} — {vuln.title}
+                  </div>
+                  <div className="text-sm text-slate-500 mb-1">Severidad: <span className="font-bold text-orange-600">{vuln.severity === 'CRITICAL' ? 'Crítica' : 'Alta'}</span></div>
+                  <div className="text-sm text-slate-500 mb-3">Detectado: <span className="font-medium text-slate-700 dark:text-slate-300">Scanner</span></div>
+                  <div className="flex gap-2">
+                    <Link href="/dashboard/incidents">
+                      <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white">
+                        Crear incidente
+                      </Button>
+                    </Link>
+                    <Link href="/dashboard/vulnerabilities">
+                      <Button size="sm" variant="outline">
+                        Ver vulnerabilidad
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

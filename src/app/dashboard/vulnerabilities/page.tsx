@@ -525,8 +525,37 @@ export default function VulnerabilitiesPage() {
                 <div>
                   <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-1">Severidad</h4>
                   <p className={`text-2xl font-bold ${SEVERITY_COLORS[selectedVuln.severity].text}`}>
-                    {selectedVuln.severity}
+                    {translateSeverity(selectedVuln.severity)}
                   </p>
+                </div>
+              </div>
+
+              {/* Impacto potencial */}
+              <div>
+                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Impacto potencial</h4>
+                <ul className="space-y-1 text-sm text-gray-600 dark:text-gray-400">
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-500 mt-0.5">•</span>
+                    Exposición de credenciales o información sensible
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-500 mt-0.5">•</span>
+                    Riesgo de ataques Man-in-the-Middle (MITM)
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-red-500 mt-0.5">•</span>
+                    Incumplimiento de buenas prácticas de seguridad
+                  </li>
+                </ul>
+              </div>
+
+              {/* Evaluación de riesgo */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Evaluación de riesgo</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div><span className="text-gray-500">Severidad:</span> <span className="font-medium">{translateSeverity(selectedVuln.severity)}</span></div>
+                  <div><span className="text-gray-500">CVSS:</span> <span className="font-medium">{selectedVuln.cvssScore?.toFixed(1) || 'No aplica'}</span></div>
+                  <div className="col-span-2"><span className="text-gray-500">Motivo:</span> <span className="font-medium">{selectedVuln.cveId ? `CVE asociado: ${selectedVuln.cveId}` : 'Vulnerabilidad de configuración detectada (no asociada a un CVE específico).'}</span></div>
                 </div>
               </div>
 
@@ -539,34 +568,97 @@ export default function VulnerabilitiesPage() {
 
               {selectedVuln.remediation && (
                 <div>
-                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-1">Remediación</h4>
+                  <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-1">Remediación recomendada</h4>
                   <p className="text-gray-600 dark:text-gray-400 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg">
                     {selectedVuln.remediation}
                   </p>
+                  <div className="grid grid-cols-2 gap-3 mt-3 text-xs text-gray-500">
+                    <div>⚙️ Dificultad: <span className="font-medium">Baja</span></div>
+                    <div>🔄 Reversible: <span className="font-medium">Sí</span></div>
+                    <div>📉 Impacto en el sistema: <span className="font-medium">Bajo</span></div>
+                    <div>⏱ Tiempo estimado: <span className="font-medium">&lt; 15 minutos</span></div>
+                  </div>
                 </div>
               )}
 
+              {/* Cumplimiento y referencias - PPT */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">Cumplimiento y referencias</h4>
+                <div className="space-y-2 text-sm text-blue-700 dark:text-blue-300">
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-blue-200 dark:bg-blue-800 rounded text-xs font-medium">ISO/IEC 27001</span>
+                    <span>A.8.20 – Seguridad en las comunicaciones</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-blue-200 dark:bg-blue-800 rounded text-xs font-medium">OWASP Top 10</span>
+                    <span>A02 – Cryptographic Failures</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 bg-blue-200 dark:bg-blue-800 rounded text-xs font-medium">Buenas prácticas</span>
+                    <span>HTTPS Everywhere</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Historial - PPT */}
+              <div>
+                <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-2">Historial</h4>
+                <div className="border-l-2 border-gray-200 dark:border-gray-600 pl-4 space-y-3">
+                  <div className="relative">
+                    <div className="absolute -left-[1.35rem] top-1.5 w-2.5 h-2.5 bg-blue-500 rounded-full border-2 border-white dark:border-gray-800" />
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {new Date(selectedVuln.discoveredAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                      </span>
+                      {' — '}Vulnerabilidad detectada automáticamente
+                    </p>
+                  </div>
+                  {selectedVuln.status !== 'OPEN' && (
+                    <div className="relative">
+                      <div className="absolute -left-[1.35rem] top-1.5 w-2.5 h-2.5 bg-amber-500 rounded-full border-2 border-white dark:border-gray-800" />
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {new Date(selectedVuln.discoveredAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        </span>
+                        {' — '}Estado cambiado a &quot;{translateStatus(selectedVuln.status)}&quot;
+                      </p>
+                    </div>
+                  )}
+                  {selectedVuln.resolvedAt && (
+                    <div className="relative">
+                      <div className="absolute -left-[1.35rem] top-1.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white dark:border-gray-800" />
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          {new Date(selectedVuln.resolvedAt).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                        </span>
+                        {' — '}Vulnerabilidad resuelta
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => updateVulnerability(selectedVuln.id, 'IN_PROGRESS')}
-                  disabled={selectedVuln.status === 'IN_PROGRESS'}
-                  className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 transition-colors"
-                >
-                  En Progreso
-                </button>
                 <button
                   onClick={() => updateVulnerability(selectedVuln.id, 'RESOLVED')}
                   disabled={selectedVuln.status === 'RESOLVED'}
                   className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 transition-colors"
                 >
-                  Resolver
+                  ✅ Marcar como resuelta
                 </button>
                 <button
                   onClick={() => updateVulnerability(selectedVuln.id, 'ACCEPTED')}
                   disabled={selectedVuln.status === 'ACCEPTED'}
                   className="flex-1 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50 transition-colors"
                 >
-                  Aceptar Riesgo
+                  Aceptar riesgo
+                </button>
+                <button
+                  onClick={() => updateVulnerability(selectedVuln.id, 'IN_PROGRESS')}
+                  disabled={selectedVuln.status === 'IN_PROGRESS'}
+                  className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 transition-colors"
+                >
+                  Cambiar estado
                 </button>
               </div>
             </div>

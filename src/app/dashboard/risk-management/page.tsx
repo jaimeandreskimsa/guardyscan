@@ -405,98 +405,151 @@ export default function RiskManagementPage() {
         </Card>
       )}
 
-      {/* Risk Lists */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-orange-600" />
-              Principales Riesgos
-            </CardTitle>
-            <CardDescription>Riesgos de mayor prioridad que requieren atención</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {risks.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No se identificaron riesgos</p>
-                <Button onClick={generateDemoData} className="mt-4">
-                  Generar Riesgos Demo
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-80 overflow-y-auto">
-                {risks
-                  .sort((a, b) => b.riskScore - a.riskScore)
-                  .slice(0, 10)
-                  .map((risk) => (
-                    <div key={risk.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <div className={`w-3 h-3 rounded-full mt-2 ${getRiskColor(risk.riskScore)}`} />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm">{risk.title}</span>
-                          <Badge variant="outline" className="text-xs">
-                            {risk.category}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span>Score: {risk.riskScore.toFixed(1)}</span>
-                          <span>P: {(risk.probability * 100).toFixed(0)}%</span>
-                          <span>I: {risk.impact.toFixed(1)}</span>
-                          <span>Owner: {risk.owner || "Unassigned"}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Central Risk Registry Table */}
+      <Card className="border-none shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5 text-orange-600" />
+            Registro Central de Riesgos
+          </CardTitle>
+          <CardDescription>Vista consolidada de todos los riesgos identificados con su evaluación</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {risks.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>No se identificaron riesgos</p>
+              <Button onClick={generateDemoData} className="mt-4">
+                Generar Riesgos Demo
+              </Button>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left">
+                    <th className="py-3 px-3 font-semibold">Riesgo</th>
+                    <th className="py-3 px-3 font-semibold">Categoría</th>
+                    <th className="py-3 px-3 font-semibold text-center">Probabilidad</th>
+                    <th className="py-3 px-3 font-semibold text-center">Impacto</th>
+                    <th className="py-3 px-3 font-semibold text-center">Score</th>
+                    <th className="py-3 px-3 font-semibold">Estado</th>
+                    <th className="py-3 px-3 font-semibold">Responsable</th>
+                    <th className="py-3 px-3 font-semibold text-center">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {risks
+                    .sort((a, b) => b.riskScore - a.riskScore)
+                    .map((risk) => (
+                      <tr key={risk.id} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2.5 h-2.5 rounded-full ${getRiskColor(risk.riskScore)}`} />
+                            <span className="font-medium">{risk.title}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3">
+                          <Badge variant="outline" className="text-xs capitalize">{risk.category}</Badge>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="font-mono">{(risk.probability * 100).toFixed(0)}%</span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="font-mono">{risk.impact.toFixed(1)}</span>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold text-white ${getRiskColor(risk.riskScore)}`}>
+                            {risk.riskScore.toFixed(1)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            risk.status === "MITIGATED" ? "bg-green-100 text-green-700" :
+                            risk.status === "ACCEPTED" ? "bg-blue-100 text-blue-700" :
+                            risk.status === "IN_PROGRESS" ? "bg-yellow-100 text-yellow-700" :
+                            "bg-red-100 text-red-700"
+                          }`}>
+                            {risk.status === "MITIGATED" ? "Mitigado" :
+                             risk.status === "ACCEPTED" ? "Aceptado" :
+                             risk.status === "IN_PROGRESS" ? "En progreso" :
+                             "Abierto"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-gray-600 dark:text-gray-400 text-xs">
+                          {risk.owner || "Sin asignar"}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <Button variant="outline" size="sm" className="text-xs h-7">
+                            Ver detalle
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        <Card className="border-none shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-600" />
-              Evaluación de Riesgos de Terceros
-            </CardTitle>
-            <CardDescription>Evaluación de riesgos de seguridad de proveedores</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {thirdParties.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Sin evaluaciones de terceros</p>
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-80 overflow-y-auto">
-                {thirdParties
-                  .sort((a, b) => b.riskScore - a.riskScore)
-                  .slice(0, 10)
-                  .map((vendor) => (
-                    <div key={vendor.id} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-sm">{vendor.vendorName}</span>
+      {/* Third Party Risk */}
+      <Card className="border-none shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-blue-600" />
+            Evaluación de Riesgos de Terceros
+          </CardTitle>
+          <CardDescription>Evaluación de riesgos de seguridad de proveedores</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {thirdParties.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Sin evaluaciones de terceros</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left">
+                    <th className="py-3 px-3 font-semibold">Proveedor</th>
+                    <th className="py-3 px-3 font-semibold">Criticidad</th>
+                    <th className="py-3 px-3 font-semibold text-center">Score</th>
+                    <th className="py-3 px-3 font-semibold">Rating</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {thirdParties
+                    .sort((a, b) => b.riskScore - a.riskScore)
+                    .map((vendor) => (
+                      <tr key={vendor.id} className="border-b last:border-0 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <td className="py-3 px-3 font-medium">{vendor.vendorName}</td>
+                        <td className="py-3 px-3">
                           <Badge variant={getCriticalityBadge(vendor.criticality) as any} className="text-xs">
                             {vendor.criticality}
                           </Badge>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className={`px-2 py-1 rounded-full text-xs font-bold text-white ${
+                            vendor.riskScore >= 70 ? "bg-red-500" : vendor.riskScore >= 40 ? "bg-yellow-500" : "bg-green-500"
+                          }`}>
+                            {vendor.riskScore.toFixed(0)}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3">
                           {vendor.securityRating && (
-                            <Badge variant="outline" className="text-xs">
-                              Rating: {vendor.securityRating}
-                            </Badge>
+                            <Badge variant="outline" className="text-xs">{vendor.securityRating}</Badge>
                           )}
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span>Risk Score: {vendor.riskScore.toFixed(0)}/100</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
