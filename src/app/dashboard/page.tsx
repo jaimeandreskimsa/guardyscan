@@ -149,7 +149,7 @@ export default async function DashboardPage() {
     where: { 
       userId: user!.id, 
       severity: { in: ["HIGH", "CRITICAL"] },
-      createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+      timestamp: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
     }
   }).catch(() => 0);
 
@@ -163,7 +163,7 @@ export default async function DashboardPage() {
       userId: user!.id, 
       severity: { in: ["HIGH", "CRITICAL"] },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { timestamp: "desc" },
   }).catch(() => null);
 
   // Get open vulnerabilities for suggested incidents
