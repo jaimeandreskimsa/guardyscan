@@ -36,17 +36,17 @@ export async function GET() {
     // Calcular métricas
     const totalUsers = users.length;
     const activeSubscriptions = users.filter(u => 
-      u.subscription && u.subscription.status === 'active'
+      u.subscription && u.subscription.status === 'ACTIVE'
     ).length;
 
     const totalRevenue = users.reduce((sum, user) => {
-      if (user.subscription?.status === 'active') {
+      if (user.subscription?.status === 'ACTIVE') {
         // Calcular ingresos según el plan
         const planPrices: { [key: string]: number } = {
-          'free': 0,
-          'basic': 49000,      // $49.000 CLP
-          'professional': 99000,// $99.000 CLP
-          'enterprise': 199000  // $199.000 CLP
+          'FREE': 0,
+          'BASIC': 49000,      // $49.000 CLP
+          'PROFESSIONAL': 99000,// $99.000 CLP
+          'ENTERPRISE': 199000  // $199.000 CLP
         };
         return sum + (planPrices[user.subscription.plan] || 0);
       }
@@ -79,8 +79,8 @@ export async function GET() {
       email: user.email,
       company: user.company,
       role: user.role,
-      plan: user.subscription?.plan || 'free',
-      status: user.subscription?.status || 'inactive',
+      plan: user.subscription?.plan || 'FREE',
+      status: user.subscription?.status || 'INACTIVE',
       scansCount: user.scans.length,
       createdAt: user.createdAt,
       subscriptionEnd: user.subscription?.currentPeriodEnd,

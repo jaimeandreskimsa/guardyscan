@@ -55,16 +55,16 @@ export default function UsersPage() {
 
   const getPlanBadge = (plan: string) => {
     const colors: { [key: string]: string } = {
-      free: "bg-gray-100 text-gray-700",
-      basic: "bg-blue-100 text-blue-700",
-      professional: "bg-purple-100 text-purple-700",
-      enterprise: "bg-yellow-100 text-yellow-700",
+      FREE: "bg-gray-100 text-gray-700",
+      BASIC: "bg-blue-100 text-blue-700",
+      PROFESSIONAL: "bg-purple-100 text-purple-700",
+      ENTERPRISE: "bg-yellow-100 text-yellow-700",
     };
-    return colors[plan] || colors.free;
+    return colors[plan] || colors.FREE;
   };
 
   const getStatusBadge = (status: string) => {
-    if (status === 'active') {
+    if (status === 'ACTIVE') {
       return <Badge className="bg-green-100 text-green-700"><CheckCircle className="h-3 w-3 mr-1" />Activa</Badge>;
     }
     return <Badge className="bg-gray-100 text-gray-700"><AlertCircle className="h-3 w-3 mr-1" />Inactiva</Badge>;
@@ -104,8 +104,8 @@ export default function UsersPage() {
 
   // Filtrar usuarios
   const filteredUsers = users.filter(user => {
-    if (filter === 'active') return user.status === 'active';
-    if (filter === 'inactive') return user.status !== 'active';
+    if (filter === 'active') return user.status === 'ACTIVE';
+    if (filter === 'inactive') return user.status !== 'ACTIVE';
     return true;
   });
 
@@ -195,7 +195,7 @@ export default function UsersPage() {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Activos ({users.filter(u => u.status === 'active').length})
+              Activos ({users.filter(u => u.status === 'ACTIVE').length})
             </button>
             <button
               onClick={() => setFilter('inactive')}
@@ -205,7 +205,7 @@ export default function UsersPage() {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Inactivos ({users.filter(u => u.status !== 'active').length})
+              Inactivos ({users.filter(u => u.status !== 'ACTIVE').length})
             </button>
           </div>
         </div>
