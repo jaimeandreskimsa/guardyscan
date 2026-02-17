@@ -39,6 +39,7 @@ const getNavigationGroups = (userRole: string) => {
       items: [
         { name: "Riesgos", href: "/dashboard/risk-management", icon: TrendingUp },
         { name: "Inventario de Equipos", href: "/dashboard/inventory", icon: Laptop },
+        { name: "Trabajadores", href: "/dashboard/workers", icon: Users },
         { name: "Terceros", href: "/dashboard/third-party", icon: Network },
         { name: "Cumplimiento Normativo", href: "/dashboard/compliance", icon: FileCheck },
         { name: "BCP/DRP", href: "/dashboard/bcp", icon: Building2 },
