@@ -35,7 +35,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
   // Navegación actualizada con nuevas secciones
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "SIEM", href: "/dashboard/siem", icon: Eye },
+    { name: "Información de Seguridad y Gestión de Eventos", href: "/dashboard/siem", icon: Eye },
     { name: "Scanner", href: "/dashboard/scanner", icon: Radar },
     { name: "Vulnerabilidades", href: "/dashboard/vulnerabilities", icon: ShieldAlert },
     { name: "Riesgos", href: "/dashboard/risk-management", icon: TrendingUp },
@@ -43,7 +43,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
     { name: "Trabajadores", href: "/dashboard/workers", icon: Users },
     { name: "Terceros", href: "/dashboard/third-party", icon: Network },
     { name: "Compliance", href: "/dashboard/compliance", icon: FileCheck },
-    { name: "BCP/DRP", href: "/dashboard/bcp", icon: Building2 },
+    { name: "Plan de Continuidad del Negocio y Recuperación ante Desastres", href: "/dashboard/bcp", icon: Building2 },
     { name: "Documentos", href: "/dashboard/documents", icon: FolderArchive },
     { name: "Incidentes", href: "/dashboard/incidents", icon: AlertTriangle },
     { name: "Escaneos", href: "/dashboard/scans", icon: Search },

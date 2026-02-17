@@ -28,7 +28,7 @@ const getNavigationGroups = (userRole: string) => {
     {
       name: "Seguridad",
       items: [
-        { name: "SIEM", href: "/dashboard/siem", icon: Eye },
+        { name: "Información de Seguridad y Gestión de Eventos", href: "/dashboard/siem", icon: Eye },
         { name: "Scanner", href: "/dashboard/scanner", icon: Radar },
         { name: "Vulnerabilidades", href: "/dashboard/vulnerabilities", icon: ShieldAlert },
         { name: "Incidentes", href: "/dashboard/incidents", icon: AlertTriangle },
@@ -42,7 +42,7 @@ const getNavigationGroups = (userRole: string) => {
         { name: "Trabajadores", href: "/dashboard/workers", icon: Users },
         { name: "Terceros", href: "/dashboard/third-party", icon: Network },
         { name: "Cumplimiento Normativo", href: "/dashboard/compliance", icon: FileCheck },
-        { name: "BCP/DRP", href: "/dashboard/bcp", icon: Building2 },
+        { name: "Plan de Continuidad del Negocio y Recuperación ante Desastres", href: "/dashboard/bcp", icon: Building2 },
         { name: "Comité", href: "/dashboard/committee", icon: Users },
       ]
     },
