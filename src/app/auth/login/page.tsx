@@ -16,6 +16,10 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // Prevenir múltiples submits
+    if (loading) return;
+    
     setLoading(true);
     setError("");
 
@@ -30,13 +34,13 @@ export default function LoginPage() {
 
       if (result?.error) {
         setError("Credenciales incorrectas");
+        setLoading(false);
       } else {
-        router.push("/dashboard");
-        router.refresh();
+        // Redirect directo sin refresh
+        window.location.href = "/dashboard";
       }
     } catch (err) {
       setError("Error al iniciar sesión");
-    } finally {
       setLoading(false);
     }
   };

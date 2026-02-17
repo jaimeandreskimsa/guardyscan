@@ -28,8 +28,13 @@ export const authOptions: NextAuthOptions = {
           where: {
             email: credentials.email,
           },
-          include: {
-            subscription: true,
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            image: true,
+            password: true,
+            role: true,
           },
         });
 
@@ -47,7 +52,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Actualizar rol a admin si es el usuario jaimegomez@kimsa.io
-        if (user.email === 'jaimegomez@kimsa.io') {
+        if (user.email === 'jaimegomez@kimsa.io' && user.role !== 'admin') {
           await prisma.user.update({
             where: { id: user.id },
             data: { role: 'admin' }

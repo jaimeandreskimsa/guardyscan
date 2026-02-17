@@ -43,36 +43,107 @@ export default async function DashboardPage() {
     redirect("/auth/login");
   }
 
-  const stats = {
-    totalScans: await prisma.scan.count({ where: { userId: user.id } }),
-    completedScans: await prisma.scan.count({ 
-      where: { userId: user.id, status: "COMPLETED" } 
+  // Ejecutar todas las queries en paralelo para mejor performance
+  const [
+    stats,
+    averageScore,
+    incidentsBySeverity,
+    allScans,
+    totalVulnerabilities,
+    closedVulnerabilities,
+    criticalVulnerabilities,
+    recentThreats,
+    recentVulnerabilities,
+    closedIncidents,
+    processedIncidents,
+  ] = await Promise.all([
+    // Stats
+    Promise.all([
+      prisma.scan.count({ where: { userId: user.id } }),
+      prisma.scan.count({ where: { userId: user.id, status: "COMPLETED" } }),
+      prisma.incident.count({ where: { userId: user.id, status: "OPEN" } }),
+      prisma.incident.count({ where: { userId: user.id, severity: "CRITICAL", status: "OPEN" } }),
+    ]).then(([totalScans, completedScans, openIncidents, criticalIncidents]) => ({
+      totalScans,
+      completedScans,
+      openIncidents,
+      criticalIncidents,
+    })),
+    
+    // Average score
+    prisma.scan.aggregate({
+      where: { userId: user.id, status: "COMPLETED", score: { not: null } },
+      _avg: { score: true },
     }),
-    openIncidents: await prisma.incident.count({ 
-      where: { userId: user.id, status: "OPEN" } 
+    
+    // Incidents by severity
+    prisma.incident.groupBy({
+      by: ['severity'],
+      where: { userId: user.id, status: 'OPEN' },
+      _count: { severity: true },
     }),
-    criticalIncidents: await prisma.incident.count({ 
-      where: { userId: user.id, severity: "CRITICAL", status: "OPEN" } 
+    
+    // All scans for unique domains
+    prisma.scan.findMany({
+      where: { userId: user.id },
+      select: { targetUrl: true },
     }),
-  };
+    
+    // Vulnerabilities stats
+    prisma.vulnerability.count({ where: { userId: user.id } }),
+    prisma.vulnerability.count({ where: { userId: user.id, status: "RESOLVED" } }),
+    prisma.vulnerability.count({ where: { userId: user.id, severity: "CRITICAL" } }),
+    
+    // Recent threats
+    prisma.incident.findMany({
+      where: { 
+        userId: user.id,
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+    }),
+    
+    // Recent vulnerabilities
+    prisma.vulnerability.findMany({
+      where: { 
+        userId: user.id,
+        createdAt: {
+          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+        }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 3,
+    }),
+    
+    // Closed incidents for avg response time
+    prisma.incident.findMany({
+      where: { 
+        userId: user.id,
+        status: "RESOLVED",
+        resolvedAt: { not: null }
+      },
+      select: {
+        detectedAt: true,
+        resolvedAt: true,
+      },
+      take: 50,
+    }),
+    
+    // Processed incidents last 30 days
+    prisma.incident.count({
+      where: {
+        userId: user.id,
+        createdAt: {
+          gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+        }
+      }
+    }),
+  ]);
 
-  const averageScore = await prisma.scan.aggregate({
-    where: { userId: user.id, status: "COMPLETED", score: { not: null } },
-    _avg: { score: true },
-  });
-
-  // Get incidents by severity for pie chart
-  const incidentsBySeverity = await prisma.incident.groupBy({
-    by: ['severity'],
-    where: { userId: user.id, status: 'OPEN' },
-    _count: { severity: true },
-  });
-
-  // Get unique domains count (assets)
-  const allScans = await prisma.scan.findMany({
-    where: { userId: user.id },
-    select: { targetUrl: true },
-  });
+  // Process unique domains
   const uniqueDomains = Array.from(new Set(allScans.map(s => {
     try {
       return new URL(s.targetUrl).hostname;
@@ -81,73 +152,13 @@ export default async function DashboardPage() {
     }
   })));
 
-  // Get vulnerabilities stats
-  const totalVulnerabilities = await prisma.vulnerability.count({
-    where: { userId: user.id },
-  });
-
-  const closedVulnerabilities = await prisma.vulnerability.count({
-    where: { userId: user.id, status: "RESOLVED" },
-  });
-
-  const criticalVulnerabilities = await prisma.vulnerability.count({
-    where: { userId: user.id, severity: "CRITICAL" },
-  });
-
-  // Get recent critical incidents for threat intelligence
-  const recentThreats = await prisma.incident.findMany({
-    where: { 
-      userId: user.id,
-      createdAt: {
-        gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Last 24 hours
-      }
-    },
-    orderBy: { createdAt: "desc" },
-    take: 3,
-  });
-
-  // Get recent vulnerabilities
-  const recentVulnerabilities = await prisma.vulnerability.findMany({
-    where: { 
-      userId: user.id,
-      createdAt: {
-        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
-      }
-    },
-    orderBy: { createdAt: "desc" },
-    take: 3,
-  });
-
-  // Calculate response time (average time to close incidents)
-  const closedIncidents = await prisma.incident.findMany({
-    where: { 
-      userId: user.id,
-      status: "RESOLVED",
-      resolvedAt: { not: null }
-    },
-    select: {
-      detectedAt: true,
-      resolvedAt: true,
-    },
-    take: 50,
-  });
-
+  // Calculate avg response time
   const avgResponseTime = closedIncidents.length > 0
     ? closedIncidents.reduce((acc, inc) => {
         const diff = inc.resolvedAt!.getTime() - inc.detectedAt.getTime();
         return acc + diff;
-      }, 0) / closedIncidents.length / (1000 * 60 * 60) // Convert to hours
+      }, 0) / closedIncidents.length / (1000 * 60 * 60)
     : 0;
-
-  // Get total incidents processed in last 30 days
-  const processedIncidents = await prisma.incident.count({
-    where: {
-      userId: user.id,
-      createdAt: {
-        gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-      }
-    }
-  });
 
   // Get SIEM alerts count
   const openAlerts = await prisma.securityAlert.count({
