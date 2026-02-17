@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { 
   LayoutDashboard, Search, AlertTriangle, FileCheck, LogOut, Menu, 
-  Settings, Users, Eye, TrendingUp, User, Bell, ShieldAlert, Shield, Building2, Radar, CreditCard, FolderArchive, Network, DollarSign
+  Settings, Users, Eye, TrendingUp, User, Bell, ShieldAlert, Shield, Building2, Radar, CreditCard, FolderArchive, Network, DollarSign, Laptop
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
@@ -39,6 +39,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
     { name: "Scanner", href: "/dashboard/scanner", icon: Radar },
     { name: "Vulnerabilidades", href: "/dashboard/vulnerabilities", icon: ShieldAlert },
     { name: "Riesgos", href: "/dashboard/risk-management", icon: TrendingUp },
+    { name: "Inventario", href: "/dashboard/inventory", icon: Laptop },
     { name: "Terceros", href: "/dashboard/third-party", icon: Network },
     { name: "Compliance", href: "/dashboard/compliance", icon: FileCheck },
     { name: "BCP/DRP", href: "/dashboard/bcp", icon: Building2 },
