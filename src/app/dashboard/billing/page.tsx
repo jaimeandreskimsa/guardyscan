@@ -25,11 +25,11 @@ const PLANS = {
     name: "Gratuito",
     price: 0,
     priceLabel: "Gratis",
-    scansLimit: 3,
+    scansLimit: -1,
     icon: Shield,
     color: "gray",
     features: [
-      "3 escaneos por mes",
+      "Escaneos ilimitados",
       "Análisis básico de seguridad",
       "Dashboard básico",
       "1 empresa",
@@ -166,6 +166,8 @@ export default function BillingPage() {
 
   const currentPlan = subscription?.plan || "FREE";
   const currentPlanData = PLANS[currentPlan];
+  const effectiveScansLimit = currentPlan === "FREE" ? -1 : (subscription?.scansLimit ?? currentPlanData.scansLimit);
+  const usageRatio = effectiveScansLimit === -1 ? 0 : (subscription?.scansUsed || 0) / (effectiveScansLimit || 1);
 
   if (loading) {
     return (
@@ -228,20 +230,20 @@ export default function BillingPage() {
               <div className="text-2xl font-bold">
                 {subscription?.scansUsed || 0}
                 <span className="text-base font-normal text-gray-500">
-                  /{subscription?.scansLimit === -1 ? "∞" : subscription?.scansLimit || 3} escaneos
+                  /{effectiveScansLimit === -1 ? "∞" : effectiveScansLimit} escaneos
                 </span>
               </div>
               <div className="mt-2 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div 
                   className={`h-full rounded-full ${
-                    (subscription?.scansUsed || 0) / (subscription?.scansLimit || 3) > 0.8 
+                    usageRatio > 0.8 
                       ? "bg-red-500" 
                       : "bg-blue-500"
                   }`}
                   style={{ 
-                    width: subscription?.scansLimit === -1 
+                    width: effectiveScansLimit === -1 
                       ? "10%" 
-                      : `${Math.min(((subscription?.scansUsed || 0) / (subscription?.scansLimit || 3)) * 100, 100)}%` 
+                      : `${Math.min(usageRatio * 100, 100)}%` 
                   }}
                 />
               </div>

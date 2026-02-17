@@ -10,9 +10,9 @@ export const PLANS = {
     name: "Free",
     price: 0,
     priceId: "", // Plan gratuito sin priceId
-    scansLimit: 3,
+    scansLimit: -1,
     features: [
-      "3 escaneos por mes",
+      "Escaneos ilimitados",
       "Análisis básico",
       "Dashboard básico",
     ],

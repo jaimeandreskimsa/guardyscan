@@ -209,7 +209,7 @@ model Subscription {
   currentPeriodEnd   DateTime?
   cancelAtPeriodEnd  Boolean          @default(false)
   scansUsed        Int                @default(0)
-  scansLimit       Int                @default(3) // FREE: 3, BASIC: 50, PROFESSIONAL: 200, ENTERPRISE: unlimited
+  scansLimit       Int                @default(-1) // FREE: unlimited, BASIC: 50, PROFESSIONAL: 200, ENTERPRISE: unlimited
   
   // Auto-scan configuration
   autoScanEnabled  Boolean            @default(false)

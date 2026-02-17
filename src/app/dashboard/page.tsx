@@ -315,13 +315,18 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm text-slate-300">Uso de escaneos este mes</span>
               <span className="text-sm font-medium">
-                {user?.subscription?.scansUsed || 0} / {user?.subscription?.scansLimit || 0}
+                {user?.subscription?.scansUsed || 0} / {(user?.subscription?.plan === "FREE" || user?.subscription?.scansLimit === -1) ? "∞" : (user?.subscription?.scansLimit || 0)}
               </span>
             </div>
             <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(((user?.subscription?.scansUsed || 0) / (user?.subscription?.scansLimit || 1)) * 100, 100)}%` }}
+                style={{
+                  width:
+                    user?.subscription?.plan === "FREE" || user?.subscription?.scansLimit === -1
+                      ? "10%"
+                      : `${Math.min(((user?.subscription?.scansUsed || 0) / (user?.subscription?.scansLimit || 1)) * 100, 100)}%`
+                }}
               />
             </div>
           </div>

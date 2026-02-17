@@ -80,7 +80,7 @@ export async function POST(req: Request) {
           data: {
             plan: "FREE",
             status: "CANCELED",
-            scansLimit: 3,
+            scansLimit: -1,
             scansUsed: 0,
             stripeSubscriptionId: null,
             stripePriceId: null,

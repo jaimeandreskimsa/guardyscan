@@ -29,7 +29,8 @@ export async function POST(req: Request) {
 
     // Check scan limit
     const subscription = user.subscription!;
-    if (subscription.scansLimit !== -1 && subscription.scansUsed >= subscription.scansLimit) {
+    const hasUnlimitedScans = subscription.plan === "FREE" || subscription.scansLimit === -1;
+    if (!hasUnlimitedScans && subscription.scansUsed >= subscription.scansLimit) {
       return NextResponse.json(
         { error: "Límite de escaneos alcanzado. Actualiza tu plan." },
         { status: 403 }

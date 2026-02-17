@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -241,7 +242,7 @@ const initialInventory: EquipmentRecord[] = [
   },
 ];
 
-export default function InventoryPage() {
+function LegacyInventoryPage() {
   const [inventory, setInventory] = useState<EquipmentRecord[]>(initialInventory);
   const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState<Omit<EquipmentRecord, "id">>(initialFormData);
@@ -531,6 +532,207 @@ export default function InventoryPage() {
               <p><strong>Cargo:</strong> {selectedRecord.userRole}</p>
               <p><strong>Correo:</strong> {selectedRecord.corporateEmail}</p>
               <p><strong>Proveedor:</strong> {selectedRecord.supplier}</p>
+              <p><strong>Costo:</strong> ${selectedRecord.equipmentCost.toLocaleString("es-CL")}</p>
+              <p><strong>Garantía:</strong> {selectedRecord.warrantyUntil || "N/A"}</p>
+              <p><strong>Soporte:</strong> {boolLabel(selectedRecord.supportContract)}</p>
+              <p><strong>Info sensible:</strong> {boolLabel(selectedRecord.hasSensitiveInformation)}</p>
+              <p><strong>Tipo info:</strong> {selectedRecord.sensitiveInformationType || "N/A"}</p>
+              <p><strong>Último parche:</strong> {selectedRecord.lastPatchUpdate || "N/A"}</p>
+              <p><strong>Última revisión seguridad:</strong> {selectedRecord.lastSecurityReview || "N/A"}</p>
+              <p><strong>Respaldo:</strong> {boolLabel(selectedRecord.backupConfigured)}</p>
+              <p><strong>Último respaldo:</strong> {selectedRecord.lastBackupDate || "N/A"}</p>
+              <p><strong>Última mantención:</strong> {selectedRecord.lastMaintenanceDate || "N/A"}</p>
+              <p><strong>Fecha de baja:</strong> {selectedRecord.decommissionDate || "N/A"}</p>
+              <p><strong>Motivo de baja:</strong> {selectedRecord.decommissionReason || "N/A"}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-semibold mb-1">Incidentes reportados</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{selectedRecord.reportedIncidents || "Sin registro"}</p>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-1">Cambios relevantes</h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300">{selectedRecord.relevantChanges || "Sin registro"}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+const INVENTORY_STORAGE_KEY = "guardyscan_inventory_equipment_v1";
+
+function loadInventoryRecords(): EquipmentRecord[] {
+  if (typeof window === "undefined") return initialInventory;
+  const raw = localStorage.getItem(INVENTORY_STORAGE_KEY);
+  if (!raw) return initialInventory;
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as EquipmentRecord[];
+    return initialInventory;
+  } catch {
+    return initialInventory;
+  }
+}
+
+export default function InventoryPage() {
+  const [inventory] = useState<EquipmentRecord[]>(() => loadInventoryRecords());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedRecord, setSelectedRecord] = useState<EquipmentRecord | null>(inventory[0] ?? null);
+
+  const filteredInventory = useMemo(() => {
+    const query = searchTerm.toLowerCase();
+    return inventory.filter((item) =>
+      item.assetCode.toLowerCase().includes(query) ||
+      item.equipmentType.toLowerCase().includes(query) ||
+      item.assignedUser.toLowerCase().includes(query) ||
+      item.serialNumber.toLowerCase().includes(query)
+    );
+  }, [inventory, searchTerm]);
+
+  const stats = useMemo(() => {
+    return {
+      total: inventory.length,
+      active: inventory.filter((item) => item.status === "OPERATIVO").length,
+      critical: inventory.filter((item) => item.criticality === "ALTA").length,
+      sensitive: inventory.filter((item) => item.hasSensitiveInformation).length,
+    };
+  }, [inventory]);
+
+  const getCriticalityClass = (criticality: Criticality) => {
+    if (criticality === "ALTA") return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300";
+    if (criticality === "MEDIA") return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300";
+    return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
+  };
+
+  const boolLabel = (value: boolean) => (value ? "Sí" : "No");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <ClipboardList className="h-8 w-8 text-blue-600" />
+            Inventario de Equipos Tecnológicos
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Control de activos TI para auditorías, cumplimiento y gestión de riesgos.
+          </p>
+        </div>
+
+        <Link href="/dashboard/inventory/new">
+          <Button className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="h-4 w-4 mr-2" />
+            Registrar equipo
+          </Button>
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card><CardContent className="pt-6"><p className="text-sm text-gray-500">Total activos</p><p className="text-2xl font-bold">{stats.total}</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-sm text-gray-500">Operativos</p><p className="text-2xl font-bold text-green-600">{stats.active}</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-sm text-gray-500">Criticidad alta</p><p className="text-2xl font-bold text-red-600">{stats.critical}</p></CardContent></Card>
+        <Card><CardContent className="pt-6"><p className="text-sm text-gray-500">Con datos sensibles</p><p className="text-2xl font-bold text-purple-600">{stats.sensitive}</p></CardContent></Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Laptop className="h-5 w-5" /> Listado de equipos</CardTitle>
+          <CardDescription>Busca por código, serie, tipo o responsable.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              className="pl-10"
+              placeholder="Buscar equipo..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  <th className="text-left p-3">Código</th>
+                  <th className="text-left p-3">Equipo</th>
+                  <th className="text-left p-3">Responsable</th>
+                  <th className="text-left p-3">Estado</th>
+                  <th className="text-left p-3">Criticidad</th>
+                  <th className="text-left p-3">Último parche</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredInventory.map((item) => (
+                  <tr
+                    key={item.id}
+                    className="border-t hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                    onClick={() => setSelectedRecord(item)}
+                  >
+                    <td className="p-3 font-medium">{item.assetCode}</td>
+                    <td className="p-3">{item.equipmentType} - {item.brand} {item.model}</td>
+                    <td className="p-3">{item.assignedUser || "Sin asignar"}</td>
+                    <td className="p-3"><Badge variant="outline">{statusLabels[item.status]}</Badge></td>
+                    <td className="p-3">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCriticalityClass(item.criticality)}`}>
+                        {criticalityLabels[item.criticality]}
+                      </span>
+                    </td>
+                    <td className="p-3">{item.lastPatchUpdate || "Sin fecha"}</td>
+                  </tr>
+                ))}
+                {filteredInventory.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="p-6 text-center text-gray-500">
+                      No se encontraron equipos con ese filtro.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {selectedRecord && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle>Ficha detallada: {selectedRecord.assetCode}</CardTitle>
+                <CardDescription>{selectedRecord.equipmentType} - {selectedRecord.brand} {selectedRecord.model}</CardDescription>
+              </div>
+              <Link href={`/dashboard/inventory/${encodeURIComponent(selectedRecord.id)}/edit`}>
+                <Button variant="outline">Editar equipo</Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+              <p><strong>Serie:</strong> {selectedRecord.serialNumber}</p>
+              <p><strong>Etiqueta física:</strong> {boolLabel(selectedRecord.physicalLabel)}</p>
+              <p><strong>Estado:</strong> {statusLabels[selectedRecord.status]}</p>
+              <p><strong>Criticidad:</strong> {criticalityLabels[selectedRecord.criticality]}</p>
+              <p><strong>SO:</strong> {selectedRecord.operatingSystem} {selectedRecord.operatingSystemVersion}</p>
+              <p><strong>Procesador:</strong> {selectedRecord.processor || "N/A"}</p>
+              <p><strong>RAM:</strong> {selectedRecord.ram || "N/A"}</p>
+              <p><strong>Disco:</strong> {selectedRecord.storage || "N/A"}</p>
+              <p><strong>IP / MAC:</strong> {(selectedRecord.assignedIp || "N/A")} / {(selectedRecord.macAddress || "N/A")}</p>
+              <p><strong>Dominio:</strong> {selectedRecord.domainOrWorkgroup || "N/A"}</p>
+              <p><strong>Antivirus:</strong> {boolLabel(selectedRecord.antivirusInstalled)} {selectedRecord.antivirusName ? `(${selectedRecord.antivirusName})` : ""}</p>
+              <p><strong>Firewall:</strong> {boolLabel(selectedRecord.firewallActive)}</p>
+              <p><strong>Cifrado:</strong> {boolLabel(selectedRecord.diskEncryption)}</p>
+              <p><strong>Ubicación:</strong> {selectedRecord.physicalLocation}</p>
+              <p><strong>Área:</strong> {selectedRecord.department || "N/A"}</p>
+              <p><strong>Usuario:</strong> {selectedRecord.assignedUser || "Sin asignar"}</p>
+              <p><strong>Cargo:</strong> {selectedRecord.userRole || "N/A"}</p>
+              <p><strong>Correo:</strong> {selectedRecord.corporateEmail || "N/A"}</p>
+              <p><strong>Proveedor:</strong> {selectedRecord.supplier || "N/A"}</p>
               <p><strong>Costo:</strong> ${selectedRecord.equipmentCost.toLocaleString("es-CL")}</p>
               <p><strong>Garantía:</strong> {selectedRecord.warrantyUntil || "N/A"}</p>
               <p><strong>Soporte:</strong> {boolLabel(selectedRecord.supportContract)}</p>

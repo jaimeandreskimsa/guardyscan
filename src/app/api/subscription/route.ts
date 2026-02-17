@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
           userId: session.user.id,
           plan: "FREE",
           status: "ACTIVE",
-          scansLimit: 3,
+          scansLimit: -1,
           scansUsed: 0,
         },
       });

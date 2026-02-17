@@ -39,7 +39,7 @@ export async function POST(req: Request) {
           create: {
             plan: "FREE",
             status: "ACTIVE",
-            scansLimit: 3,
+            scansLimit: -1,
           },
         },
       },
