@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Search, AlertTriangle, FileCheck, LogOut,
   Settings, Eye, TrendingUp, ShieldAlert, Building2, Radar, 
   FolderArchive, Network, ChevronLeft, ChevronRight, Shield,
-  CreditCard, Bell, User, HelpCircle, Users
+  CreditCard, Bell, User, HelpCircle, Users, DollarSign, UserCheck
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -17,40 +17,55 @@ interface SidebarProps {
 }
 
 // Navegación agrupada por categorías
-const navigationGroups = [
-  {
-    name: "General",
-    items: [
-      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    ]
-  },
-  {
-    name: "Seguridad",
-    items: [
-      { name: "SIEM", href: "/dashboard/siem", icon: Eye },
-      { name: "Scanner", href: "/dashboard/scanner", icon: Radar },
-      { name: "Vulnerabilidades", href: "/dashboard/vulnerabilities", icon: ShieldAlert },
-      { name: "Incidentes", href: "/dashboard/incidents", icon: AlertTriangle },
-    ]
-  },
-  {
-    name: "Gestión",
-    items: [
-      { name: "Riesgos", href: "/dashboard/risk-management", icon: TrendingUp },
-      { name: "Terceros", href: "/dashboard/third-party", icon: Network },
-      { name: "Cumplimiento Normativo", href: "/dashboard/compliance", icon: FileCheck },
-      { name: "BCP/DRP", href: "/dashboard/bcp", icon: Building2 },
-      { name: "Comité", href: "/dashboard/committee", icon: Users },
-    ]
-  },
-  {
-    name: "Recursos",
-    items: [
-      { name: "Documentos", href: "/dashboard/documents", icon: FolderArchive },
-      { name: "Escaneos", href: "/dashboard/scans", icon: Search },
-    ]
-  },
-];
+const getNavigationGroups = (userRole: string) => {
+  const baseGroups = [
+    {
+      name: "General",
+      items: [
+        { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+      ]
+    },
+    {
+      name: "Seguridad",
+      items: [
+        { name: "SIEM", href: "/dashboard/siem", icon: Eye },
+        { name: "Scanner", href: "/dashboard/scanner", icon: Radar },
+        { name: "Vulnerabilidades", href: "/dashboard/vulnerabilities", icon: ShieldAlert },
+        { name: "Incidentes", href: "/dashboard/incidents", icon: AlertTriangle },
+      ]
+    },
+    {
+      name: "Gestión",
+      items: [
+        { name: "Riesgos", href: "/dashboard/risk-management", icon: TrendingUp },
+        { name: "Terceros", href: "/dashboard/third-party", icon: Network },
+        { name: "Cumplimiento Normativo", href: "/dashboard/compliance", icon: FileCheck },
+        { name: "BCP/DRP", href: "/dashboard/bcp", icon: Building2 },
+        { name: "Comité", href: "/dashboard/committee", icon: Users },
+      ]
+    },
+    {
+      name: "Recursos",
+      items: [
+        { name: "Documentos", href: "/dashboard/documents", icon: FolderArchive },
+        { name: "Escaneos", href: "/dashboard/scans", icon: Search },
+      ]
+    },
+  ];
+
+  // Agregar sección de Administración solo para admins
+  if (userRole === 'admin') {
+    baseGroups.push({
+      name: "Administración",
+      items: [
+        { name: "Usuarios Activos", href: "/dashboard/admin/users", icon: UserCheck },
+        { name: "Finanzas", href: "/dashboard/admin/finance", icon: DollarSign },
+      ]
+    });
+  }
+
+  return baseGroups;
+};
 
 export function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
@@ -182,7 +197,7 @@ export function Sidebar({ user }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-3">
-        {navigationGroups.map((group, groupIndex) => (
+        {getNavigationGroups(user.role).map((group, groupIndex) => (
           <div key={group.name} className={groupIndex > 0 ? "mt-6" : ""}>
             {!collapsed && (
               <h3 className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">

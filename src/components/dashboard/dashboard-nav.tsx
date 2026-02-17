@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { 
   LayoutDashboard, Search, AlertTriangle, FileCheck, LogOut, Menu, 
-  Settings, Users, Eye, TrendingUp, User, Bell, ShieldAlert, Shield, Building2, Radar, CreditCard, FolderArchive, Network
+  Settings, Users, Eye, TrendingUp, User, Bell, ShieldAlert, Shield, Building2, Radar, CreditCard, FolderArchive, Network, DollarSign
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
@@ -47,6 +47,13 @@ export function DashboardNav({ user }: DashboardNavProps) {
     { name: "Escaneos", href: "/dashboard/scans", icon: Search },
   ];
 
+  // Agregar sección de Administración solo para admins
+  const adminNavigation = user.role === 'admin' ? [
+    { name: "Administración", href: "/dashboard/admin", icon: DollarSign },
+  ] : [];
+
+  const allNavigation = [...navigation, ...adminNavigation];
+
   // Obtener iniciales del usuario
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "U";
@@ -86,7 +93,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-1">
-            {navigation.map((item) => {
+            {allNavigation.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
               return (
@@ -261,7 +268,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
             </div>
 
             <div className="space-y-1">
-              {navigation.map((item) => {
+              {allNavigation.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
                 return (
