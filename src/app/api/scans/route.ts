@@ -37,6 +37,27 @@ export async function POST(req: Request) {
       );
     }
 
+    // Check concurrent scans per user to protect system capacity
+    const maxConcurrentScans = Math.max(
+      1,
+      parseInt(process.env.MAX_CONCURRENT_SCANS_PER_USER || "5", 10)
+    );
+    const activeScansCount = await prisma.scan.count({
+      where: {
+        userId: user.id,
+        status: { in: ["PENDING", "PROCESSING"] },
+      },
+    });
+
+    if (activeScansCount >= maxConcurrentScans) {
+      return NextResponse.json(
+        {
+          error: `Tienes demasiados escaneos en curso. Máximo permitido: ${maxConcurrentScans}. Espera a que finalicen e inténtalo nuevamente.`,
+        },
+        { status: 429 }
+      );
+    }
+
     // Create scan record
     const scan = await prisma.scan.create({
       data: {
@@ -70,6 +91,11 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(10, parseInt(searchParams.get("limit") || "50", 10)));
+    const skip = (page - 1) * limit;
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
@@ -82,7 +108,8 @@ export async function GET(req: Request) {
     const scans = await prisma.scan.findMany({
       where: { userId: user!.id },
       orderBy: { createdAt: "desc" },
-      take: 50,
+      skip,
+      take: limit,
     });
 
     return NextResponse.json(scans);

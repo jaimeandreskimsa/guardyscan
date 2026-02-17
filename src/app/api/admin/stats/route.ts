@@ -3,8 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(10, parseInt(searchParams.get("limit") || "50", 10)));
+    const skip = (page - 1) * limit;
+
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
@@ -20,37 +25,55 @@ export async function GET() {
       return NextResponse.json({ error: "Acceso denegado. Solo admins." }, { status: 403 });
     }
 
-    // Obtener todos los usuarios con sus suscripciones
-    const users = await prisma.user.findMany({
-      include: {
-        subscription: true,
-        scans: {
-          select: { id: true }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+    // Métricas optimizadas (sin cargar todos los usuarios en memoria)
+    const [
+      totalUsers,
+      activeSubscriptions,
+      users,
+      subscriptionsByPlan,
+      recentActiveUsersRows,
+      totalUsersForTable,
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.subscription.count({ where: { status: "ACTIVE" } }),
+      prisma.user.findMany({
+        include: {
+          subscription: true,
+          _count: { select: { scans: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.subscription.groupBy({
+        by: ["plan"],
+        _count: { plan: true },
+      }),
+      prisma.scan.findMany({
+        where: {
+          createdAt: { gt: new Date(new Date().setMonth(new Date().getMonth() - 1)) },
+        },
+        select: { userId: true },
+        distinct: ["userId"],
+      }),
+      prisma.user.count(),
+    ]);
 
-    // Calcular métricas
-    const totalUsers = users.length;
-    const activeSubscriptions = users.filter(u => 
-      u.subscription && u.subscription.status === 'ACTIVE'
-    ).length;
+    // Calcular ingresos según el plan
+    const planPrices: { [key: string]: number } = {
+      FREE: 0,
+      BASIC: 49000,
+      PROFESSIONAL: 99000,
+      ENTERPRISE: 199000,
+    };
 
-    const totalRevenue = users.reduce((sum, user) => {
-      if (user.subscription?.status === 'ACTIVE') {
-        // Calcular ingresos según el plan
-        const planPrices: { [key: string]: number } = {
-          'FREE': 0,
-          'BASIC': 49000,      // $49.000 CLP
-          'PROFESSIONAL': 99000,// $99.000 CLP
-          'ENTERPRISE': 199000  // $199.000 CLP
-        };
-        return sum + (planPrices[user.subscription.plan] || 0);
-      }
-      return sum;
+    const subscriptionsByPlanMap = subscriptionsByPlan.reduce((acc, row) => {
+      acc[row.plan] = row._count.plan;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const totalRevenue = Object.entries(subscriptionsByPlanMap).reduce((sum, [plan, count]) => {
+      return sum + (planPrices[plan] || 0) * count;
     }, 0);
 
     const monthlyRecurring = totalRevenue; // MRR (Monthly Recurring Revenue)
@@ -59,18 +82,10 @@ export async function GET() {
     const annualRevenue = monthlyRecurring * 12;
 
     // Distribución por planes
-    const planDistribution = users.reduce((acc, user) => {
-      const plan = user.subscription?.plan || 'free';
-      acc[plan] = (acc[plan] || 0) + 1;
-      return acc;
-    }, {} as { [key: string]: number });
+    const planDistribution = subscriptionsByPlanMap;
 
     // Usuarios activos recientes (último mes)
-    const lastMonth = new Date();
-    lastMonth.setMonth(lastMonth.getMonth() - 1);
-    const recentActiveUsers = users.filter(u => 
-      u.scans.length > 0 && new Date(u.createdAt) > lastMonth
-    ).length;
+    const recentActiveUsers = recentActiveUsersRows.length;
 
     // Datos de usuarios para la tabla
     const userData = users.map(user => ({
@@ -81,7 +96,7 @@ export async function GET() {
       role: user.role,
       plan: user.subscription?.plan || 'FREE',
       status: user.subscription?.status || 'INACTIVE',
-      scansCount: user.scans.length,
+      scansCount: user._count.scans,
       createdAt: user.createdAt,
       subscriptionEnd: user.subscription?.currentPeriodEnd,
     }));
@@ -97,6 +112,12 @@ export async function GET() {
         planDistribution,
       },
       users: userData,
+      pagination: {
+        page,
+        limit,
+        total: totalUsersForTable,
+        totalPages: Math.max(1, Math.ceil(totalUsersForTable / limit)),
+      },
     });
 
   } catch (error) {

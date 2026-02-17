@@ -5,6 +5,11 @@ import { prisma } from "@/lib/prisma";
 
 export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const limit = Math.min(100, Math.max(10, parseInt(searchParams.get("limit") || "50", 10)));
+    const skip = (page - 1) * limit;
+
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
@@ -21,6 +26,8 @@ export async function GET(req: Request) {
     const incidents = await prisma.incident.findMany({
       where: { userId: user.id },
       orderBy: { detectedAt: "desc" },
+      skip,
+      take: limit,
     });
 
     return NextResponse.json(incidents);

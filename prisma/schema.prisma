@@ -254,6 +254,8 @@ model Scan {
   pdfPurchases PdfPurchase[]
 
   @@index([userId])
+  @@index([userId, status])
+  @@index([userId, createdAt])
   @@map("scans")
 }
 
@@ -294,6 +296,7 @@ model Incident {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, detectedAt])
   @@index([status])
   @@map("incidents")
 }
