@@ -10,7 +10,12 @@ const nextConfig = {
   
   // Optimización de imágenes
   images: {
-    domains: ['localhost'],
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+    ],
     minimumCacheTTL: 60 * 60 * 24, // 24 horas de caché
   },
   

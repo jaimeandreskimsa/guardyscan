@@ -66,24 +66,10 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
-      }
-      // Actualizar rol desde DB solo en refresh o cuando no existe
-      if (token.id && (trigger === 'update' || !token.role)) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { role: true }
-          });
-          if (dbUser) {
-            token.role = dbUser.role;
-          }
-        } catch (error) {
-          console.error('Error actualizando rol:', error);
-        }
       }
       return token;
     },
