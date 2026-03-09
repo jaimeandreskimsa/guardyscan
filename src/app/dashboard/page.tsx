@@ -6,7 +6,7 @@ import {
   Shield, Activity, AlertTriangle, FileCheck, TrendingUp, TrendingDown, 
   ArrowUpRight, ArrowDownRight, Users, Lock, Zap, Eye, ChevronRight,
   BarChart3, Target, Clock, CheckCircle2, XCircle, AlertCircle, Sparkles,
-  Globe, Server, Database, Cloud, Wifi, Bug, ShieldAlert, TrendingUpIcon,
+  Globe, Server, Database, Cloud, Wifi, Bug, TrendingUpIcon,
   Calendar, Bell, Layers, Network, HardDrive, Code, UserPlus, Mail
 } from "lucide-react";
 import Link from "next/link";
@@ -921,7 +921,7 @@ export default async function DashboardPage() {
               <p className="text-sm text-slate-500">Últimas 24 horas</p>
             </div>
             <div className="p-3 rounded-xl bg-gradient-to-br from-red-500 to-rose-500 shadow-lg shadow-red-500/25">
-              <ShieldAlert className="h-5 w-5 text-white" />
+              <AlertTriangle className="h-5 w-5 text-white" />
             </div>
           </div>
           <div className="space-y-4">

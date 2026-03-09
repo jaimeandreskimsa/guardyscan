@@ -8,7 +8,7 @@ import {
   LayoutDashboard, AlertTriangle, FileCheck, LogOut,
   Settings, ShieldAlert, Building2, Radar, Eye,
   FolderArchive, Network, ChevronLeft, ChevronRight, Shield,
-  CreditCard, Bell, User, HelpCircle, Users, DollarSign, UserCheck, Laptop
+  CreditCard, Bell, User, HelpCircle, Users, DollarSign, UserCheck, Laptop, Target
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -50,6 +50,7 @@ const getNavigationGroups = (userRole: string) => {
     {
       name: "Gobernanza",
       items: [
+        { name: "Gestión de Riesgos", href: "/dashboard/risk-management", icon: Target },
         { name: "Cumplimiento Normativo", href: "/dashboard/compliance", icon: FileCheck },
         { name: "Continuidad de Negocio", href: "/dashboard/bcp", icon: Building2 },
         { name: "Comité", href: "/dashboard/committee", icon: Users },
