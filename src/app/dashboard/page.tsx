@@ -16,6 +16,7 @@ import { SecurityTrendChart } from "@/components/dashboard/security-trend-chart"
 import { IncidentPieChart } from "@/components/dashboard/incident-pie-chart";
 import { ScanActivityChart } from "@/components/dashboard/scan-activity-chart";
 import { MonthlyReportButton } from "@/components/dashboard/MonthlyReportButton";
+import { AdvisoryRequestButton } from "@/components/dashboard/AdvisoryRequestButton";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -279,7 +280,7 @@ export default async function DashboardPage() {
               <p className="text-slate-400 text-lg">
                 Tu infraestructura de seguridad en tiempo real
               </p>
-              <div className="mt-4">
+              <div className="mt-4 flex items-center gap-3 flex-wrap">
                 <MonthlyReportButton />
               </div>
             </div>
@@ -812,6 +813,9 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* CTA Asesoría Profesional */}
+      <AdvisoryRequestButton />
 
       {/* Committee Members Section */}
       <div className="rounded-2xl bg-white dark:bg-slate-800 p-6 shadow-sm border border-slate-100 dark:border-slate-700">

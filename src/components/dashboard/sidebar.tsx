@@ -5,8 +5,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { 
-  LayoutDashboard, Search, AlertTriangle, FileCheck, LogOut,
-  Settings, Eye, TrendingUp, ShieldAlert, Building2, Radar, 
+  LayoutDashboard, AlertTriangle, FileCheck, LogOut,
+  Settings, ShieldAlert, Building2, Radar, Eye,
   FolderArchive, Network, ChevronLeft, ChevronRight, Shield,
   CreditCard, Bell, User, HelpCircle, Users, DollarSign, UserCheck, Laptop
 } from "lucide-react";
@@ -26,10 +26,15 @@ const getNavigationGroups = (userRole: string) => {
       ]
     },
     {
+      name: "Análisis",
+      items: [
+        { name: "Centro de Análisis", href: "/dashboard/scanner", icon: Radar },
+      ]
+    },
+    {
       name: "Seguridad",
       items: [
-        { name: "Información de Seguridad y Gestión de Eventos", href: "/dashboard/siem", icon: Eye },
-        { name: "Scanner", href: "/dashboard/scanner", icon: Radar },
+        { name: "Panel SIEM", href: "/dashboard/siem", icon: Eye },
         { name: "Vulnerabilidades", href: "/dashboard/vulnerabilities", icon: ShieldAlert },
         { name: "Incidentes", href: "/dashboard/incidents", icon: AlertTriangle },
       ]
@@ -37,12 +42,16 @@ const getNavigationGroups = (userRole: string) => {
     {
       name: "Gestión",
       items: [
-        { name: "Riesgos", href: "/dashboard/risk-management", icon: TrendingUp },
-        { name: "Inventario de Equipos", href: "/dashboard/inventory", icon: Laptop },
+        { name: "Inventario de Activos", href: "/dashboard/inventory", icon: Laptop },
         { name: "Trabajadores", href: "/dashboard/workers", icon: Users },
         { name: "Terceros", href: "/dashboard/third-party", icon: Network },
+      ]
+    },
+    {
+      name: "Gobernanza",
+      items: [
         { name: "Cumplimiento Normativo", href: "/dashboard/compliance", icon: FileCheck },
-        { name: "Plan de Continuidad del Negocio y Recuperación ante Desastres", href: "/dashboard/bcp", icon: Building2 },
+        { name: "Continuidad de Negocio", href: "/dashboard/bcp", icon: Building2 },
         { name: "Comité", href: "/dashboard/committee", icon: Users },
       ]
     },
@@ -50,7 +59,6 @@ const getNavigationGroups = (userRole: string) => {
       name: "Recursos",
       items: [
         { name: "Documentos", href: "/dashboard/documents", icon: FolderArchive },
-        { name: "Escaneos", href: "/dashboard/scans", icon: Search },
       ]
     },
   ];

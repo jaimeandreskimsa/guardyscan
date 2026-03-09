@@ -5,8 +5,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { 
-  LayoutDashboard, Search, AlertTriangle, FileCheck, LogOut, Menu, 
-  Settings, Users, Eye, TrendingUp, User, Bell, ShieldAlert, Shield, Building2, Radar, CreditCard, FolderArchive, Network, DollarSign, Laptop
+  LayoutDashboard, AlertTriangle, FileCheck, LogOut, Menu, Eye,
+  Settings, Users, User, Bell, ShieldAlert, Shield, Building2, Radar, CreditCard, FolderArchive, Network, DollarSign, Laptop
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useRef, useEffect } from "react";
@@ -32,21 +32,20 @@ export function DashboardNav({ user }: DashboardNavProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Navegación actualizada con nuevas secciones
+  // Navegación reorganizada por categorías
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Información de Seguridad y Gestión de Eventos", href: "/dashboard/siem", icon: Eye },
-    { name: "Scanner", href: "/dashboard/scanner", icon: Radar },
+    { name: "Centro de Análisis", href: "/dashboard/scanner", icon: Radar },
+    { name: "Panel SIEM", href: "/dashboard/siem", icon: Eye },
     { name: "Vulnerabilidades", href: "/dashboard/vulnerabilities", icon: ShieldAlert },
-    { name: "Riesgos", href: "/dashboard/risk-management", icon: TrendingUp },
+    { name: "Incidentes", href: "/dashboard/incidents", icon: AlertTriangle },
     { name: "Inventario", href: "/dashboard/inventory", icon: Laptop },
     { name: "Trabajadores", href: "/dashboard/workers", icon: Users },
     { name: "Terceros", href: "/dashboard/third-party", icon: Network },
-    { name: "Compliance", href: "/dashboard/compliance", icon: FileCheck },
-    { name: "Plan de Continuidad del Negocio y Recuperación ante Desastres", href: "/dashboard/bcp", icon: Building2 },
+    { name: "Cumplimiento", href: "/dashboard/compliance", icon: FileCheck },
+    { name: "Continuidad", href: "/dashboard/bcp", icon: Building2 },
+    { name: "Comité", href: "/dashboard/committee", icon: Users },
     { name: "Documentos", href: "/dashboard/documents", icon: FolderArchive },
-    { name: "Incidentes", href: "/dashboard/incidents", icon: AlertTriangle },
-    { name: "Escaneos", href: "/dashboard/scans", icon: Search },
   ];
 
   // Agregar sección de Administración solo para admins

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Users, UserCheck, AlertCircle, CheckCircle, Activity, Clock } from "lucide-react";
+import { Users, UserCheck, AlertCircle, CheckCircle, Activity, Clock, Headphones, MessageSquare, Phone, X, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface User {
   id: string;
@@ -16,6 +17,19 @@ interface User {
   scansCount: number;
   createdAt: string;
   subscriptionEnd: string | null;
+}
+
+interface AdvisoryRequest {
+  id: string;
+  message: string | null;
+  status: string;
+  createdAt: string;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    company: string | null;
+  };
 }
 
 interface AdminData {
@@ -32,9 +46,12 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [advisoryRequests, setAdvisoryRequests] = useState<AdvisoryRequest[]>([]);
+  const [updatingAdvisory, setUpdatingAdvisory] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAdminData();
+    fetchAdvisoryRequests();
   }, []);
 
   const fetchAdminData = async () => {
@@ -51,6 +68,31 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchAdvisoryRequests = async () => {
+    try {
+      const res = await fetch("/api/advisory");
+      if (res.ok) {
+        const data = await res.json();
+        setAdvisoryRequests(Array.isArray(data) ? data : []);
+      }
+    } catch { /* ignore */ }
+  };
+
+  const updateAdvisoryStatus = async (id: string, status: string) => {
+    setUpdatingAdvisory(id);
+    try {
+      const res = await fetch("/api/advisory", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      if (res.ok) {
+        setAdvisoryRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+      }
+    } catch { /* ignore */ }
+    setUpdatingAdvisory(null);
   };
 
   const getPlanBadge = (plan: string) => {
@@ -171,6 +213,138 @@ export default function UsersPage() {
           </div>
         </Card>
       </div>
+
+      {/* Alertas de Solicitudes de Asesoría */}
+      {advisoryRequests.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <Bell className="h-5 w-5 text-indigo-600" />
+                {advisoryRequests.filter(r => r.status === 'PENDING').length > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {advisoryRequests.filter(r => r.status === 'PENDING').length}
+                  </span>
+                )}
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Solicitudes de Asesoría
+              </h2>
+            </div>
+            <span className="px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-sm font-semibold">
+              {advisoryRequests.filter(r => r.status === 'PENDING').length} pendiente{advisoryRequests.filter(r => r.status === 'PENDING').length !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="space-y-3">
+            {advisoryRequests.map((request) => (
+              <Card key={request.id} className={`overflow-hidden border-l-4 transition-all hover:shadow-lg ${
+                request.status === 'PENDING'
+                  ? 'border-l-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/10'
+                  : request.status === 'CONTACTED'
+                  ? 'border-l-amber-500 bg-amber-50/50 dark:bg-amber-900/10'
+                  : 'border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-900/10'
+              }`}>
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div className={`p-3 rounded-xl flex-shrink-0 ${
+                        request.status === 'PENDING'
+                          ? 'bg-indigo-100 dark:bg-indigo-800/30'
+                          : request.status === 'CONTACTED'
+                          ? 'bg-amber-100 dark:bg-amber-800/30'
+                          : 'bg-emerald-100 dark:bg-emerald-800/30'
+                      }`}>
+                        <Headphones className={`h-5 w-5 ${
+                          request.status === 'PENDING'
+                            ? 'text-indigo-600'
+                            : request.status === 'CONTACTED'
+                            ? 'text-amber-600'
+                            : 'text-emerald-600'
+                        }`} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-gray-900 dark:text-white text-lg">
+                            {request.user.name || 'Usuario sin nombre'}
+                          </h3>
+                          <Badge className={`text-xs ${
+                            request.status === 'PENDING'
+                              ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
+                              : request.status === 'CONTACTED'
+                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                              : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                          }`}>
+                            {request.status === 'PENDING' && '⏳ Pendiente'}
+                            {request.status === 'CONTACTED' && '📞 Contactado'}
+                            {request.status === 'RESOLVED' && '✓ Resuelto'}
+                          </Badge>
+                          {request.status === 'PENDING' && (
+                            <span className="flex items-center gap-1 px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs font-semibold rounded-full animate-pulse">
+                              <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                              Nueva solicitud
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 mt-1.5 text-sm text-gray-500 dark:text-gray-400 flex-wrap">
+                          <span className="font-medium">{request.user.email}</span>
+                          {request.user.company && (
+                            <span className="bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded text-xs">
+                              {request.user.company}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3.5 w-3.5" />
+                            {new Date(request.createdAt).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })}
+                          </span>
+                        </div>
+                        {request.message && (
+                          <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+                              <MessageSquare className="h-3 w-3" />
+                              Mensaje del cliente:
+                            </div>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">{request.message}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 flex-shrink-0">
+                      {request.status === 'PENDING' && (
+                        <Button
+                          size="sm"
+                          className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                          onClick={() => updateAdvisoryStatus(request.id, 'CONTACTED')}
+                          disabled={updatingAdvisory === request.id}
+                        >
+                          <Phone className="h-3.5 w-3.5 mr-1.5" />
+                          Marcar Contactado
+                        </Button>
+                      )}
+                      {request.status === 'CONTACTED' && (
+                        <Button
+                          size="sm"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                          onClick={() => updateAdvisoryStatus(request.id, 'RESOLVED')}
+                          disabled={updatingAdvisory === request.id}
+                        >
+                          <CheckCircle className="h-3.5 w-3.5 mr-1.5" />
+                          Marcar Resuelto
+                        </Button>
+                      )}
+                      {request.status !== 'PENDING' && request.status !== 'CONTACTED' && (
+                        <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                          <CheckCircle className="h-3.5 w-3.5" /> Completado
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filtros */}
       <Card className="p-4">

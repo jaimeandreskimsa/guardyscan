@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, Edit, Trash2, Shield, Building, Mail, Phone, Calendar, Clock, FileText, Plus, CheckCircle } from "lucide-react";
+import { Users, UserPlus, Edit, Trash2, Shield, Building, Mail, Phone, Calendar, Clock, FileText, Plus, CheckCircle, Power, MoreHorizontal, Eye } from "lucide-react";
 
 const ROLES = [
   "CISO - Chief Information Security Officer",
@@ -90,21 +90,38 @@ export default function CommitteePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(sessionForm),
       });
-      if (response.ok) {
-        setShowSessionForm(false);
-        setSessionForm({ date: new Date().toISOString().split("T")[0], time: "10:00", topic: "", description: "", decisions: "", attendees: "", status: "SCHEDULED" });
-        loadSessions();
-      }
-    } catch (error) {
-      // If the API doesn't exist, store locally
-      setSessions([...sessions, { id: Date.now().toString(), ...sessionForm, createdAt: new Date().toISOString() }]);
+      if (!response.ok) throw new Error("Error al crear sesión");
       setShowSessionForm(false);
       setSessionForm({ date: new Date().toISOString().split("T")[0], time: "10:00", topic: "", description: "", decisions: "", attendees: "", status: "SCHEDULED" });
+      await loadSessions();
+    } catch (error) {
+      console.error("Error creating session:", error);
+      alert("Error al guardar la sesión");
     }
   };
 
-  const handleSessionComplete = (sessionId: string) => {
-    setSessions(sessions.map(s => s.id === sessionId ? { ...s, status: "COMPLETED" } : s));
+  const handleSessionComplete = async (sessionId: string) => {
+    try {
+      const response = await fetch("/api/committee/sessions", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: sessionId, status: "COMPLETED" }),
+      });
+      if (!response.ok) throw new Error("Error al completar sesión");
+      await loadSessions();
+    } catch (error) {
+      console.error("Error completing session:", error);
+    }
+  };
+
+  const handleSessionDelete = async (sessionId: string) => {
+    if (!confirm("¿Eliminar esta sesión?")) return;
+    try {
+      await fetch(`/api/committee/sessions?id=${sessionId}`, { method: "DELETE" });
+      await loadSessions();
+    } catch (error) {
+      console.error("Error deleting session:", error);
+    }
   };
 
   const resetForm = () => {
@@ -218,7 +235,7 @@ export default function CommitteePage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
@@ -227,7 +244,7 @@ export default function CommitteePage() {
               </div>
               <div>
                 <div className="text-2xl font-bold">{members.length}</div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Total Miembros</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Miembros Totales</p>
               </div>
             </div>
           </CardContent>
@@ -248,12 +265,25 @@ export default function CommitteePage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-gray-100 dark:bg-gray-900 rounded-lg">
-                <Users className="h-6 w-6 text-gray-600" />
+              <div className="p-3 bg-indigo-100 dark:bg-indigo-900 rounded-lg">
+                <Calendar className="h-6 w-6 text-indigo-600" />
               </div>
               <div>
-                <div className="text-2xl font-bold">{inactiveCount}</div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Inactivos</p>
+                <div className="text-2xl font-bold">{sessions.filter(s => new Date(s.date || s.createdAt).getFullYear() === new Date().getFullYear()).length}</div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Sesiones Año Actual</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-amber-100 dark:bg-amber-900 rounded-lg">
+                <Clock className="h-6 w-6 text-amber-600" />
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{sessions.filter(s => s.status === "SCHEDULED").length}</div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Decisiones Pendientes</p>
               </div>
             </div>
           </CardContent>
@@ -424,96 +454,111 @@ export default function CommitteePage() {
             </CardContent>
           </Card>
         ) : (
-          filteredMembers.map((member) => (
-            <Card key={member.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="pt-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                        <Shield className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-lg">{member.name}</h3>
-                        <p className="text-sm text-blue-600 dark:text-blue-400">{member.role}</p>
-                      </div>
-                      <Badge variant={member.status === "ACTIVE" ? "default" : "outline"}>
-                        {member.status === "ACTIVE" ? "Activo" : "Inactivo"}
-                      </Badge>
+          filteredMembers.map((member) => {
+            const initials = (member.name || '').split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2)
+            const isActive = member.status === 'ACTIVE'
+            return (
+              <div key={member.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all overflow-hidden">
+                <div className="p-5">
+                  <div className="flex items-start gap-4">
+                    {/* Avatar */}
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-bold text-sm ${
+                      isActive ? 'bg-gradient-to-br from-blue-500 to-indigo-600' : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                    }`}>
+                      {initials}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm mb-4">
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-gray-400" />
-                        <a href={`mailto:${member.email}`} className="text-blue-600 hover:underline">
-                          {member.email}
-                        </a>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{member.name}</h3>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                          isActive
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
+                          {isActive ? 'Activo' : 'Inactivo'}
+                        </span>
                       </div>
-                      {member.phone && (
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-gray-400" />
-                          <span>{member.phone}</span>
-                        </div>
-                      )}
-                      {member.department && (
-                        <div className="flex items-center gap-2">
-                          <Building className="h-4 w-4 text-gray-400" />
-                          <span>{member.department}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                        <span>Desde {new Date(member.appointedDate).toLocaleDateString('es-ES')}</span>
-                      </div>
+                      <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">{member.role}</p>
                     </div>
 
-                    {member.responsibilities && (
-                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md mb-3">
-                        <p className="text-sm font-medium mb-1">Responsabilidades:</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
-                          {member.responsibilities}
-                        </p>
-                      </div>
-                    )}
-
-                    {member.notes && (
-                      <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-md">
-                        <p className="text-sm font-medium mb-1">Notas:</p>
-                        <p className="text-sm text-gray-700 dark:text-gray-300">
-                          {member.notes}
-                        </p>
-                      </div>
-                    )}
+                    {/* Actions */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => handleEdit(member)}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                        title="Editar"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleStatus(member)}
+                        className={`p-2 rounded-lg transition-colors ${
+                          isActive
+                            ? 'text-gray-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                            : 'text-gray-400 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'
+                        }`}
+                        title={isActive ? 'Desactivar miembro' : 'Activar miembro'}
+                      >
+                        <Power className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(member.id)}
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 ml-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEdit(member)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleToggleStatus(member)}
-                    >
-                      {member.status === "ACTIVE" ? "Desactivar" : "Activar"}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(member.id)}
-                      className="text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  {/* Contact grid */}
+                  <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 min-w-0">
+                      <Mail className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                      <a href={`mailto:${member.email}`} className="truncate hover:text-blue-600 transition-colors">{member.email}</a>
+                    </div>
+                    {member.phone && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <Phone className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                        <span className="truncate">{member.phone}</span>
+                      </div>
+                    )}
+                    {member.department && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <Building className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                        <span>{member.department}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <Calendar className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                      <span>Desde {new Date(member.appointedDate).toLocaleDateString('es-CL')}</span>
+                    </div>
                   </div>
+
+                  {/* Responsibilities & Notes */}
+                  {(member.responsibilities || member.notes) && (
+                    <div className="mt-3 space-y-2">
+                      {member.responsibilities && (
+                        <div className="bg-blue-50 dark:bg-blue-900/15 px-3 py-2.5 rounded-lg">
+                          <p className="text-xs font-semibold text-blue-700 dark:text-blue-400 mb-0.5">Responsabilidades</p>
+                          <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">{member.responsibilities}</p>
+                        </div>
+                      )}
+                      {member.notes && (
+                        <div className="bg-amber-50 dark:bg-amber-900/15 px-3 py-2.5 rounded-lg">
+                          <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-0.5">Notas</p>
+                          <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">{member.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          ))
+              </div>
+            )
+          })
         )}
       </div>
 
@@ -642,7 +687,7 @@ export default function CommitteePage() {
                       <div className="flex items-center gap-4 text-xs text-gray-500">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {sess.date} {sess.time}
+                          {new Date(sess.date).toLocaleDateString('es-CL')} {sess.time}
                         </span>
                         {sess.attendees && (
                           <span className="flex items-center gap-1">
@@ -658,17 +703,26 @@ export default function CommitteePage() {
                         </p>
                       )}
                     </div>
-                    {sess.status === "SCHEDULED" && (
+                    <div className="flex items-center gap-2 ml-3">
+                      {sess.status === "SCHEDULED" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleSessionComplete(sess.id)}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Completar
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleSessionComplete(sess.id)}
-                        className="ml-3"
+                        onClick={() => handleSessionDelete(sess.id)}
+                        className="text-red-600 hover:text-red-700"
                       >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Completar
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    )}
+                    </div>
                   </div>
                 ))}
             </div>

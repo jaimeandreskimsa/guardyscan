@@ -54,11 +54,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Vulnerabilidad no encontrada' }, { status: 404 })
     }
 
-    // Si se está resolviendo, actualizar fecha
+    // Si se está remediando, actualizar fecha
     const updateData: any = { ...data }
-    if (data.status === 'RESOLVED' && existing.status !== 'RESOLVED') {
-      updateData.resolvedAt = new Date()
-      updateData.resolvedBy = session.user.id
+    if ((data.status === 'REMEDIATED' || data.status === 'RESOLVED') && existing.status !== 'REMEDIATED' && existing.status !== 'RESOLVED') {
+      updateData.remediatedAt = new Date()
+      updateData.verifiedBy = session.user.id
     }
 
     const vulnerability = await prisma.vulnerability.update({

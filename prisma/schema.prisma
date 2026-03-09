@@ -81,6 +81,7 @@ model User {
   incidents     Incident[]
   pdfPurchases  PdfPurchase[]
   committeeMembers CommitteeMember[]
+  committeeSessions CommitteeSession[]
   securityEvents SecurityEvent[]
   securityAlerts SecurityAlert[]
   detectionRules DetectionRule[]
@@ -91,6 +92,7 @@ model User {
   monteCarloSimulations MonteCarloSimulation[]
   vulnerabilities Vulnerability[]
   businessContinuityPlans BusinessContinuityPlan[]
+  advisoryRequests AdvisoryRequest[]
   
   // Organization relations
   ownedOrganizations Organization[]
@@ -340,6 +342,26 @@ model CommitteeMember {
   @@index([userId])
   @@index([status])
   @@map("committee_members")
+}
+
+model CommitteeSession {
+  id          String   @id @default(cuid())
+  userId      String
+  topic       String
+  description String?  @db.Text
+  date        DateTime
+  time        String?  @default("10:00")
+  attendees   String?  @db.Text
+  decisions   String?  @db.Text
+  status      String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("committee_sessions")
 }
 
 // SIEM - Security Information and Event Management
@@ -1052,5 +1074,22 @@ model IncidentResponsePlan {
   @@index([type])
   @@index([status])
   @@map("incident_response_plans")
+}
+
+model AdvisoryRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  message   String?  @db.Text
+  status    String   @default("PENDING") // PENDING, CONTACTED, RESOLVED
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("advisory_requests")
 }
 
