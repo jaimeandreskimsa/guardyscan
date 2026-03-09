@@ -6,8 +6,8 @@ import { prisma } from "@/lib/prisma";
 // Models to try in order (fallback chain)
 const GEMINI_MODELS = [
   "gemini-2.0-flash",
-  "gemini-1.5-flash",
   "gemini-2.0-flash-lite",
+  "gemini-1.5-flash-8b",
 ];
 
 const SYSTEM_PROMPT = `Eres "Guardy", el asistente virtual de ciberseguridad de GuardyScan. Tu rol es ayudar a los usuarios a entender su postura de seguridad en lenguaje de negocio simple y claro.
