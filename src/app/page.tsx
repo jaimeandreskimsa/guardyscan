@@ -67,7 +67,7 @@ export default function HomePage() {
                 onClick={() => smoothScrollTo('features')} 
                 className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
               >
-                Caracteristicas
+                Características
               </button>
               <button 
                 onClick={() => smoothScrollTo('demo')} 
@@ -93,7 +93,7 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               <Link href="/auth/login">
                 <Button variant="ghost" className="text-sm font-medium">
-                  Iniciar Sesion
+                  Iniciar Sesión
                 </Button>
               </Link>
               <Link href="/auth/register">
@@ -116,7 +116,7 @@ export default function HomePage() {
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/50 dark:to-cyan-900/50 px-4 py-2 rounded-full text-blue-700 dark:text-blue-300 text-sm font-medium mb-8 border border-blue-200 dark:border-blue-800">
               <Sparkles className="h-4 w-4" />
-              Plataforma de Ciberseguridad #1 en Latinoamerica
+              Plataforma de Ciberseguridad #1 en Latinoamérica
               <ChevronRight className="h-4 w-4" />
             </div>
             
@@ -131,8 +131,8 @@ export default function HomePage() {
             </h1>
             
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-10 max-w-3xl mx-auto leading-relaxed">
-              SIEM avanzado, gestion de riesgos cuantitativa, cumplimiento ISO 27001 y 
-              analisis de vulnerabilidades. Todo en una sola plataforma.
+              SIEM avanzado, gestión de riesgos cuantitativa, cumplimiento ISO 27001 y 
+              análisis de vulnerabilidades. Todo en una sola plataforma.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
@@ -185,7 +185,7 @@ export default function HomePage() {
               </div>
               <div>
                 <div className="font-semibold text-gray-900 dark:text-white">SIEM Avanzado</div>
-                <div className="text-sm text-gray-500">Deteccion con ML</div>
+                <div className="text-sm text-gray-500">Detección con ML</div>
               </div>
             </div>
             <div className="flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
@@ -193,8 +193,8 @@ export default function HomePage() {
                 <BarChart3 className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <div className="font-semibold text-gray-900 dark:text-white">Gestion de Riesgos</div>
-                <div className="text-sm text-gray-500">Analisis cuantitativo</div>
+                <div className="font-semibold text-gray-900 dark:text-white">Gestión de Riesgos</div>
+                <div className="text-sm text-gray-500">Análisis cuantitativo</div>
               </div>
             </div>
             <div className="flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
@@ -231,7 +231,7 @@ export default function HomePage() {
               Todo lo que necesitas
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Herramientas de nivel enterprise para proteger tu organizacion
+              Herramientas de nivel enterprise para proteger tu organización
             </p>
           </div>
 
@@ -243,7 +243,7 @@ export default function HomePage() {
                 </div>
                 <CardTitle className="text-xl">SIEM Avanzado</CardTitle>
                 <CardDescription className="text-base">
-                  Sistema de monitoreo con machine learning para deteccion de anomalias en tiempo real
+                  Sistema de monitoreo con machine learning para detección de anomalías en tiempo real
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -253,9 +253,9 @@ export default function HomePage() {
                 <div className="h-14 w-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-green-500/20 group-hover:shadow-green-500/40 transition-shadow">
                   <BarChart3 className="h-7 w-7 text-white" />
                 </div>
-                <CardTitle className="text-xl">Gestion de Riesgos</CardTitle>
+                <CardTitle className="text-xl">Gestión de Riesgos</CardTitle>
                 <CardDescription className="text-base">
-                  Analisis cuantitativo con simulaciones Monte Carlo y Business Impact Analysis
+                  Análisis cuantitativo con simulaciones Monte Carlo y Business Impact Analysis
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -267,7 +267,7 @@ export default function HomePage() {
                 </div>
                 <CardTitle className="text-xl">Cumplimiento ISO 27001</CardTitle>
                 <CardDescription className="text-base">
-                  Controles y checklist completo para certificacion internacional
+                  Controles y checklist completo para certificación internacional
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -277,7 +277,7 @@ export default function HomePage() {
                 <div className="h-14 w-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-orange-500/20 group-hover:shadow-orange-500/40 transition-shadow">
                   <Shield className="h-7 w-7 text-white" />
                 </div>
-                <CardTitle className="text-xl">Analisis de Vulnerabilidades</CardTitle>
+                <CardTitle className="text-xl">Análisis de Vulnerabilidades</CardTitle>
                 <CardDescription className="text-base">
                   Escaneo profundo de SSL, headers, puertos y configuraciones de seguridad
                 </CardDescription>
@@ -291,7 +291,7 @@ export default function HomePage() {
                 </div>
                 <CardTitle className="text-xl">Reportes Ejecutivos</CardTitle>
                 <CardDescription className="text-base">
-                  Genera informes PDF profesionales para directivos y auditorias
+                  Genera informes PDF profesionales para directivos y auditorías
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -301,9 +301,9 @@ export default function HomePage() {
                 <div className="h-14 w-14 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-shadow">
                   <Users className="h-7 w-7 text-white" />
                 </div>
-                <CardTitle className="text-xl">Comite de Seguridad</CardTitle>
+                <CardTitle className="text-xl">Comité de Seguridad</CardTitle>
                 <CardDescription className="text-base">
-                  Gestion de reuniones, actas y seguimiento de acciones del comite
+                  Gestión de reuniones, actas y seguimiento de acciones del comité
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -665,7 +665,7 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <Card className="relative hover:shadow-xl transition-all duration-300 border-gray-200 dark:border-gray-800">
               <CardHeader>
-                <CardTitle className="text-2xl">Basico</CardTitle>
+                <CardTitle className="text-2xl">Básico</CardTitle>
                 <div className="mt-4">
                   <span className="text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">$100</span>
                   <span className="text-gray-600 dark:text-gray-400">/mes</span>
@@ -819,10 +819,10 @@ export default function HomePage() {
         
         <div className="container mx-auto max-w-4xl text-center relative z-10">
           <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
-            Listo para proteger tu empresa?
+            ¿Listo para proteger tu empresa?
           </h2>
           <p className="text-xl mb-10 text-white/90 max-w-2xl mx-auto">
-            Unete a mas de 150 empresas que confian en GuardyScan para su ciberseguridad
+            Únete a más de 150 empresas que confían en GuardyScan para su ciberseguridad
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth/register">
@@ -1010,7 +1010,7 @@ export default function HomePage() {
                 />
               </Link>
               <p className="text-sm mb-4 max-w-xs">
-                Plataforma lider en ciberseguridad empresarial. Protege tu organizacion con tecnologia de punta.
+                Plataforma líder en ciberseguridad empresarial. Protege tu organización con tecnología de punta.
               </p>
             </div>
             <div>
@@ -1018,7 +1018,7 @@ export default function HomePage() {
               <ul className="space-y-3 text-sm">
                 <li><button onClick={() => smoothScrollTo('features')} className="hover:text-white transition-colors">Funcionalidades</button></li>
                 <li><button onClick={() => smoothScrollTo('pricing')} className="hover:text-white transition-colors">Precios</button></li>
-                <li><Link href="/docs" className="hover:text-white transition-colors">Documentacion</Link></li>
+                <li><Link href="/docs" className="hover:text-white transition-colors">Documentación</Link></li>
               </ul>
             </div>
             <div>
@@ -1036,7 +1036,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm">2026 GuardyScan. Todos los derechos reservados.</p>
+            <p className="text-sm">© 2026 GuardyScan. Todos los derechos reservados.</p>
             <div className="flex items-center gap-6 text-sm">
               <span className="flex items-center gap-2">
                 <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
