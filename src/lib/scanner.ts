@@ -28,6 +28,13 @@ export async function performSecurityScan(
   };
   
   try {
+    // Get userId from scan record
+    const scanRecord = await prisma.scan.findUnique({
+      where: { id: scanId },
+      select: { userId: true },
+    });
+    const userId = scanRecord?.userId;
+
     // Update scan status to PROCESSING
     await prisma.scan.update({
       where: { id: scanId },
@@ -98,6 +105,21 @@ export async function performSecurityScan(
 
     console.log(`Scan ${scanId} completed with score ${finalScore}`);
 
+    // ── Persist discovered vulnerabilities to the vulnerability table ──
+    if (userId) {
+      await persistScanVulnerabilities({
+        userId,
+        scanId,
+        targetUrl,
+        hostname,
+        sslInfo: results.sslInfo,
+        securityHeaders: results.securityHeaders,
+        openPorts: results.openPorts,
+        cookies: results.cookies,
+        vulnerabilities: results.vulnerabilities,
+      });
+    }
+
     // Update scan with results (100%)
     await prisma.scan.update({
       where: { id: scanId },
@@ -137,6 +159,256 @@ export async function performSecurityScan(
       },
     });
   }
+}
+
+// ── Types for persist helper ──────────────────────────────────────────────────
+interface PersistVulnsInput {
+  userId: string
+  scanId: string
+  targetUrl: string
+  hostname: string
+  sslInfo: any
+  securityHeaders: any
+  openPorts: any[]
+  cookies: any
+  vulnerabilities: any[]
+}
+
+/**
+ * Converts scan findings into Vulnerability records and saves them to the DB.
+ * Avoids duplicates by checking for an existing open record with the same title + assetName.
+ */
+async function persistScanVulnerabilities(input: PersistVulnsInput): Promise<void> {
+  const { userId, scanId, hostname, targetUrl, sslInfo, securityHeaders, openPorts, cookies, vulnerabilities } = input
+
+  const toCreate: any[] = []
+
+  // ── 1. HTTPS check ────────────────────────────────────────────────────────
+  if (!targetUrl.startsWith('https://')) {
+    toCreate.push({
+      title: 'Sitio web sin HTTPS',
+      description: 'El sitio no utiliza cifrado HTTPS. Las comunicaciones viajan en texto claro, exponiendo datos de usuarios a interceptación (man-in-the-middle).',
+      severity: 'HIGH',
+      source: 'SCAN',
+      assetType: 'WEB',
+      remediation: 'Obtener un certificado SSL/TLS de una CA reconocida (Let\'s Encrypt es gratuito) y redirigir todo el tráfico HTTP a HTTPS.',
+      cweId: 'CWE-319',
+    })
+  }
+
+  // ── 2. SSL/TLS analysis ───────────────────────────────────────────────────
+  if (sslInfo && !sslInfo.valid) {
+    toCreate.push({
+      title: 'Certificado SSL/TLS inválido o ausente',
+      description: `Problema con el certificado SSL/TLS: ${sslInfo.error || 'certificado no válido'}. Los usuarios verán advertencias de seguridad en el navegador.`,
+      severity: 'HIGH',
+      source: 'SCAN',
+      assetType: 'WEB',
+      remediation: 'Configurar un certificado SSL/TLS válido emitido por una Autoridad Certificadora (CA) reconocida.',
+      cweId: 'CWE-295',
+    })
+  } else if (sslInfo?.daysRemaining !== undefined && sslInfo.daysRemaining < 30) {
+    toCreate.push({
+      title: `Certificado SSL próximo a vencer (${sslInfo.daysRemaining} días)`,
+      description: `El certificado SSL/TLS del sitio vence en ${sslInfo.daysRemaining} días (${sslInfo.validTo}). Si expira, los usuarios no podrán acceder al sitio de forma segura.`,
+      severity: sslInfo.daysRemaining < 7 ? 'CRITICAL' : 'MEDIUM',
+      source: 'SCAN',
+      assetType: 'WEB',
+      remediation: 'Renovar el certificado SSL/TLS antes de su vencimiento.',
+    })
+  }
+
+  // ── 3. Missing security headers ───────────────────────────────────────────
+  const headerDetails: Record<string, { title: string; description: string; severity: string; remediation: string; cweId: string }> = {
+    'strict-transport-security': {
+      title: 'Header HSTS (HTTP Strict-Transport-Security) ausente',
+      description: 'Sin HSTS, los navegadores pueden conectarse vía HTTP inseguro incluso si el servidor soporta HTTPS, facilitando ataques de downgrade y man-in-the-middle.',
+      severity: 'MEDIUM',
+      remediation: 'Agregar: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload',
+      cweId: 'CWE-319',
+    },
+    'x-frame-options': {
+      title: 'Sitio vulnerable a Clickjacking (X-Frame-Options ausente)',
+      description: 'Sin X-Frame-Options, el sitio puede ser embebido en iframes de páginas maliciosas para engañar a los usuarios y capturar clics (clickjacking).',
+      severity: 'MEDIUM',
+      remediation: 'Agregar: X-Frame-Options: SAMEORIGIN  o usar Content-Security-Policy: frame-ancestors \'self\'',
+      cweId: 'CWE-1021',
+    },
+    'x-content-type-options': {
+      title: 'Header X-Content-Type-Options ausente (MIME Sniffing)',
+      description: 'Sin este header, el navegador puede interpretar erróneamente el tipo MIME del contenido, lo que puede usarse para ejecutar scripts maliciosos.',
+      severity: 'LOW',
+      remediation: 'Agregar: X-Content-Type-Options: nosniff',
+      cweId: 'CWE-116',
+    },
+    'content-security-policy': {
+      title: 'Content Security Policy (CSP) ausente',
+      description: 'Sin una política CSP, el sitio es más vulnerable a ataques Cross-Site Scripting (XSS) y de inyección de contenido desde fuentes externas.',
+      severity: 'MEDIUM',
+      remediation: 'Implementar una política CSP restrictiva. Ejemplo: Content-Security-Policy: default-src \'self\'',
+      cweId: 'CWE-693',
+    },
+    'x-xss-protection': {
+      title: 'Header X-XSS-Protection ausente',
+      description: 'Este header activa el filtro XSS del navegador. Su ausencia puede dejar a los usuarios de navegadores antiguos expuestos a ataques XSS reflejado.',
+      severity: 'LOW',
+      remediation: 'Agregar: X-XSS-Protection: 1; mode=block',
+      cweId: 'CWE-79',
+    },
+    'referrer-policy': {
+      title: 'Header Referrer-Policy ausente',
+      description: 'Sin Referrer-Policy, las URLs completas (incluyendo parámetros sensibles) pueden ser enviadas a sitios terceros como cabecera Referer.',
+      severity: 'LOW',
+      remediation: 'Agregar: Referrer-Policy: strict-origin-when-cross-origin',
+      cweId: 'CWE-200',
+    },
+  }
+
+  for (const header of (securityHeaders?.missingHeaders || [])) {
+    const detail = headerDetails[header]
+    if (detail) {
+      toCreate.push({
+        title: detail.title,
+        description: detail.description,
+        severity: detail.severity,
+        source: 'SCAN',
+        assetType: 'WEB',
+        remediation: detail.remediation,
+        cweId: detail.cweId,
+      })
+    }
+  }
+
+  // ── 4. Cookie security ────────────────────────────────────────────────────
+  if (cookies?.total > 0) {
+    const insecureCount = cookies.total - (cookies.secure || 0)
+    const noHttpOnlyCount = cookies.total - (cookies.httpOnly || 0)
+
+    if (insecureCount > 0) {
+      toCreate.push({
+        title: `Cookies sin atributo Secure (${insecureCount} cookie${insecureCount > 1 ? 's' : ''})`,
+        description: `${insecureCount} cookie(s) no tienen el atributo Secure, lo que permite que sean transmitidas por conexiones HTTP no cifradas, exponiendo sesiones a interceptación.`,
+        severity: 'MEDIUM',
+        source: 'SCAN',
+        assetType: 'WEB',
+        remediation: 'Establecer el atributo Secure en todas las cookies de sesión y autenticación.',
+        cweId: 'CWE-614',
+      })
+    }
+    if (noHttpOnlyCount > 0) {
+      toCreate.push({
+        title: `Cookies sin atributo HttpOnly (${noHttpOnlyCount} cookie${noHttpOnlyCount > 1 ? 's' : ''})`,
+        description: `${noHttpOnlyCount} cookie(s) no tienen el atributo HttpOnly, haciéndolas accesibles desde JavaScript y vulnerables a robo mediante ataques XSS.`,
+        severity: 'MEDIUM',
+        source: 'SCAN',
+        assetType: 'WEB',
+        remediation: 'Establecer el atributo HttpOnly en todas las cookies de sesión.',
+        cweId: 'CWE-1004',
+      })
+    }
+    if (cookies.sameSite === 'None' || cookies.sameSite === 'No disponible') {
+      toCreate.push({
+        title: 'Cookies sin protección SameSite (CSRF)',
+        description: 'Sin el atributo SameSite, las cookies pueden ser enviadas en peticiones cross-site, facilitando ataques CSRF (Cross-Site Request Forgery).',
+        severity: 'MEDIUM',
+        source: 'SCAN',
+        assetType: 'WEB',
+        remediation: 'Agregar SameSite=Lax o SameSite=Strict a las cookies de sesión.',
+        cweId: 'CWE-352',
+      })
+    }
+  }
+
+  // ── 5. Dangerous open ports ───────────────────────────────────────────────
+  const dangerousPortMap: Record<number, { title: string; description: string; severity: string; remediation: string }> = {
+    21:    { title: 'Puerto FTP expuesto (21)', description: 'FTP transmite credenciales y datos en texto claro. Es susceptible a ataques de sniffing y man-in-the-middle.', severity: 'HIGH', remediation: 'Deshabilitar FTP y migrar a SFTP (puerto 22) o FTPS (puerto 990).' },
+    23:    { title: 'Puerto Telnet expuesto (23)', description: 'Telnet es un protocolo obsoleto sin cifrado. Las credenciales se transmiten en texto plano.', severity: 'CRITICAL', remediation: 'Deshabilitar Telnet inmediatamente y usar SSH (puerto 22).' },
+    3306:  { title: 'MySQL expuesto a Internet (3306)', description: 'La base de datos MySQL está accesible públicamente, exponiéndola a ataques de fuerza bruta y explotación directa.', severity: 'HIGH', remediation: 'Restringir acceso a MySQL mediante firewall. Usar VPN o túnel SSH para administración remota.' },
+    5432:  { title: 'PostgreSQL expuesto a Internet (5432)', description: 'PostgreSQL está accesible públicamente, exponiéndolo a ataques de fuerza bruta sobre credenciales.', severity: 'HIGH', remediation: 'Restringir acceso mediante firewall. Usar VPN o túnel SSH.' },
+    1433:  { title: 'Microsoft SQL Server expuesto (1433)', description: 'SQL Server está expuesto a Internet, susceptible a ataques de autenticación y exploits conocidos.', severity: 'HIGH', remediation: 'Bloquear en firewall y usar VPN para acceso administrativo.' },
+    1521:  { title: 'Oracle DB expuesto a Internet (1521)', description: 'La base de datos Oracle está accesible públicamente, representando un riesgo crítico de datos.', severity: 'HIGH', remediation: 'Restringir con firewall, usar VPN para administración.' },
+    27017: { title: 'MongoDB expuesto a Internet (27017)', description: 'MongoDB frecuentemente se despliega sin autenticación por defecto. Un MongoDB expuesto puede permitir acceso completo a los datos sin contraseña.', severity: 'CRITICAL', remediation: 'Habilitar autenticación, limitar bind a localhost (bindIp: 127.0.0.1) y usar firewall.' },
+    6379:  { title: 'Redis expuesto a Internet (6379)', description: 'Redis sin autenticación permite acceso completo a datos y puede ser usado para ejecución remota de comandos.', severity: 'CRITICAL', remediation: 'Habilitar contraseña (requirepass), bind a localhost y usar firewall.' },
+    3389:  { title: 'RDP (Escritorio Remoto) expuesto (3389)', description: 'RDP expuesto es un vector común de ataques de fuerza bruta y exploits (BlueKeep CVE-2019-0708). Miles de servidores han sido comprometidos por RDP expuesto.', severity: 'HIGH', remediation: 'Usar VPN o Azure Bastion, habilitar NLA, limitar IPs con firewall.' },
+    5900:  { title: 'VNC expuesto a Internet (5900)', description: 'VNC sin VPN puede ser accesible sin autenticación o con contraseñas débiles, permitiendo control total del sistema.', severity: 'HIGH', remediation: 'Usar VPN para acceso VNC, configurar contraseña fuerte y cifrado.' },
+    445:   { title: 'SMB expuesto a Internet (445)', description: 'SMB expuesto es el vector de propagación de ransomware como WannaCry (EternalBlue). Es extremadamente peligroso en Internet.', severity: 'CRITICAL', remediation: 'Bloquear puerto 445 en el firewall perimetral inmediatamente.' },
+    139:   { title: 'NetBIOS expuesto (139)', description: 'NetBIOS puede filtrar información del sistema y ser usado para enumeración de recursos compartidos y ataques de relay.', severity: 'MEDIUM', remediation: 'Deshabilitar NetBIOS sobre TCP/IP si no es necesario. Bloquear en firewall.' },
+    135:   { title: 'MS-RPC expuesto (135)', description: 'El puerto RPC de Windows expuesto puede ser explotado para ejecución remota de código y movimiento lateral.', severity: 'HIGH', remediation: 'Bloquear en firewall perimetral, solo permitir en redes internas.' },
+  }
+
+  for (const portInfo of (openPorts || [])) {
+    if (portInfo.status === 'open' && dangerousPortMap[portInfo.port]) {
+      const risk = dangerousPortMap[portInfo.port]
+      toCreate.push({
+        title: risk.title,
+        description: risk.description,
+        severity: risk.severity,
+        source: 'SCAN',
+        assetType: 'SERVER',
+        remediation: risk.remediation,
+      })
+    }
+  }
+
+  // ── 6. checkVulnerabilities() findings ───────────────────────────────────
+  const vulnTypeMap: Record<string, { cweId?: string }> = {
+    NO_HTTPS:            { cweId: 'CWE-319' },
+    MISSING_HSTS:        { cweId: 'CWE-319' },
+    CLICKJACKING:        { cweId: 'CWE-1021' },
+    SENSITIVE_DATA_HTTP: { cweId: 'CWE-319' },
+  }
+
+  for (const v of (vulnerabilities || [])) {
+    // Avoid duplicates with headers/HTTPS checks already added above
+    if (['NO_HTTPS', 'MISSING_HSTS', 'CLICKJACKING'].includes(v.type)) continue
+    const extra = vulnTypeMap[v.type] || {}
+    toCreate.push({
+      title: v.description || v.type,
+      description: v.description || '',
+      severity: v.severity || 'MEDIUM',
+      source: 'SCAN',
+      assetType: 'WEB',
+      remediation: v.recommendation || '',
+      cweId: extra.cweId,
+    })
+  }
+
+  // ── Save to DB (skip duplicates) ──────────────────────────────────────────
+  for (const vuln of toCreate) {
+    try {
+      const existing = await prisma.vulnerability.findFirst({
+        where: {
+          userId,
+          title: vuln.title,
+          assetName: hostname,
+          status: { notIn: ['RESOLVED', 'FALSE_POSITIVE'] },
+        },
+      })
+      if (!existing) {
+        await prisma.vulnerability.create({
+          data: {
+            userId,
+            scanId,
+            title: vuln.title,
+            description: vuln.description,
+            severity: vuln.severity,
+            status: 'OPEN',
+            source: vuln.source,
+            assetId: `web-${hostname}`,
+            assetName: hostname,
+            assetType: vuln.assetType || 'WEB',
+            remediation: vuln.remediation || null,
+            cweId: vuln.cweId || null,
+            discoveredAt: new Date(),
+          },
+        })
+      }
+    } catch (err) {
+      console.error('Error saving vulnerability:', vuln.title, err)
+    }
+  }
+
+  console.log(`Persisted ${toCreate.length} potential vulnerabilities for scan ${scanId}`)
 }
 
 async function analyzeSSL(hostname: string): Promise<any> {

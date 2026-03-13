@@ -17,6 +17,7 @@ import { IncidentPieChart } from "@/components/dashboard/incident-pie-chart";
 import { ScanActivityChart } from "@/components/dashboard/scan-activity-chart";
 import { MonthlyReportButton } from "@/components/dashboard/MonthlyReportButton";
 import { AdvisoryRequestButton } from "@/components/dashboard/AdvisoryRequestButton";
+import { GuardyAgentCard } from "@/components/dashboard/GuardyAgentCard";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -1151,6 +1152,9 @@ export default async function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Guardy Agente */}
+      <GuardyAgentCard />
     </div>
   );
 }

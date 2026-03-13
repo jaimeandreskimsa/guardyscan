@@ -57,7 +57,11 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { title, description, severity, category, affectedSystems, assignedTo, notes } = body;
+    const {
+      title, description, severity, category, affectedSystems, assignedTo, notes,
+      origin, sourceUrl, linkedVulnerabilityId, immediateActions,
+      impactFinancial, impactOperational, impactReputational
+    } = body;
 
     if (!title || !description || !severity || !category) {
       return NextResponse.json(
@@ -76,6 +80,13 @@ export async function POST(req: Request) {
         affectedSystems: affectedSystems || null,
         assignedTo: assignedTo || null,
         notes: notes || null,
+        origin: origin || null,
+        sourceUrl: sourceUrl || null,
+        linkedVulnerabilityId: linkedVulnerabilityId || null,
+        immediateActions: immediateActions || null,
+        impactFinancial: impactFinancial || null,
+        impactOperational: impactOperational || null,
+        impactReputational: impactReputational || null,
       } as any,
     });
 

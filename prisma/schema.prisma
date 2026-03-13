@@ -292,6 +292,16 @@ model Incident {
   resolvedAt  DateTime?
   closedAt    DateTime?        // Closing date
   notes       String?
+
+  // Origin tracking
+  origin               String?  // Manual, Vulnerabilidad, SIEM, Scanner, Tercero
+  sourceUrl            String?  // URL del sitio/activo de origen (from scan or vulnerability)
+  linkedVulnerabilityId String? // ID de vulnerabilidad asociada
+  immediateActions     String?  // Acciones inmediatas tomadas
+  impactFinancial      String?  // LOW, MEDIUM, HIGH, CRITICAL
+  impactOperational    String?
+  impactReputational   String?
+
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 

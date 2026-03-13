@@ -2,17 +2,16 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { useAgent } from "@/components/dashboard/AgentContext";
 import {
-  MessageCircle,
-  X,
   Send,
   Bot,
   User,
   Sparkles,
   Shield,
   Loader2,
-  Minimize2,
   Trash2,
+  PanelRightClose,
 } from "lucide-react";
 
 interface Message {
@@ -34,13 +33,12 @@ const QUICK_QUESTIONS = [
 ];
 
 export function GuardyAgent() {
-  const [isOpen, setIsOpen] = useState(false);
+  const { isAgentOpen: isOpen, toggleAgent, closeAgent } = useAgent();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [showPulse, setShowPulse] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -54,11 +52,17 @@ export function GuardyAgent() {
     }
   }, [isOpen]);
 
-  // Stop pulse after 10 seconds
+  // Keyboard shortcut: Ctrl/Cmd + Shift + A to toggle
   useEffect(() => {
-    const timer = setTimeout(() => setShowPulse(false), 10000);
-    return () => clearTimeout(timer);
-  }, []);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "a") {
+        e.preventDefault();
+        toggleAgent();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleAgent]);
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -74,6 +78,11 @@ export function GuardyAgent() {
       setMessages((prev) => [...prev, userMsg]);
       setInput("");
       setIsLoading(true);
+
+      // Reset textarea height
+      if (inputRef.current) {
+        inputRef.current.style.height = "auto";
+      }
 
       try {
         const history = messages.map((m) => ({
@@ -119,244 +128,250 @@ export function GuardyAgent() {
     sendMessage(input);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage(input);
+    }
+  };
+
+  // Auto-resize textarea
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    e.target.style.height = "auto";
+    e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
+  };
+
   // Format markdown-like text to simple HTML
   const formatMessage = (text: string) => {
     return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br/>')
-      .replace(/• /g, '&bull; ');
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\n/g, "<br/>")
+      .replace(/• /g, "&bull; ");
   };
 
   return (
     <>
-      {/* Floating Chat Button */}
-      {!isOpen && (
-        <button
-          onClick={() => {
-            setIsOpen(true);
-            setShowPulse(false);
-          }}
-          className="fixed bottom-6 right-6 z-50 group"
-          aria-label="Abrir Guardy Agente"
-        >
-          {/* Pulse animation */}
-          {showPulse && (
-            <span className="absolute inset-0 rounded-full bg-cyan-400 animate-ping opacity-30" />
-          )}
-          {/* Main button */}
-          <div className="relative flex items-center gap-2 bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 text-white px-5 py-3.5 rounded-full shadow-2xl shadow-blue-500/30 hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105">
-            <Shield className="h-5 w-5" />
-            <span className="font-semibold text-sm">Guardy Agente</span>
-            <Sparkles className="h-4 w-4 text-yellow-300 animate-pulse" />
-          </div>
-          {/* Tooltip */}
-          <div className="absolute bottom-full right-0 mb-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-            🛡️ Tu asistente de ciberseguridad con IA
-          </div>
-        </button>
+      {/* Sidebar Overlay (mobile) */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden"
+          onClick={() => closeAgent()}
+        />
       )}
 
-      {/* Chat Window */}
-      {isOpen && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[420px] h-[70vh] sm:h-[600px] max-h-[80vh] flex flex-col bg-white dark:bg-gray-900 rounded-2xl shadow-2xl shadow-black/20 border border-gray-200 dark:border-gray-700 overflow-hidden animate-in slide-in-from-bottom-5 duration-300">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 p-4 flex items-center justify-between flex-shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <Shield className="h-5 w-5 text-white" />
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-blue-600 rounded-full" />
+      {/* Sidebar Panel */}
+      <aside
+        className={`fixed top-0 right-0 h-full z-40 flex flex-col bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-2xl transition-transform duration-300 ease-in-out w-full sm:w-[420px] lg:w-[400px] ${
+          isOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-cyan-600 via-blue-600 to-purple-600 px-5 py-4 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <Shield className="h-5 w-5 text-white" />
               </div>
-              <div>
-                <h3 className="text-white font-bold text-sm flex items-center gap-1.5">
-                  Guardy Agente
-                  <Sparkles className="h-3.5 w-3.5 text-yellow-300" />
-                </h3>
-                <p className="text-blue-100 text-xs">Asistente IA de ciberseguridad</p>
-              </div>
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-blue-600 rounded-full" />
             </div>
-            <div className="flex items-center gap-1">
-              {messages.length > 0 && (
-                <button
-                  onClick={() => setMessages([])}
-                  className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-                  aria-label="Limpiar chat"
-                  title="Limpiar conversación"
-                >
-                  <Trash2 className="h-4 w-4 text-white" />
-                </button>
-              )}
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-                aria-label="Minimizar"
-              >
-                <Minimize2 className="h-4 w-4 text-white" />
-              </button>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-                aria-label="Cerrar"
-              >
-                <X className="h-4 w-4 text-white" />
-              </button>
+            <div>
+              <h3 className="text-white font-bold text-sm flex items-center gap-1.5">
+                Guardy Agente
+                <Sparkles className="h-3.5 w-3.5 text-yellow-300" />
+              </h3>
+              <p className="text-blue-100 text-xs">Asistente IA de ciberseguridad</p>
             </div>
           </div>
-
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-950">
-            {/* Welcome message if no messages */}
-            {messages.length === 0 && (
-              <div className="space-y-4">
-                {/* Welcome */}
-                <div className="flex gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                    <Bot className="h-4 w-4 text-white" />
-                  </div>
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-md p-3.5 shadow-sm max-w-[85%]">
-                    <p className="text-sm text-gray-700 dark:text-gray-200">
-                      🛡️ ¡Hola! Soy <strong>Guardy</strong>, tu asistente de
-                      ciberseguridad con IA.
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                      Estoy conectado a todos los módulos de tu plataforma. Puedo explicarte
-                      en lenguaje simple tus vulnerabilidades, incidentes, escaneos y mucho más.
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">
-                      Pregúntame lo que necesites 👇
-                    </p>
-                  </div>
-                </div>
-                {/* Quick questions */}
-                <div className="pl-11 space-y-2">
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                    Preguntas sugeridas:
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {QUICK_QUESTIONS.map((q) => (
-                      <button
-                        key={q.label}
-                        onClick={() => sendMessage(q.text)}
-                        disabled={isLoading}
-                        className="text-xs px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 text-gray-700 dark:text-gray-300 transition-all disabled:opacity-50"
-                      >
-                        {q.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Conversation messages */}
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+          <div className="flex items-center gap-1">
+            {messages.length > 0 && (
+              <button
+                onClick={() => setMessages([])}
+                className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                aria-label="Limpiar chat"
+                title="Limpiar conversación"
               >
-                {/* Avatar */}
-                <div
-                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    msg.role === "user"
-                      ? "bg-gradient-to-br from-purple-500 to-pink-500"
-                      : "bg-gradient-to-br from-cyan-500 to-blue-600"
-                  }`}
-                >
-                  {msg.role === "user" ? (
-                    <User className="h-4 w-4 text-white" />
-                  ) : (
-                    <Bot className="h-4 w-4 text-white" />
-                  )}
-                </div>
-                {/* Bubble */}
-                <div
-                  className={`max-w-[80%] rounded-2xl p-3.5 shadow-sm ${
-                    msg.role === "user"
-                      ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-tr-md"
-                      : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-tl-md"
-                  }`}
-                >
-                  <div
-                    className="text-sm leading-relaxed whitespace-pre-wrap break-words"
-                    dangerouslySetInnerHTML={{ __html: formatMessage(msg.content) }}
-                  />
-                  <p
-                    className={`text-[10px] mt-1.5 ${
-                      msg.role === "user" ? "text-blue-200" : "text-gray-400"
-                    }`}
-                  >
-                    {msg.timestamp.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}
-                  </p>
-                </div>
-              </div>
-            ))}
+                <Trash2 className="h-4 w-4 text-white" />
+              </button>
+            )}
+            <button
+              onClick={() => closeAgent()}
+              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              aria-label="Cerrar panel"
+              title="Cerrar panel"
+            >
+              <PanelRightClose className="h-4 w-4 text-white" />
+            </button>
+          </div>
+        </div>
 
-            {/* Typing indicator */}
-            {isLoading && (
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-gray-50 dark:bg-gray-950">
+          {/* Welcome message if no messages */}
+          {messages.length === 0 && (
+            <div className="space-y-5">
+              {/* Welcome */}
               <div className="flex gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
                   <Bot className="h-4 w-4 text-white" />
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-md p-3.5 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                    <span className="text-sm text-gray-500">Guardy está analizando...</span>
-                  </div>
+                <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-md p-4 shadow-sm flex-1">
+                  <p className="text-sm text-gray-700 dark:text-gray-200">
+                    🛡️ ¡Hola! Soy <strong>Guardy</strong>, tu asistente de
+                    ciberseguridad con IA.
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                    Estoy conectado a todos los módulos de tu plataforma. Puedo
+                    explicarte en lenguaje simple tus vulnerabilidades, incidentes,
+                    escaneos y mucho más.
+                  </p>
+                  <p className="text-xs text-gray-400 mt-3">
+                    Pregúntame lo que necesites 👇
+                  </p>
                 </div>
               </div>
-            )}
 
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Quick questions after conversation */}
-          {messages.length > 0 && !isLoading && (
-            <div className="px-4 py-2 bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
-              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-                {QUICK_QUESTIONS.slice(0, 4).map((q) => (
-                  <button
-                    key={q.label}
-                    onClick={() => sendMessage(q.text)}
-                    className="text-[11px] px-2.5 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-600 dark:text-gray-400 transition-all whitespace-nowrap flex-shrink-0"
-                  >
-                    {q.label}
-                  </button>
-                ))}
+              {/* Quick questions grid */}
+              <div className="space-y-2.5">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">
+                  Preguntas sugeridas
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {QUICK_QUESTIONS.map((q) => (
+                    <button
+                      key={q.label}
+                      onClick={() => sendMessage(q.text)}
+                      disabled={isLoading}
+                      className="text-left text-xs px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 text-gray-700 dark:text-gray-300 transition-all disabled:opacity-50 hover:shadow-sm"
+                    >
+                      {q.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {/* Input Area */}
-          <form
-            onSubmit={handleSubmit}
-            className="p-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex-shrink-0"
-          >
-            <div className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-1.5">
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Escribe tu pregunta..."
-                disabled={isLoading}
-                className="flex-1 bg-transparent text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none disabled:opacity-50 py-1.5"
-              />
-              <Button
-                type="submit"
-                size="sm"
-                disabled={!input.trim() || isLoading}
-                className="h-8 w-8 p-0 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-30 disabled:cursor-not-allowed"
+          {/* Conversation messages */}
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+            >
+              {/* Avatar */}
+              <div
+                className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                  msg.role === "user"
+                    ? "bg-gradient-to-br from-purple-500 to-pink-500"
+                    : "bg-gradient-to-br from-cyan-500 to-blue-600"
+                }`}
               >
-                <Send className="h-3.5 w-3.5 text-white" />
-              </Button>
+                {msg.role === "user" ? (
+                  <User className="h-4 w-4 text-white" />
+                ) : (
+                  <Bot className="h-4 w-4 text-white" />
+                )}
+              </div>
+              {/* Bubble */}
+              <div
+                className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
+                  msg.role === "user"
+                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-tr-md"
+                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-tl-md"
+                }`}
+              >
+                <div
+                  className="text-sm leading-relaxed whitespace-pre-wrap break-words"
+                  dangerouslySetInnerHTML={{
+                    __html: formatMessage(msg.content),
+                  }}
+                />
+                <p
+                  className={`text-[10px] mt-2 ${
+                    msg.role === "user" ? "text-blue-200" : "text-gray-400"
+                  }`}
+                >
+                  {msg.timestamp.toLocaleTimeString("es", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
             </div>
-            <p className="text-center text-[10px] text-gray-400 mt-1.5">
+          ))}
+
+          {/* Typing indicator */}
+          {isLoading && (
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                <Bot className="h-4 w-4 text-white" />
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-md p-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                  <span className="text-sm text-gray-500">
+                    Guardy está analizando...
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Quick actions after conversation */}
+        {messages.length > 0 && !isLoading && (
+          <div className="px-5 py-2.5 bg-gray-50 dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+              {QUICK_QUESTIONS.slice(0, 4).map((q) => (
+                <button
+                  key={q.label}
+                  onClick={() => sendMessage(q.text)}
+                  className="text-[11px] px-2.5 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900/30 text-gray-600 dark:text-gray-400 transition-all whitespace-nowrap flex-shrink-0"
+                >
+                  {q.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Input Area */}
+        <form
+          onSubmit={handleSubmit}
+          className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 flex-shrink-0"
+        >
+          <div className="flex items-end gap-2 bg-gray-100 dark:bg-gray-800 rounded-xl px-3 py-2">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="Escribe tu pregunta..."
+              disabled={isLoading}
+              rows={1}
+              className="flex-1 bg-transparent text-sm text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:outline-none disabled:opacity-50 py-1.5 resize-none max-h-[120px]"
+            />
+            <Button
+              type="submit"
+              size="sm"
+              disabled={!input.trim() || isLoading}
+              className="h-8 w-8 p-0 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-30 disabled:cursor-not-allowed flex-shrink-0"
+            >
+              <Send className="h-3.5 w-3.5 text-white" />
+            </Button>
+          </div>
+          <div className="flex items-center justify-between mt-2 px-1">
+            <p className="text-[10px] text-gray-400">
               Guardy Agente · Powered by IA 🛡️
             </p>
-          </form>
-        </div>
-      )}
+            <p className="text-[10px] text-gray-400">
+              ⌘⇧A para abrir/cerrar
+            </p>
+          </div>
+        </form>
+      </aside>
     </>
   );
 }

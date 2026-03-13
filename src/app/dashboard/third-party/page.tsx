@@ -7,7 +7,7 @@ import {
   Trash2, Eye, FileText, CheckCircle2, XCircle, Clock, X,
   Link2, ExternalLink, RefreshCw, Download,
   BarChart3, TrendingUp, MapPin, Mail, Calendar, Loader2, ChevronRight,
-  Lock, Activity, ArrowUpRight, Minus
+  Lock, Activity, ArrowUpRight, Minus, Zap
 } from 'lucide-react'
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar,
@@ -125,7 +125,20 @@ const INITIAL_VENDORS = [
   },
 ]
 
-type Vendor = typeof INITIAL_VENDORS[0]
+type Vendor = typeof INITIAL_VENDORS[0] & { vendorUrl?: string }
+
+type ScanResult = {
+  status: 'idle' | 'scanning' | 'done' | 'error'
+  openPorts: number
+  criticalPorts: number
+  exposure: 'none' | 'low' | 'medium' | 'high' | 'critical'
+  host?: string
+  ip?: string
+  scanTime?: number
+  ports?: Array<{ port: number; service: string; status: string }>
+  error?: string
+  scannedAt?: string
+}
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -184,6 +197,41 @@ function daysUntil(date: string | null) {
   if (!date) return null
   const diff = (new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   return Math.ceil(diff)
+}
+
+function extractDomain(vendor: Vendor): string | null {
+  if (vendor.vendorType === 'cloud') return null
+  if (vendor.vendorUrl) {
+    try {
+      const url = vendor.vendorUrl.startsWith('http') ? vendor.vendorUrl : `https://${vendor.vendorUrl}`
+      return new URL(url).hostname
+    } catch {}
+  }
+  if (vendor.contactEmail) {
+    const parts = vendor.contactEmail.split('@')
+    if (parts.length === 2 && parts[1]) return parts[1]
+  }
+  return null
+}
+
+function ExposureBadge({ result, domain }: { result?: ScanResult; domain: string | null }) {
+  if (!domain) return <span className="text-[10px] text-gray-400 px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800">No aplica</span>
+  if (!result || result.status === 'idle') return <span className="text-[10px] text-gray-400">Sin escanear</span>
+  if (result.status === 'scanning') {
+    return <span className="flex items-center gap-1 text-[10px] text-blue-600"><Loader2 className="h-3 w-3 animate-spin" />Escaneando...</span>
+  }
+  if (result.status === 'error') {
+    return <span className="text-[10px] text-red-500 px-1.5 py-0.5 rounded bg-red-50 dark:bg-red-900/20">⚠ Error al escanear</span>
+  }
+  const configs: Record<string, { label: string; cls: string }> = {
+    none:     { label: '✓ Sin exposición',                                                  cls: 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' },
+    low:      { label: `Baja · ${result.openPorts} puerto${result.openPorts !== 1 ? 's' : ''}`,          cls: 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' },
+    medium:   { label: `Media · ${result.openPorts} puerto${result.openPorts !== 1 ? 's' : ''}`,         cls: 'bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400' },
+    high:     { label: `Alta · ${result.criticalPorts} crítico${result.criticalPorts !== 1 ? 's' : ''}`, cls: 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-400' },
+    critical: { label: `Crítica · ${result.criticalPorts} crítico${result.criticalPorts !== 1 ? 's' : ''}`, cls: 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400' },
+  }
+  const cfg = configs[result.exposure] || configs.none
+  return <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${cfg.cls}`}>{cfg.label}</span>
 }
 
 function exportToCSV(vendors: Vendor[]) {
@@ -247,12 +295,15 @@ export default function ThirdPartyPage() {
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null)
   const [saving, setSaving] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [showCharts, setShowCharts] = useState(false)
+  const [scanResults, setScanResults] = useState<Record<string, ScanResult>>({})
 
   const emptyForm = {
     vendorName: '', vendorType: 'cloud', connectionType: 'api',
     dataTypes: [] as string[], criticality: 'MEDIUM', systemAccess: false,
     dataAccess: false, certifications: [] as string[], contractValue: 0,
     contractEnd: '', geographicLocation: '', contactName: '', contactEmail: '', notes: '',
+    vendorUrl: '',
   }
   const [form, setForm] = useState(emptyForm)
 
@@ -347,6 +398,7 @@ export default function ThirdPartyPage() {
       dataAccess: v.dataAccess, certifications: [...v.certifications], contractValue: v.contractValue,
       contractEnd: v.contractEnd, geographicLocation: v.geographicLocation,
       contactName: v.contactName, contactEmail: v.contactEmail, notes: v.notes || '',
+      vendorUrl: v.vendorUrl || '',
     })
     setShowForm(true)
   }
@@ -363,6 +415,46 @@ export default function ThirdPartyPage() {
       exportToCSV(filtered.length > 0 ? filtered : vendors)
       setExporting(false)
     }, 500)
+  }
+
+  const scanVendor = async (vendor: Vendor) => {
+    const domain = extractDomain(vendor)
+    if (!domain) return
+    setScanResults(prev => ({ ...prev, [vendor.id]: { status: 'scanning', openPorts: 0, criticalPorts: 0, exposure: 'none' } }))
+    try {
+      const res = await fetch('/api/scan/ports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ host: domain, scanType: 'quick' }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Error en escaneo')
+      const CRIT = [21, 23, 25, 445, 3389, 5432, 3306, 1433, 1521, 27017, 6379, 5900]
+      const allPorts: Array<{ port: number; service: string; status: string }> = data.openPorts || []
+      const openPorts = allPorts.filter(p => p.status === 'open')
+      const critCount = openPorts.filter(p => CRIT.includes(p.port)).length
+      const sensitiveOpen = openPorts.filter(p => ![80, 443, 8080, 8443].includes(p.port))
+      let exposure: ScanResult['exposure'] = 'none'
+      if (critCount >= 2) exposure = 'critical'
+      else if (critCount >= 1) exposure = 'high'
+      else if (sensitiveOpen.length >= 2) exposure = 'medium'
+      else if (openPorts.length > 0) exposure = 'low'
+      setScanResults(prev => ({
+        ...prev,
+        [vendor.id]: {
+          status: 'done', openPorts: openPorts.length, criticalPorts: critCount, exposure,
+          host: data.host, ip: data.ip, scanTime: data.scanTime, ports: openPorts,
+          scannedAt: new Date().toLocaleTimeString('es-ES'),
+        },
+      }))
+    } catch (err: any) {
+      setScanResults(prev => ({ ...prev, [vendor.id]: { status: 'error', openPorts: 0, criticalPorts: 0, exposure: 'none', error: err.message } }))
+    }
+  }
+
+  const scanAll = async () => {
+    const scannable = vendors.filter(v => extractDomain(v))
+    for (const v of scannable) await scanVendor(v)
   }
 
   const toggleArrayItem = (arr: string[], item: string) =>
@@ -421,7 +513,17 @@ export default function ThirdPartyPage() {
         ))}
       </div>
 
+      {/* ════════ CHARTS toggle ════════ */}
+      <div className="flex justify-end -mt-3">
+        <button onClick={() => setShowCharts(p => !p)}
+          className="flex items-center gap-1.5 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 font-medium px-3 py-1.5 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors">
+          <BarChart3 className="h-3.5 w-3.5" />
+          {showCharts ? 'Ocultar gráficos ▴' : 'Ver análisis gráfico ▾'}
+        </button>
+      </div>
+
       {/* ════════ CHARTS ════════ */}
+      {showCharts && (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Criticality pie */}
         <div className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-lg border border-gray-200 dark:border-gray-700">
@@ -493,6 +595,7 @@ export default function ThirdPartyPage() {
           </ResponsiveContainer>
         </div>
       </div>
+      )}
 
       {/* ════════ FILTERS ════════ */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-lg border border-gray-200 dark:border-gray-700">
@@ -528,6 +631,10 @@ export default function ThirdPartyPage() {
             <h3 className="font-semibold text-gray-900 dark:text-white">Registro de Proveedores</h3>
             <p className="text-xs text-gray-500 mt-0.5">{filtered.length} proveedor{filtered.length !== 1 ? 'es' : ''} registrado{filtered.length !== 1 ? 's' : ''}</p>
           </div>
+          <button onClick={scanAll}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-xs font-medium shadow-sm">
+            <Zap className="h-3.5 w-3.5" />Escanear todos
+          </button>
         </div>
 
         {filtered.length === 0 ? (
@@ -608,6 +715,14 @@ export default function ThirdPartyPage() {
                           </span>
                         )}
                       </div>
+                      {/* Exposición externa */}
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <span className="text-[10px] text-gray-400 uppercase tracking-wider">Exposición ext.:</span>
+                        <ExposureBadge result={scanResults[vendor.id]} domain={extractDomain(vendor)} />
+                        {scanResults[vendor.id]?.status === 'done' && scanResults[vendor.id]?.scannedAt && (
+                          <span className="text-[9px] text-gray-400">{scanResults[vendor.id]?.scannedAt}</span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Metrics */}
@@ -638,6 +753,17 @@ export default function ThirdPartyPage() {
 
                     {/* Actions */}
                     <div className="flex gap-1 flex-shrink-0">
+                      {extractDomain(vendor) && (
+                        <button
+                          onClick={() => scanVendor(vendor)}
+                          disabled={scanResults[vendor.id]?.status === 'scanning'}
+                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors disabled:opacity-50"
+                          title="Escanear exposición externa">
+                          {scanResults[vendor.id]?.status === 'scanning'
+                            ? <Loader2 className="h-4 w-4 animate-spin" />
+                            : <Zap className="h-4 w-4" />}
+                        </button>
+                      )}
                       <button onClick={() => setShowDetail(vendor)} className="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors" title="Ver detalle"><Eye className="h-4 w-4" /></button>
                       <button onClick={() => openEdit(vendor)} className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors" title="Editar"><Edit className="h-4 w-4" /></button>
                       <button onClick={() => handleDelete(vendor.id)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Eliminar"><Trash2 className="h-4 w-4" /></button>
@@ -680,6 +806,15 @@ export default function ThirdPartyPage() {
                     <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Nombre <span className="text-red-500">*</span></label>
                     <input type="text" value={form.vendorName} onChange={e => setForm({ ...form, vendorName: e.target.value })}
                       placeholder="Nombre de la empresa o servicio"
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+                      <Globe className="h-3.5 w-3.5" />URL / Dominio
+                      <span className="text-gray-400 font-normal normal-case text-[11px]">(opcional — para escaneo de exposición externa)</span>
+                    </label>
+                    <input type="text" value={form.vendorUrl || ''} onChange={e => setForm({ ...form, vendorUrl: e.target.value })}
+                      placeholder="proveedor.com o https://proveedor.com"
                       className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent" />
                   </div>
                   <div>
@@ -929,6 +1064,58 @@ export default function ThirdPartyPage() {
                   <p className="text-xs text-gray-500">Valor Contrato (USD)</p>
                 </div>
               </div>
+
+              <hr className="border-gray-100 dark:border-gray-800" />
+
+              {/* Exposure scan panel */}
+              <section>
+                <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-3 uppercase tracking-widest flex items-center gap-1"><Zap className="h-3.5 w-3.5 text-blue-500" />Exposición Externa</h4>
+                {extractDomain(showDetail) ? (
+                  <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div>
+                        <p className="text-xs text-gray-500">Dominio escaneado: <span className="font-mono text-gray-700 dark:text-gray-300">{extractDomain(showDetail)}</span></p>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <ExposureBadge result={scanResults[showDetail.id]} domain={extractDomain(showDetail)} />
+                          {scanResults[showDetail.id]?.status === 'done' && (
+                            <span className="text-[10px] text-gray-400">· {scanResults[showDetail.id]?.scannedAt}</span>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => scanVendor(showDetail)}
+                        disabled={scanResults[showDetail.id]?.status === 'scanning'}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                        {scanResults[showDetail.id]?.status === 'scanning'
+                          ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Escaneando...</>
+                          : <><Zap className="h-3.5 w-3.5" />{scanResults[showDetail.id]?.status === 'done' ? 'Re-escanear' : 'Escanear ahora'}</>}
+                      </button>
+                    </div>
+                    {scanResults[showDetail.id]?.status === 'done' && (scanResults[showDetail.id]?.ports?.length ?? 0) > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                        <p className="text-[11px] font-semibold text-gray-500 mb-2 uppercase tracking-wider">Puertos abiertos detectados:</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {scanResults[showDetail.id]?.ports?.map((p, i) => {
+                            const isCrit = [21,23,25,445,3389,5432,3306,1433,1521,27017,6379,5900].includes(p.port)
+                            return (
+                              <span key={i} className={`text-[10px] px-2 py-0.5 rounded font-mono ${
+                                isCrit ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                              }`}>
+                                {p.port}/{p.service || 'unknown'}
+                              </span>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    {scanResults[showDetail.id]?.status === 'done' && (scanResults[showDetail.id]?.ports?.length ?? 0) === 0 && (
+                      <p className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600 text-xs text-green-600">✔ No se detectaron puertos abiertos públicamente expuestos.</p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400 italic">Proveedor cloud/gestionado — escaneo de exposición no aplicable.</p>
+                )}
+              </section>
 
               <hr className="border-gray-100 dark:border-gray-800" />
 

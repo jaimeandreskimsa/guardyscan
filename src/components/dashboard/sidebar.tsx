@@ -8,9 +8,11 @@ import {
   LayoutDashboard, AlertTriangle, FileCheck, LogOut,
   Settings, ShieldAlert, Building2, Radar, Eye,
   FolderArchive, Network, ChevronLeft, ChevronRight, Shield,
-  CreditCard, Bell, User, HelpCircle, Users, DollarSign, UserCheck, Laptop, Target
+  CreditCard, Bell, User, HelpCircle, Users, DollarSign, UserCheck, Laptop, Target,
+  Sparkles, Bot
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAgent } from "@/components/dashboard/AgentContext";
 
 interface SidebarProps {
   user: any;
@@ -34,7 +36,7 @@ const getNavigationGroups = (userRole: string) => {
     {
       name: "Seguridad",
       items: [
-        { name: "Panel SIEM", href: "/dashboard/siem", icon: Eye },
+        { name: "Monitoreo de Seguridad", href: "/dashboard/siem", icon: Eye },
         { name: "Vulnerabilidades", href: "/dashboard/vulnerabilities", icon: ShieldAlert },
         { name: "Incidentes", href: "/dashboard/incidents", icon: AlertTriangle },
       ]
@@ -42,6 +44,7 @@ const getNavigationGroups = (userRole: string) => {
     {
       name: "Gestión",
       items: [
+        { name: "Riesgos", href: "/dashboard/risk-management", icon: Target },
         { name: "Inventario de Activos", href: "/dashboard/inventory", icon: Laptop },
         { name: "Trabajadores", href: "/dashboard/workers", icon: Users },
         { name: "Terceros", href: "/dashboard/third-party", icon: Network },
@@ -50,7 +53,6 @@ const getNavigationGroups = (userRole: string) => {
     {
       name: "Gobernanza",
       items: [
-        { name: "Gestión de Riesgos", href: "/dashboard/risk-management", icon: Target },
         { name: "Cumplimiento Normativo", href: "/dashboard/compliance", icon: FileCheck },
         { name: "Continuidad de Negocio", href: "/dashboard/bcp", icon: Building2 },
         { name: "Comité", href: "/dashboard/committee", icon: Users },
@@ -83,6 +85,7 @@ export function Sidebar({ user }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { isAgentOpen, toggleAgent } = useAgent();
 
   // Detectar móvil
   useEffect(() => {
@@ -220,27 +223,57 @@ export function Sidebar({ user }: SidebarProps) {
                 const Icon = item.icon;
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
                 return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
-                      isActive
-                        ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-500/20"
-                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
-                    } ${collapsed ? "justify-center" : ""}`}
-                    title={collapsed ? item.name : undefined}
-                  >
-                    <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"}`} />
-                    {!collapsed && (
-                      <span className="font-medium text-sm">{item.name}</span>
+                  <>
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+                        isActive
+                          ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-500/20"
+                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                      } ${collapsed ? "justify-center" : ""}`}
+                      title={collapsed ? item.name : undefined}
+                    >
+                      <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"}`} />
+                      {!collapsed && (
+                        <span className="font-medium text-sm">{item.name}</span>
+                      )}
+                    </Link>
+                    {/* Guardy Agente — debajo del Dashboard */}
+                    {item.href === "/dashboard" && (
+                      <button
+                        onClick={() => toggleAgent()}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+                          isAgentOpen
+                            ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-blue-500/20"
+                            : "text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 dark:hover:from-cyan-900/20 dark:hover:to-blue-900/20"
+                        } ${collapsed ? "justify-center" : ""}`}
+                        title={collapsed ? "Guardy AI" : undefined}
+                      >
+                        <div className={`relative flex-shrink-0 ${isAgentOpen ? "" : "text-cyan-600 dark:text-cyan-400"}`}>
+                          <Bot className={`h-5 w-5 ${isAgentOpen ? "text-white" : ""}`} />
+                          {!isAgentOpen && (
+                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full border border-white dark:border-gray-800" />
+                          )}
+                        </div>
+                        {!collapsed && (
+                          <div className="flex items-center gap-2 flex-1">
+                            <span className="font-semibold text-sm">Guardy AI</span>
+                            <Sparkles className={`h-3.5 w-3.5 ${isAgentOpen ? "text-yellow-300" : "text-yellow-500"}`} />
+                          </div>
+                        )}
+                      </button>
                     )}
-                  </Link>
+                  </>
                 );
               })}
             </div>
           </div>
         ))}
       </nav>
+
+      {/* Bottom footer placeholder - keep border for layout */}
+      <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700" />
     </>
   );
 

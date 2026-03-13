@@ -23,7 +23,11 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { title, description, severity, category, affectedSystems, assignedTo, notes, status } = body;
+    const {
+      title, description, severity, category, affectedSystems, assignedTo, notes, status,
+      origin, sourceUrl, linkedVulnerabilityId, immediateActions,
+      impactFinancial, impactOperational, impactReputational
+    } = body;
 
     // Verificar que el incidente pertenece al usuario
     const existingIncident = await prisma.incident.findFirst({
@@ -45,6 +49,13 @@ export async function PUT(
       affectedSystems: affectedSystems || null,
       assignedTo: assignedTo || null,
       notes: notes || null,
+      origin: origin || null,
+      sourceUrl: sourceUrl || null,
+      linkedVulnerabilityId: linkedVulnerabilityId || null,
+      immediateActions: immediateActions || null,
+      impactFinancial: impactFinancial || null,
+      impactOperational: impactOperational || null,
+      impactReputational: impactReputational || null,
     };
 
     // Si se cambia el estado a RESOLVED o CLOSED, actualizar resolvedAt

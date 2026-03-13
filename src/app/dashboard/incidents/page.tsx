@@ -121,6 +121,7 @@ export default function IncidentsPage() {
   const [form, setForm] = useState({
     title: '', description: '', severity: 'MEDIUM', category: '', origin: 'Manual',
     affectedSystems: '', assignedTo: '', notes: '', immediateActions: '', linkedVulnerabilityId: '',
+    sourceUrl: '',
     impactFinancial: 'MEDIUM', impactOperational: 'MEDIUM', impactReputational: 'MEDIUM',
     evidences: [] as string[], actions: [] as string[],
   })
@@ -153,18 +154,20 @@ export default function IncidentsPage() {
       // Critical/High open vulnerabilities
       const vulns = vulnRes.vulnerabilities || []
       vulns.forEach((v: any) => {
+        const siteLabel = v.assetName ? `${v.assetName}` : 'sistema'
         items.push({
           id: `vuln-${v.id}`,
           type: 'vulnerability',
           title: v.title,
-          description: v.description || 'Vulnerabilidad detectada en el sistema',
+          description: `${v.description || 'Vulnerabilidad detectada'}${v.assetName ? ` — Sitio afectado: ${v.assetName}` : ''}`,
           severity: v.severity,
           source: v.source || 'SCAN',
           cveId: v.cveId,
           assetName: v.assetName,
+          sourceUrl: v.assetName,
           detectedAt: v.discoveredAt || v.createdAt,
           origin: 'Vulnerabilidad',
-          category: 'Vulnerabilidad de Sistema',
+          category: v.cweId ? 'Vulnerabilidad de Sistema' : 'Explotación de Vulnerabilidad',
           raw: v,
         })
       })
@@ -179,11 +182,12 @@ export default function IncidentsPage() {
               id: `vuln-${v.id}`,
               type: 'vulnerability',
               title: v.title,
-              description: v.description || 'Vulnerabilidad detectada',
+              description: `${v.description || 'Vulnerabilidad detectada'}${v.assetName ? ` — Sitio afectado: ${v.assetName}` : ''}`,
               severity: v.severity,
               source: v.source || 'SCAN',
               cveId: v.cveId,
               assetName: v.assetName,
+              sourceUrl: v.assetName,
               detectedAt: v.discoveredAt || v.createdAt,
               origin: 'Vulnerabilidad',
               category: 'Vulnerabilidad de Sistema',
@@ -239,16 +243,27 @@ export default function IncidentsPage() {
         .filter((s: any) => s.status === 'COMPLETED' && s.score != null && s.score < 50)
         .slice(0, 3)
         .forEach((s: any) => {
+          let hostname = s.targetUrl
+          try { hostname = new URL(s.targetUrl).hostname } catch {}
+          const vulnCount = (s.vulnerabilities || []).length
+          const missingHeaders = s.securityHeaders?.missingHeaders?.length || 0
+          const openPorts = (s.openPorts || []).filter((p: any) => p.status === 'open').length
+          const details: string[] = []
+          if (vulnCount > 0) details.push(`${vulnCount} vulnerabilidad${vulnCount > 1 ? 'es' : ''}`)
+          if (missingHeaders > 0) details.push(`${missingHeaders} header${missingHeaders > 1 ? 's' : ''} de seguridad ausente${missingHeaders > 1 ? 's' : ''}`)
+          if (openPorts > 2) details.push(`${openPorts} puertos expuestos`)
           items.push({
             id: `scan-${s.id}`,
             type: 'scan',
-            title: `Escaneo crítico: ${s.targetUrl}`,
-            description: `Escaneo web completado con puntuación ${s.score}/100 — múltiples vulnerabilidades detectadas`,
+            title: `Escaneo crítico: ${hostname}`,
+            description: `El sitio ${hostname} obtuvo puntuación ${s.score}/100.${details.length ? ' Detectados: ' + details.join(', ') + '.' : ''} Requiere atención inmediata.`,
             severity: s.score < 30 ? 'CRITICAL' : 'HIGH',
             source: 'Scanner',
+            assetName: hostname,
+            sourceUrl: s.targetUrl,
             detectedAt: s.createdAt,
             origin: 'Scanner',
-            category: 'Vulnerabilidad de Sistema',
+            category: 'Configuración Insegura',
             raw: s,
           })
         })
@@ -306,6 +321,7 @@ export default function IncidentsPage() {
       affectedSystems: inc.affectedSystems || '', assignedTo: inc.assignedTo || '',
       notes: inc.notes || '', immediateActions: inc.immediateActions || '',
       linkedVulnerabilityId: inc.linkedVulnerabilityId || '',
+      sourceUrl: inc.sourceUrl || '',
       impactFinancial: inc.impactFinancial || 'MEDIUM',
       impactOperational: inc.impactOperational || 'MEDIUM', impactReputational: inc.impactReputational || 'MEDIUM',
       evidences: inc.evidences || [], actions: inc.actions || [],
@@ -329,21 +345,33 @@ export default function IncidentsPage() {
     setForm({
       title: '', description: '', severity: 'MEDIUM', category: '', origin: 'Manual',
       affectedSystems: '', assignedTo: '', notes: '', immediateActions: '', linkedVulnerabilityId: '',
+      sourceUrl: '',
       impactFinancial: 'MEDIUM', impactOperational: 'MEDIUM', impactReputational: 'MEDIUM',
       evidences: [], actions: [],
     })
   }
 
   const createFromSuggestion = (sug: any) => {
+    const site = sug.sourceUrl || sug.assetName || ''
+    // Build a richer description including the site
+    const enrichedDesc = sug.type === 'scan'
+      ? `Incidente originado por escaneo de seguridad en ${site}. ${sug.description}`
+      : sug.type === 'vulnerability'
+      ? `Incidente originado por vulnerabilidad detectada en ${site}. ${sug.description}${sug.cveId ? ` CVE: ${sug.cveId}` : ''}`
+      : sug.description
     setForm({
       ...form,
       title: `Incidente: ${sug.title}`,
-      description: sug.description,
+      description: enrichedDesc,
       severity: sug.severity === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
       category: sug.category || 'Vulnerabilidad de Sistema',
       origin: sug.origin || 'Vulnerabilidad',
-      affectedSystems: sug.assetName || '',
+      affectedSystems: site,
+      sourceUrl: site,
       linkedVulnerabilityId: sug.type === 'vulnerability' ? (sug.raw?.id || '') : '',
+      impactFinancial: sug.severity === 'CRITICAL' ? 'HIGH' : 'MEDIUM',
+      impactOperational: sug.severity === 'CRITICAL' ? 'HIGH' : 'MEDIUM',
+      impactReputational: 'MEDIUM',
     })
     if (sug.origin === 'Vulnerabilidad' && availableVulns.length === 0) loadAvailableVulns()
     setShowSuggested(false)
@@ -618,7 +646,14 @@ export default function IncidentsPage() {
                               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                                 <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${sev.color}`}>Severidad: {sev.label}</span>
                                 <span className="text-[11px] text-gray-500 flex items-center gap-1"><SrcIcon className={`h-3 w-3 ${srcCfg.color}`} />Detectado: {srcCfg.label}</span>
-                                {sug.assetName && <span className="text-[11px] text-gray-500">📍 {sug.assetName}</span>}
+                                {sug.assetName && (
+                                  <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <Globe className="h-3 w-3" />🌐 {sug.assetName}
+                                  </span>
+                                )}
+                                {sug.detectedAt && (
+                                  <span className="text-[11px] text-gray-400">{new Date(sug.detectedAt).toLocaleDateString('es-ES')}</span>
+                                )}
                               </div>
                               <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{sug.description}</p>
                             </div>
@@ -1112,6 +1147,25 @@ export default function IncidentsPage() {
                   <p className="text-gray-700 dark:text-gray-300"><span className="text-gray-500">Responsable:</span> {showDetail.assignedTo || 'Sin asignar'}</p>
                   <p className="text-gray-700 dark:text-gray-300"><span className="text-gray-500">Sistemas:</span> {showDetail.affectedSystems || 'N/A'}</p>
                   <p className="text-gray-700 dark:text-gray-300"><span className="text-gray-500">Detectado:</span> {fmtDateTime(showDetail.detectedAt)}</p>
+                  {showDetail.sourceUrl && (
+                    <p className="col-span-2 text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                      <span className="text-gray-500">Sitio de origen:</span>
+                      <a href={showDetail.sourceUrl.startsWith('http') ? showDetail.sourceUrl : `https://${showDetail.sourceUrl}`}
+                        target="_blank" rel="noopener noreferrer"
+                        className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium flex items-center gap-1">
+                        <Globe className="h-3.5 w-3.5" />{showDetail.sourceUrl}
+                        <ExternalLink className="h-3 w-3 opacity-60" />
+                      </a>
+                    </p>
+                  )}
+                  {showDetail.linkedVulnerabilityId && (
+                    <p className="col-span-2 text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                      <span className="text-gray-500">Vulnerabilidad vinculada:</span>
+                      <Link href="/dashboard/vulnerabilities" className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium flex items-center gap-1">
+                        <ShieldAlert className="h-3.5 w-3.5" />Ver en Vulnerabilidades <ExternalLink className="h-3 w-3 opacity-60" />
+                      </Link>
+                    </p>
+                  )}
                   {showDetail.resolvedAt && <p className="text-gray-700 dark:text-gray-300"><span className="text-gray-500">Resuelto:</span> {fmtDateTime(showDetail.resolvedAt)}</p>}
                 </div>
               </section>

@@ -6,6 +6,7 @@ import { Check, Shield, Lock, FileCheck, TrendingUp, Users, Zap, ArrowRight, Pla
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 export default function HomePage() {
   const [contactForm, setContactForm] = useState({
@@ -1045,6 +1046,7 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+      <WhatsAppButton />
     </div>
   );
 }

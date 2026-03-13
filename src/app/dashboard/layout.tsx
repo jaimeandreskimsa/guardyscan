@@ -1,8 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
-import { Sidebar } from "@/components/dashboard/sidebar";
-import { GuardyAgent } from "@/components/dashboard/GuardyAgent";
+import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
 export default async function DashboardLayout({
   children,
@@ -16,14 +15,8 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      <Sidebar user={session.user} />
-      <main className="flex-1 overflow-auto">
-        <div className="p-6 lg:p-8 max-w-7xl mx-auto">
-          {children}
-        </div>
-      </main>
-      <GuardyAgent />
-    </div>
+    <DashboardShell user={session.user}>
+      {children}
+    </DashboardShell>
   );
 }

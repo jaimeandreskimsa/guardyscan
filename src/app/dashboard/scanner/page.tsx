@@ -10,7 +10,7 @@ import {
   AlertTriangle, CheckCircle, Clock, RefreshCw, FileCode, Globe,
   Server, Lock, Zap, FileText, BarChart3, Eye, Download,
   Loader2, Map, Container, ExternalLink, Radar, Activity,
-  TrendingUp, ShieldCheck
+  TrendingUp, ShieldCheck, HelpCircle
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -841,11 +841,40 @@ function TechnicalResultsPanel({ result }: { result: ScanResult }) {
 // ═══════════════════════════════════════════════════════════════════
 
 function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void }) {
-  const risk = getRiskLevel(scan.score)
   const vulnCount = (scan.vulnerabilities || []).length
   const sslValid = scan.sslInfo?.valid
   const activeHeaders = ['strict-transport-security', 'x-content-type-options', 'x-frame-options', 'content-security-policy', 'x-xss-protection', 'referrer-policy']
     .filter(h => scan.securityHeaders?.headers?.[h]).length
+
+  // Calcular score real basado en los datos del escaneo
+  const computedScore = (() => {
+    if (scan.score != null) return Math.round(scan.score)
+    let s = 100
+    // SSL: -25 si inválido
+    if (!scan.sslInfo?.valid) s -= 25
+    // Cabeceras: -3 por cada cabecera faltante (máx -18)
+    s -= (6 - activeHeaders) * 3
+    // Vulnerabilidades
+    const vulns = scan.vulnerabilities || []
+    const criticals = vulns.filter((v: any) => v.severity === 'CRITICAL').length
+    const highs = vulns.filter((v: any) => v.severity === 'HIGH').length
+    const mediums = vulns.filter((v: any) => v.severity === 'MEDIUM').length
+    s -= criticals * 15
+    s -= highs * 8
+    s -= mediums * 3
+    // Firewall: -5 si sin WAF, -5 si sin DDoS
+    if (!scan.firewall?.waf) s -= 5
+    if (!scan.firewall?.ddos) s -= 5
+    // Puertos abiertos: -2 por cada puerto extra sobre 3
+    const openPorts = (scan.openPorts || []).length
+    if (openPorts > 3) s -= (openPorts - 3) * 2
+    return Math.max(0, Math.min(100, Math.round(s)))
+  })()
+
+  const risk = getRiskLevel(computedScore)
+  const scoreColor = computedScore >= 85 ? '#10b981' : computedScore >= 70 ? '#f59e0b' : computedScore >= 50 ? '#f97316' : '#ef4444'
+  const circumference = 2 * Math.PI * 54
+  const strokeDashoffset = circumference - (computedScore / 100) * circumference
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -880,21 +909,26 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
               </div>
             </div>
 
-            <div className="flex items-center gap-5">
-              <div className="text-center">
-                <div className="relative w-24 h-24">
-                  <svg className="w-full h-full" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
-                    <circle cx="50" cy="50" r="42" fill="none"
-                      stroke={scan.score >= 85 ? '#10b981' : scan.score >= 70 ? '#f59e0b' : scan.score >= 50 ? '#f97316' : '#ef4444'}
-                      strokeWidth="8" strokeDasharray={`${(scan.score || 0) * 2.64} 264`}
-                      strokeLinecap="round" transform="rotate(-90 50 50)" />
-                  </svg>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-3xl font-black">{scan.score || 0}</span>
-                  </div>
+            {/* Score circular */}
+            <div className="flex items-center gap-4">
+              <div className="relative flex items-center justify-center">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
+                  <circle
+                    cx="60" cy="60" r="54" fill="none"
+                    stroke={scoreColor}
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    transform="rotate(-90 60 60)"
+                    className="transition-all duration-1000"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-black" style={{ color: scoreColor }}>{computedScore}</span>
+                  <span className="text-[10px] text-blue-300 font-semibold uppercase tracking-wider">Índice Global</span>
                 </div>
-                <p className="text-[10px] uppercase tracking-widest text-blue-300 mt-1 font-semibold">Índice Global</p>
               </div>
               <Button variant="ghost" onClick={onClose} className="text-white hover:bg-white/10 rounded-xl h-10 w-10 p-0">
                 ✕
@@ -946,10 +980,20 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
               title="Infraestructura del Servidor"
               subtitle="Información del hosting y conectividad"
             >
-              <DetailRow label="Dirección IP" value={scan.serverInfo?.ip || scan.dnsRecords?.a?.[0] || 'N/A'} />
-              <DetailRow label="Proveedor de hosting" value={scan.serverInfo?.provider || 'N/A'} />
-              <DetailRow label="Ubicación del servidor" value={scan.serverInfo?.location || 'N/A'} />
-              <DetailRow label="Tiempo de respuesta" value={scan.serverInfo?.responseTime || 'N/A'} />
+              <DetailRow label="Dirección IP" value={scan.serverInfo?.ip || scan.dnsRecords?.a?.[0] || 'N/A'} hint="La dirección IP es el identificador numérico único del servidor en Internet. Permite localizar dónde está alojado el sitio web y detectar posibles exposiciones de infraestructura." />
+              <DetailRow label="Proveedor de hosting" value={scan.serverInfo?.provider || 'N/A'} hint="El proveedor de hosting es la empresa que aloja el servidor donde funciona el sitio web. Conocerlo permite evaluar la calidad del servicio, soporte y garantías de seguridad disponibles." />
+              <DetailRow label="Ubicación del servidor" value={scan.serverInfo?.location || 'N/A'} hint="La ubicación geográfica del servidor afecta la velocidad de acceso para los usuarios y el cumplimiento de regulaciones de protección de datos según el país." />
+              <DetailRow label="Tiempo de respuesta" value={scan.serverInfo?.responseTime || 'N/A'} hint="Es el tiempo que tarda el servidor en responder a una solicitud. Un tiempo alto indica problemas de rendimiento que afectan la experiencia del usuario y pueden reducir conversiones." />
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
+                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {!scan.serverInfo?.ip ? 'Sin información del servidor — no es posible evaluar la exposición de infraestructura' :
+                   'La ubicación y proveedor del servidor afectan la latencia, cumplimiento de regulaciones de datos y la resiliencia ante desastres'}
+                </p>
+              </div>
             </SectionCard>
 
             {/* Certificación Digital */}
@@ -962,10 +1006,23 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                 : { text: 'No válido', color: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' }
               }
             >
-              <DetailRow label="Estado" value={scan.sslInfo?.valid ? '✓ Certificado válido' : '✗ Certificado inválido'} valueClass={scan.sslInfo?.valid ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'} />
-              <DetailRow label="Autoridad emisora" value={scan.sslInfo?.issuer || 'N/A'} />
-              <DetailRow label="Fecha de expiración" value={scan.sslInfo?.validTo ? new Date(scan.sslInfo.validTo).toLocaleDateString('es-ES', { dateStyle: 'long' }) : 'N/A'} />
-              <DetailRow label="Días hasta renovación" value={scan.sslInfo?.daysRemaining != null ? `${scan.sslInfo.daysRemaining} días` : 'N/A'} valueClass={scan.sslInfo?.daysRemaining != null && scan.sslInfo.daysRemaining < 30 ? 'text-orange-600 font-semibold' : ''} />
+              <DetailRow label="Estado" value={scan.sslInfo?.valid ? '✓ Certificado válido' : '✗ Certificado inválido'} valueClass={scan.sslInfo?.valid ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'} hint="El certificado SSL/TLS cifra la comunicación entre el navegador del usuario y el servidor. Si es inválido, los datos como contraseñas y tarjetas de crédito pueden ser interceptados." />
+              <DetailRow label="Autoridad emisora" value={scan.sslInfo?.issuer || 'N/A'} hint="Es la entidad de confianza que emitió el certificado digital (ej: Let's Encrypt, DigiCert). Una autoridad reconocida garantiza que la identidad del sitio ha sido verificada." />
+              <DetailRow label="Fecha de expiración" value={scan.sslInfo?.validTo ? new Date(scan.sslInfo.validTo).toLocaleDateString('es-ES', { dateStyle: 'long' }) : 'N/A'} hint="Fecha en la que el certificado deja de ser válido. Después de esta fecha, los navegadores mostrarán advertencias de seguridad y los usuarios no podrán acceder de forma segura." />
+              <DetailRow label="Días hasta renovación" value={scan.sslInfo?.daysRemaining != null ? `${scan.sslInfo.daysRemaining} días` : 'N/A'} valueClass={scan.sslInfo?.daysRemaining != null && scan.sslInfo.daysRemaining < 30 ? 'text-orange-600 font-semibold' : ''} hint="Indica cuántos días quedan antes de que el certificado expire. Se recomienda renovar con al menos 30 días de anticipación para evitar interrupciones del servicio." />
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
+                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {!scan.sslInfo?.valid
+                    ? 'Certificado inválido — los datos de clientes y transacciones están expuestos. Riesgo de pérdida de confianza y sanciones regulatorias'
+                    : scan.sslInfo?.daysRemaining != null && scan.sslInfo.daysRemaining < 30
+                    ? 'Certificado próximo a expirar — riesgo de interrupción del servicio y pérdida de transacciones si no se renueva a tiempo'
+                    : 'Certificado vigente — las comunicaciones con clientes están cifradas y protegidas correctamente'}
+                </p>
+              </div>
             </SectionCard>
 
             {/* Resolución de Nombres */}
@@ -974,12 +1031,22 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
               title="Resolución de Nombres (DNS)"
               subtitle="Registros de dominio y enrutamiento"
             >
-              <DetailRow label="Registro A (IPv4)" value={scan.dnsRecords?.a?.join(', ') || 'N/A'} />
-              <DetailRow label="Registros MX (Correo)" value={scan.dnsRecords?.mx?.map((m: any) => m.exchange || m).join(', ') || 'N/A'} />
-              <div className="py-1">
-                <span className="text-sm text-gray-500 dark:text-gray-400">Registros TXT (Verificación)</span>
-                <p className="mt-1 text-xs text-gray-700 dark:text-gray-300 break-all line-clamp-3 bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg">
-                  {scan.dnsRecords?.txt?.slice(0, 2).map((t: any) => Array.isArray(t) ? t.join(' ') : t).join(', ') || 'N/A'}
+              <DetailRow label="Registro A (IPv4)" value={scan.dnsRecords?.a?.join(', ') || 'N/A'} hint="El registro A vincula el nombre de dominio con la dirección IP del servidor. Es el registro fundamental que permite que los usuarios encuentren el sitio al escribir la URL." />
+              <DetailRow label="Registros MX (Correo)" value={scan.dnsRecords?.mx?.map((m: any) => m.exchange || m).join(', ') || 'N/A'} hint="Los registros MX definen qué servidores gestionan el correo electrónico del dominio. Sin ellos, la empresa no puede recibir emails y es vulnerable a suplantación de identidad." />
+              <DetailRow 
+                label="Registros TXT (Verificación)" 
+                value={scan.dnsRecords?.txt?.slice(0, 2).map((t: any) => Array.isArray(t) ? t.join(' ') : t).join(', ') || 'N/A'}
+                hint="Los registros TXT contienen información de verificación del dominio, como configuraciones de SPF (anti-spam) y DKIM (firma de correos). Son clave para evitar que suplanten el correo de la empresa."
+              />
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
+                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {!scan.dnsRecords?.mx || scan.dnsRecords.mx.length === 0
+                    ? 'Sin registros MX — el correo corporativo puede ser vulnerable a suplantación de identidad (phishing)'
+                    : 'Configuración DNS activa — asegura la disponibilidad del dominio y protege la reputación del correo electrónico'}
                 </p>
               </div>
             </SectionCard>
@@ -992,27 +1059,28 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
               badge={{ text: `${activeHeaders}/6`, color: activeHeaders >= 5 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : activeHeaders >= 3 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' }}
             >
               {[
-                { key: 'strict-transport-security', name: 'Strict-Transport-Security', desc: 'Fuerza conexión HTTPS' },
-                { key: 'x-content-type-options', name: 'X-Content-Type-Options', desc: 'Previene MIME sniffing' },
-                { key: 'x-frame-options', name: 'X-Frame-Options', desc: 'Protege contra clickjacking' },
-                { key: 'content-security-policy', name: 'Content-Security-Policy', desc: 'Control de recursos' },
-                { key: 'x-xss-protection', name: 'X-XSS-Protection', desc: 'Filtro anti-XSS' },
-                { key: 'referrer-policy', name: 'Referrer-Policy', desc: 'Controla referencia' },
+                { key: 'strict-transport-security', name: 'Strict-Transport-Security', desc: 'Fuerza conexión HTTPS', hint: 'Obliga al navegador a usar siempre HTTPS, evitando que datos sensibles viajen sin cifrar por la red' },
+                { key: 'x-content-type-options', name: 'X-Content-Type-Options', desc: 'Previene MIME sniffing', hint: 'Impide que el navegador interprete archivos de forma diferente a su tipo declarado, previniendo ataques de inyección de código' },
+                { key: 'x-frame-options', name: 'X-Frame-Options', desc: 'Protege contra clickjacking', hint: 'Evita que el sitio sea insertado dentro de un iframe en otro sitio malicioso, protegiendo a los usuarios de hacer clics engañosos' },
+                { key: 'content-security-policy', name: 'Content-Security-Policy', desc: 'Control de recursos', hint: 'Define qué recursos (scripts, imágenes, estilos) puede cargar la página. Es la defensa más potente contra ataques XSS e inyección de contenido' },
+                { key: 'x-xss-protection', name: 'X-XSS-Protection', desc: 'Filtro anti-XSS', hint: 'Activa el filtro del navegador que detecta y bloquea ataques de Cross-Site Scripting (XSS), donde un atacante inyecta código malicioso' },
+                { key: 'referrer-policy', name: 'Referrer-Policy', desc: 'Controla referencia', hint: 'Controla qué información de la URL se envía cuando el usuario navega a otro sitio. Protege la privacidad y evita filtrar datos internos' },
               ].map(h => (
-                <div key={h.key} className="flex items-center justify-between py-1.5">
-                  <div className="min-w-0">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{h.name}</span>
-                    <p className="text-[10px] text-gray-400">{h.desc}</p>
-                  </div>
-                  <span className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-full font-semibold ${
-                    scan.securityHeaders?.headers?.[h.key]
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                  }`}>
-                    {scan.securityHeaders?.headers?.[h.key] ? '✓ Activa' : '✗ Ausente'}
-                  </span>
-                </div>
+                <HeaderRow key={h.key} name={h.name} desc={h.desc} hint={h.hint} isActive={!!scan.securityHeaders?.headers?.[h.key]} />
               ))}
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
+                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {activeHeaders < 3
+                    ? 'Cabeceras insuficientes — la aplicación es vulnerable a ataques XSS, clickjacking e inyección de contenido que pueden comprometer datos de usuarios'
+                    : activeHeaders < 5
+                    ? 'Protección parcial — algunas cabeceras faltan, lo que deja vectores de ataque abiertos que podrían afectar la integridad de la plataforma'
+                    : 'Cabeceras correctamente configuradas — la aplicación cuenta con protección robusta contra ataques comunes del navegador'}
+                </p>
+              </div>
             </SectionCard>
 
             {/* Stack Tecnológico */}
@@ -1035,6 +1103,15 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                   </div>
                 ))}
               </div>
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
+                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  La exposición de tecnologías y versiones facilita ataques dirigidos. Mantener versiones actualizadas reduce el riesgo de exploits conocidos
+                </p>
+              </div>
             </SectionCard>
 
             {/* Rendimiento Web */}
@@ -1043,9 +1120,18 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
               title="Rendimiento y Velocidad"
               subtitle="Métricas de rendimiento de la aplicación web"
             >
-              <DetailRow label="Tiempo de carga" value={scan.performance?.loadTime || 'N/A'} />
-              <DetailRow label="Tamaño de la página" value={scan.performance?.size || 'N/A'} />
-              <DetailRow label="Peticiones HTTP" value={scan.performance?.requests || 'N/A'} />
+              <DetailRow label="Tiempo de carga" value={scan.performance?.loadTime || 'N/A'} hint="Es el tiempo total que tarda la página en cargarse completamente. Google recomienda menos de 3 segundos; cada segundo adicional aumenta el abandono de usuarios." />
+              <DetailRow label="Tamaño de la página" value={scan.performance?.size || 'N/A'} hint="El peso total de todos los archivos que se descargan al abrir la página (HTML, CSS, imágenes, scripts). Páginas más livianas cargan más rápido, especialmente en móviles." />
+              <DetailRow label="Peticiones HTTP" value={scan.performance?.requests || 'N/A'} hint="La cantidad de solicitudes que el navegador hace al servidor para cargar la página. Más peticiones significa más tiempo de carga. Se recomienda optimizar y reducir su número." />
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
+                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  El rendimiento afecta directamente la experiencia del usuario y las tasas de conversión. Cada segundo adicional de carga puede reducir las conversiones hasta un 7%
+                </p>
+              </div>
             </SectionCard>
 
             {/* Servicios de Red */}
@@ -1072,6 +1158,17 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                   </div>
                 ))}
               </div>
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
+                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {(scan.openPorts || []).length > 3
+                    ? `${(scan.openPorts || []).length} puertos expuestos — superficie de ataque amplia que aumenta el riesgo de acceso no autorizado a sistemas internos`
+                    : 'Exposición de puertos controlada — la superficie de ataque es reducida, minimizando vectores de intrusión'}
+                </p>
+              </div>
             </SectionCard>
 
             {/* Protección Perimetral */}
@@ -1080,9 +1177,22 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
               title="Protección Perimetral"
               subtitle="Firewall de aplicaciones web y mitigación de ataques"
             >
-              <DetailRow label="Web Application Firewall (WAF)" value={scan.firewall?.waf || 'No detectado'} valueClass={scan.firewall?.waf && scan.firewall.waf !== 'No detectado' ? 'text-emerald-600 font-semibold' : 'text-gray-500'} />
-              <DetailRow label="Protección Anti-DDoS" value={scan.firewall?.ddos ? '✓ Activa' : '✗ No detectada'} valueClass={scan.firewall?.ddos ? 'text-emerald-600 font-semibold' : 'text-red-500'} />
-              <DetailRow label="Limitación de peticiones (Rate Limiting)" value={scan.firewall?.rateLimit ? '✓ Activo' : '✗ No detectado'} valueClass={scan.firewall?.rateLimit ? 'text-emerald-600 font-semibold' : 'text-red-500'} />
+              <DetailRow label="Web Application Firewall (WAF)" value={scan.firewall?.waf || 'No detectado'} valueClass={scan.firewall?.waf && scan.firewall.waf !== 'No detectado' ? 'text-emerald-600 font-semibold' : 'text-gray-500'} hint="Un WAF es un escudo que filtra y bloquea tráfico malicioso antes de que llegue a la aplicación. Protege contra ataques como inyección SQL, XSS y otros intentos de hackeo." />
+              <DetailRow label="Protección Anti-DDoS" value={scan.firewall?.ddos ? '✓ Activa' : '✗ No detectada'} valueClass={scan.firewall?.ddos ? 'text-emerald-600 font-semibold' : 'text-red-500'} hint="Protección contra ataques de Denegación de Servicio Distribuido, donde miles de solicitudes falsas intentan saturar el servidor para dejarlo fuera de línea e interrumpir el negocio." />
+              <DetailRow label="Limitación de peticiones (Rate Limiting)" value={scan.firewall?.rateLimit ? '✓ Activo' : '✗ No detectado'} valueClass={scan.firewall?.rateLimit ? 'text-emerald-600 font-semibold' : 'text-red-500'} hint="Limita la cantidad de solicitudes que un usuario puede hacer en un período de tiempo. Previene ataques de fuerza bruta contra contraseñas y abuso de APIs." />
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
+                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {!scan.firewall?.waf && !scan.firewall?.ddos
+                    ? 'Sin protección perimetral — la aplicación está expuesta a ataques DDoS, inyección SQL y otros ataques que pueden causar caída total del servicio'
+                    : !scan.firewall?.ddos
+                    ? 'Sin protección Anti-DDoS — un ataque de denegación de servicio puede interrumpir las operaciones del negocio'
+                    : 'Protección perimetral activa — el servicio cuenta con capas de defensa que protegen la continuidad operativa'}
+                </p>
+              </div>
             </SectionCard>
           </div>
 
@@ -1143,32 +1253,107 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
             )}
           </SectionCard>
 
-          {/* ── Cumplimiento Normativo — ancho completo ── */}
+          {/* ── Impacto al Negocio — ancho completo ── */}
           <SectionCard
-            icon={<ShieldCheck className="h-5 w-5 text-blue-600" />}
-            title="Cumplimiento Normativo"
-            subtitle="Evaluación del nivel de adherencia a estándares internacionales"
+            icon={<TrendingUp className="h-5 w-5 text-purple-600" />}
+            title="Impacto al Negocio"
+            subtitle="Evaluación del impacto potencial de los hallazgos en la operación empresarial"
           >
-            {scan.compliance?.iso27001?.score !== undefined || scan.compliance?.gdpr?.compliant !== undefined ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {scan.compliance?.iso27001?.score !== undefined && (
-                  <ComplianceCard
-                    label="ISO 27001"
-                    description="Sistema de Gestión de Seguridad de la Información"
-                    percentage={scan.compliance.iso27001.score}
-                  />
-                )}
-                {scan.compliance?.gdpr?.compliant !== undefined && (
-                  <ComplianceCard
-                    label="GDPR"
-                    description="Reglamento General de Protección de Datos"
-                    percentage={scan.compliance.gdpr.compliant ? 100 : 50}
-                  />
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 text-center py-6">No se encontraron datos de cumplimiento normativo para esta evaluación</p>
-            )}
+            {(() => {
+              const criticalCount = (scan.vulnerabilities || []).filter((v: any) => v.severity === 'CRITICAL').length;
+              const highCount = (scan.vulnerabilities || []).filter((v: any) => v.severity === 'HIGH').length;
+              const mediumCount = (scan.vulnerabilities || []).filter((v: any) => v.severity === 'MEDIUM').length;
+              const totalVulns = (scan.vulnerabilities || []).length;
+              const sslOk = scan.sslInfo?.valid;
+              const headersCount = ['strict-transport-security', 'x-content-type-options', 'x-frame-options', 'content-security-policy', 'x-xss-protection', 'referrer-policy']
+                .filter(h => scan.securityHeaders?.headers?.[h]).length;
+
+              const impactLevel = criticalCount > 0 ? 'Crítico' : highCount > 0 ? 'Alto' : mediumCount > 0 ? 'Moderado' : 'Bajo';
+              const impactColor = criticalCount > 0 ? 'text-red-600' : highCount > 0 ? 'text-orange-600' : mediumCount > 0 ? 'text-amber-600' : 'text-emerald-600';
+              const impactBg = criticalCount > 0 ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800' : highCount > 0 ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800' : mediumCount > 0 ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800' : 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800';
+
+              return (
+                <div className="space-y-5">
+                  {/* Nivel de impacto general */}
+                  <div className={`rounded-xl p-5 border ${impactBg}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Nivel de Impacto General</h4>
+                        <p className={`text-3xl font-black mt-1 ${impactColor}`}>{impactLevel}</p>
+                      </div>
+                      <div className={`w-16 h-16 rounded-2xl flex items-center justify-center ${impactBg}`}>
+                        <AlertTriangle className={`h-8 w-8 ${impactColor}`} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Categorías de impacto */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4 border border-gray-100 dark:border-gray-700/50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Database className="h-4 w-4 text-blue-500" />
+                        <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Confidencialidad</h5>
+                      </div>
+                      <p className={`text-lg font-black ${criticalCount > 0 || !sslOk ? 'text-red-600' : highCount > 0 ? 'text-orange-600' : 'text-emerald-600'}`}>
+                        {criticalCount > 0 || !sslOk ? 'Alto riesgo' : highCount > 0 ? 'Riesgo moderado' : 'Controlado'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {!sslOk ? 'Certificado SSL inválido expone datos en tránsito' : criticalCount > 0 ? 'Vulnerabilidades críticas pueden exponer datos sensibles' : 'Los datos están adecuadamente protegidos'}
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4 border border-gray-100 dark:border-gray-700/50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Shield className="h-4 w-4 text-purple-500" />
+                        <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Integridad</h5>
+                      </div>
+                      <p className={`text-lg font-black ${headersCount < 3 ? 'text-red-600' : headersCount < 5 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                        {headersCount < 3 ? 'Vulnerable' : headersCount < 5 ? 'Parcialmente protegido' : 'Protegido'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {headersCount}/6 cabeceras de seguridad activas para proteger la integridad de la información
+                      </p>
+                    </div>
+
+                    <div className="bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4 border border-gray-100 dark:border-gray-700/50">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Activity className="h-4 w-4 text-green-500" />
+                        <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider">Disponibilidad</h5>
+                      </div>
+                      <p className={`text-lg font-black ${scan.firewall?.ddos ? 'text-emerald-600' : 'text-orange-600'}`}>
+                        {scan.firewall?.ddos ? 'Protegido' : 'Expuesto'}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {scan.firewall?.ddos ? 'Protección Anti-DDoS activa, servicio resistente a ataques' : 'Sin protección Anti-DDoS, riesgo de interrupción del servicio'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Resumen de riesgo financiero estimado */}
+                  <div className="bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4 border border-gray-100 dark:border-gray-700/50">
+                    <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Resumen de Riesgo Operacional</h5>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Vulnerabilidades que requieren acción inmediata</span>
+                        <span className={`text-sm font-bold ${criticalCount + highCount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{criticalCount + highCount}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Riesgo de fuga de datos</span>
+                        <span className={`text-sm font-bold ${!sslOk || criticalCount > 0 ? 'text-red-600' : 'text-emerald-600'}`}>{!sslOk || criticalCount > 0 ? 'Alto' : 'Bajo'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Riesgo de interrupción de servicio</span>
+                        <span className={`text-sm font-bold ${!scan.firewall?.ddos ? 'text-orange-600' : 'text-emerald-600'}`}>{!scan.firewall?.ddos ? 'Moderado' : 'Bajo'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-600 dark:text-gray-400">Exposición de infraestructura</span>
+                        <span className={`text-sm font-bold ${(scan.openPorts || []).length > 3 ? 'text-orange-600' : 'text-emerald-600'}`}>{(scan.openPorts || []).length > 3 ? 'Alta' : 'Controlada'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </SectionCard>
         </div>
       </div>
@@ -1208,12 +1393,68 @@ function SectionCard({ icon, title, subtitle, badge, children }: {
   )
 }
 
-const DetailRow = ({ label, value, valueClass = '' }: { label: string; value: any; valueClass?: string }) => (
-  <div className="flex items-center justify-between py-1">
-    <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
-    <span className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${valueClass}`}>{value}</span>
-  </div>
-)
+const DetailRow = ({ label, value, valueClass = '', hint }: { label: string; value: any; valueClass?: string; hint?: string }) => {
+  const [showHint, setShowHint] = useState(false)
+  return (
+    <div className="py-1.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm text-gray-500 dark:text-gray-400">{label}</span>
+          {hint && (
+            <button
+              onClick={() => setShowHint(!showHint)}
+              className="text-amber-500 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300 transition-colors flex-shrink-0"
+              title="Ver explicación"
+            >
+              <HelpCircle className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        <span className={`text-sm font-medium text-gray-900 dark:text-gray-100 ${valueClass}`}>{value}</span>
+      </div>
+      {hint && showHint && (
+        <div className="mt-1.5 ml-0 text-[11px] text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 px-3 py-2 rounded-lg leading-relaxed">
+          {hint}
+        </div>
+      )}
+    </div>
+  )
+}
+
+const HeaderRow = ({ name, desc, hint, isActive }: { name: string; desc: string; hint: string; isActive: boolean }) => {
+  const [showHint, setShowHint] = useState(false)
+  return (
+    <div className="py-1.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <div>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{name}</span>
+            <p className="text-[10px] text-gray-400">{desc}</p>
+          </div>
+          <button
+            onClick={() => setShowHint(!showHint)}
+            className="text-amber-500 hover:text-amber-600 dark:text-amber-400 dark:hover:text-amber-300 transition-colors flex-shrink-0"
+            title="Ver explicación"
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        <span className={`flex-shrink-0 text-xs px-2.5 py-1 rounded-full font-semibold ${
+          isActive
+            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+            : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+        }`}>
+          {isActive ? '✓ Activa' : '✗ Ausente'}
+        </span>
+      </div>
+      {showHint && (
+        <div className="mt-1.5 text-[11px] text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 px-3 py-2 rounded-lg leading-relaxed">
+          {hint}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const MetricCard = ({ icon, label, value, status }: { icon: React.ReactNode; label: string; value: any; status: 'success' | 'danger' | 'warning' | 'info' }) => {
   const styles = {
