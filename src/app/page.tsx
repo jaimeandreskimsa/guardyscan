@@ -89,20 +89,35 @@ export default function HomePage() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [chatMessages, chatTyping]);
 
-  // Dashboard visibility observer
+  // Dashboard visibility observer + auto-repeat every 5 s
   useEffect(() => {
     if (!dashRef.current) return;
+    let loop: ReturnType<typeof setInterval>;
+    const replay = () => {
+      setDashVisible(false);
+      setTimeout(() => setDashVisible(true), 80);
+    };
     const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setDashVisible(true); obs.disconnect(); } },
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setDashVisible(true);
+          loop = setInterval(replay, 5000);
+          obs.disconnect();
+        }
+      },
       { threshold: 0.15 }
     );
     obs.observe(dashRef.current);
-    return () => obs.disconnect();
+    return () => { obs.disconnect(); clearInterval(loop); };
   }, []);
 
   // Count-up numbers when dashboard becomes visible
   useEffect(() => {
-    if (!dashVisible) return;
+    // Reset numbers to 0 on hide
+    if (!dashVisible) {
+      dashNums.current.forEach(el => { if (el) el.textContent = '0'; });
+      return;
+    }
     // [score, hallazgos, donutCenter, stat1, stat2, stat3, stat4]
     const targets = [32, 87, 68, 24, 6, 18, 6];
     dashNums.current.forEach((el, i) => {
