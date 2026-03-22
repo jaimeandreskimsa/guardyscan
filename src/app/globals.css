@@ -160,6 +160,15 @@
   transform: translateY(-3px);
 }
 
+/* ── Card Glow Light (for light sections) ── */
+.card-glow-light {
+  transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+.card-glow-light:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(99,102,241,0.08);
+  transform: translateY(-3px);
+}
+
 /* ── Noise Texture Overlay ── */
 .noise-overlay::after {
   content: '';
