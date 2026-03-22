@@ -22,6 +22,16 @@ const fmtPrice = (name: string, period: 'monthly' | 'annual', curr: 'CLP' | 'MXN
   return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, sep);
 };
 
+// ── Chat simulation script ────────────────────────────────────
+const CHAT_SCRIPT = [
+  { q: "¿Cuál es mi mayor riesgo hoy?",
+    a: "Tu mayor riesgo es la falta de cifrado en 3 endpoints expuestos a internet. Te recomiendo priorizar el módulo de vulnerabilidades y cerrar esos hallazgos esta semana." },
+  { q: "¿Cumplo con la Ley 21.663?",
+    a: "Tienes 74 controles pendientes. Los más críticos son los de gestión de incidentes y notificación al CSIRT. Puedo mostrarte el plan de acción paso a paso." },
+  { q: "¿Qué debo hacer primero?",
+    a: "Activa el monitoreo continuo para los 6 proveedores críticos. Eso te cubre el 40% del riesgo de terceros con un solo clic." },
+];
+
 export default function HomePage() {
   const [contactForm, setContactForm] = useState({
     name: "",
@@ -34,23 +44,14 @@ export default function HomePage() {
   const [sending, setSending] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
   const [currency, setCurrency] = useState<'CLP' | 'MXN'>('CLP');
+  const [chatMessages, setChatMessages] = useState<{ type: 'user' | 'ai'; text: string }[]>([]);
+  const [chatTyping, setChatTyping] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [scrollY, setScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX - window.innerWidth / 2, y: e.clientY - window.innerHeight / 2 });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatScrollRef = useRef<HTMLDivElement>(null);
+  const [dashVisible, setDashVisible] = useState(false);
+  const dashRef = useRef<HTMLDivElement>(null);
+  const dashNums = useRef<(HTMLSpanElement | null)[]>([]);
 
   useEffect(() => {
     const els = document.querySelectorAll('.reveal');
@@ -61,6 +62,64 @@ export default function HomePage() {
     els.forEach(el => obs.observe(el));
     return () => obs.disconnect();
   }, []);
+
+  // Chat simulation loop
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const s = (fn: () => void, ms: number) => { const t = setTimeout(fn, ms); timers.push(t); };
+    const run = () => {
+      setChatMessages([]);
+      setChatTyping(false);
+      let t = 600;
+      CHAT_SCRIPT.forEach((item, i) => {
+        s(() => setChatMessages(p => [...p, { type: 'user', text: item.q }]), t); t += 900;
+        s(() => setChatTyping(true), t); t += 1500;
+        s(() => { setChatTyping(false); setChatMessages(p => [...p, { type: 'ai', text: item.a }]); }, t);
+        t += i < CHAT_SCRIPT.length - 1 ? 1100 : 3200;
+      });
+      s(run, t);
+    };
+    run();
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  // Auto-scroll chat to bottom (only inside the container, never the page)
+  useEffect(() => {
+    const el = chatScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [chatMessages, chatTyping]);
+
+  // Dashboard visibility observer
+  useEffect(() => {
+    if (!dashRef.current) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setDashVisible(true); obs.disconnect(); } },
+      { threshold: 0.15 }
+    );
+    obs.observe(dashRef.current);
+    return () => obs.disconnect();
+  }, []);
+
+  // Count-up numbers when dashboard becomes visible
+  useEffect(() => {
+    if (!dashVisible) return;
+    // [score, hallazgos, donutCenter, stat1, stat2, stat3, stat4]
+    const targets = [32, 87, 68, 24, 6, 18, 6];
+    dashNums.current.forEach((el, i) => {
+      if (!el) return;
+      const target = targets[i] ?? 0;
+      if (!target) return;
+      const duration = 1100 + i * 90;
+      const start = performance.now();
+      const step = (now: number) => {
+        const p = Math.min((now - start) / duration, 1);
+        const eased = 1 - (1 - p) ** 3;
+        el.textContent = Math.round(eased * target).toString();
+        if (p < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  }, [dashVisible]);
 
   // Smooth scroll function - fintech style
   const smoothScrollTo = (elementId: string) => {
@@ -172,8 +231,7 @@ export default function HomePage() {
             width: 720, height: 720,
             background: 'radial-gradient(circle, rgba(59,130,246,0.22) 0%, rgba(99,102,241,0.12) 40%, transparent 70%)',
             top: '10%', left: '28%',
-            transform: `translate(-50%,-50%) translate(${mousePos.x * 0.06}px,${mousePos.y * 0.06}px) translateY(${scrollY * 0.18}px)`,
-            transition: 'transform 1s cubic-bezier(.25,.46,.45,.94)',
+            transform: 'translate(-50%,-50%)',
             filter: 'blur(55px)',
           }}
         />
@@ -184,8 +242,6 @@ export default function HomePage() {
             width: 480, height: 480,
             background: 'radial-gradient(circle, rgba(139,92,246,0.18) 0%, rgba(236,72,153,0.08) 50%, transparent 70%)',
             bottom: '5%', right: '8%',
-            transform: `translate(${-mousePos.x * 0.03}px,${-mousePos.y * 0.03}px) translateY(${-scrollY * 0.10}px)`,
-            transition: 'transform 1.4s cubic-bezier(.25,.46,.45,.94)',
             filter: 'blur(65px)',
           }}
         />
@@ -271,10 +327,7 @@ export default function HomePage() {
             <div className="relative hidden lg:block h-[540px]">
 
               {/* Card 1 – Security Score */}
-              <div
-                className="absolute top-0 left-4 w-64 hero-el hero-el-d2"
-                style={{ transform: `translate(${mousePos.x * 0.008}px,${mousePos.y * 0.008}px)`, transition: 'transform 0.9s cubic-bezier(.25,.46,.45,.94)' }}
-              >
+              <div className="absolute top-0 left-4 w-64 hero-el hero-el-d2">
                 <div style={{ animation: 'floatA 6s ease-in-out infinite' }}
                   className="bg-white/[0.05] backdrop-blur-xl border border-white/[0.09] rounded-2xl p-5 shadow-2xl">
                   <div className="flex items-center justify-between mb-4">
@@ -296,10 +349,7 @@ export default function HomePage() {
               </div>
 
               {/* Card 2 – Hallazgos */}
-              <div
-                className="absolute top-24 right-0 w-52 hero-el hero-el-d3"
-                style={{ transform: `translate(${-mousePos.x * 0.012}px,${-mousePos.y * 0.012}px)`, transition: 'transform 1.1s cubic-bezier(.25,.46,.45,.94)' }}
-              >
+              <div className="absolute top-24 right-0 w-52 hero-el hero-el-d3">
                 <div style={{ animation: 'floatB 8s ease-in-out infinite 1s' }}
                   className="bg-white/[0.05] backdrop-blur-xl border border-white/[0.09] rounded-2xl p-5 shadow-2xl">
                   <div className="text-gray-400 text-[11px] font-semibold uppercase tracking-wider mb-4">Hallazgos activos</div>
@@ -322,10 +372,7 @@ export default function HomePage() {
               </div>
 
               {/* Card 3 – ISO compliance donut */}
-              <div
-                className="absolute bottom-8 left-8 w-60 hero-el hero-el-d4"
-                style={{ transform: `translate(${mousePos.x * 0.006}px,${mousePos.y * 0.006}px)`, transition: 'transform 0.8s cubic-bezier(.25,.46,.45,.94)' }}
-              >
+              <div className="absolute bottom-8 left-8 w-60 hero-el hero-el-d4">
                 <div style={{ animation: 'floatC 7s ease-in-out infinite 0.5s' }}
                   className="bg-white/[0.05] backdrop-blur-xl border border-white/[0.09] rounded-2xl p-5 shadow-2xl">
                   <div className="text-gray-400 text-[11px] font-semibold uppercase tracking-wider mb-4">ISO 27001 Compliance</div>
@@ -351,10 +398,7 @@ export default function HomePage() {
               </div>
 
               {/* Card 4 – Guardy AI notification */}
-              <div
-                className="absolute top-[50%] right-6 w-52 hero-el hero-el-d5"
-                style={{ transform: `translate(${-mousePos.x * 0.015}px,${-mousePos.y * 0.015}px)`, transition: 'transform 1.3s cubic-bezier(.25,.46,.45,.94)' }}
-              >
+              <div className="absolute top-[50%] right-6 w-52 hero-el hero-el-d5">
                 <div style={{ animation: 'floatA 9s ease-in-out infinite 2s' }}
                   className="bg-white/[0.05] backdrop-blur-xl border border-white/[0.09] rounded-xl p-4 shadow-2xl">
                   <div className="flex items-start gap-3">
@@ -388,7 +432,7 @@ export default function HomePage() {
       <section id="features" className="relative py-28 px-4 overflow-hidden bg-white">
         {/* Parallax orb */}
         <div className="parallax-orb w-[600px] h-[600px] top-[-100px] right-[-80px] opacity-[0.06]"
-          style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)', transform: `translateY(${scrollY * 0.06}px)` }} />
+          style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }} />
         <div className="container mx-auto max-w-7xl relative z-10">
           {/* Badge + Heading */}
           <div className="text-center mb-16 reveal">
@@ -437,8 +481,8 @@ export default function HomePage() {
       <section className="relative py-28 px-4 overflow-hidden bg-gray-50">
         {/* Parallax orb */}
         <div className="parallax-orb w-[500px] h-[500px] bottom-[-60px] left-[-60px] opacity-[0.05]"
-          style={{ background: 'radial-gradient(circle, #8b5cf6, transparent 70%)', transform: `translateY(${-scrollY * 0.05}px)` }} />
-        <div className="container mx-auto max-w-6xl relative z-10">
+          style={{ background: 'radial-gradient(circle, #8b5cf6, transparent 70%)' }} />
+        <div ref={dashRef} className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16 reveal">
             <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-sm font-medium mb-5">Visibilidad real</div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
@@ -456,11 +500,11 @@ export default function HomePage() {
                 <div className="bg-white p-5 rounded-2xl border border-gray-100">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Score de seguridad consolidado</div>
                   <div className="flex items-end gap-2 mb-1">
-                    <span className="text-5xl font-extrabold text-gray-900">32</span>
+                    <span ref={el => { dashNums.current[0] = el; }} className="text-5xl font-extrabold text-gray-900">0</span>
                     <span className="text-xl text-gray-400 mb-1">/ 100</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2 mb-2">
-                    <div className="bg-gradient-to-r from-orange-400 to-amber-400 h-2 rounded-full" style={{ width: "32%" }} />
+                    <div className="bg-gradient-to-r from-orange-400 to-amber-400 h-2 rounded-full" style={{ width: dashVisible ? '32%' : '0%', transition: 'width 1.3s ease 0.4s' }} />
                   </div>
                   <p className="text-sm text-gray-500">Riesgo moderado basado en 24 escaneos</p>
                 </div>
@@ -468,7 +512,9 @@ export default function HomePage() {
               <div className="reveal reveal-d2 p-[1px] rounded-2xl bg-gradient-to-br from-red-300/40 to-purple-300/10 card-glow-light">
                 <div className="bg-white p-5 rounded-2xl border border-gray-100">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Hallazgos por prioridad</div>
-                  <div className="text-5xl font-extrabold text-gray-900 mb-2">87</div>
+                  <div className="text-5xl font-extrabold text-gray-900 mb-2">
+                    <span ref={el => { dashNums.current[1] = el; }}>0</span>
+                  </div>
                   <div className="flex gap-3 text-sm">
                     <span className="text-red-500 font-semibold">15 altos</span>
                     <span className="text-amber-500 font-semibold">68 medios</span>
@@ -494,7 +540,9 @@ export default function HomePage() {
                   <div className="relative w-28 h-28 flex-shrink-0">
                     <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                       <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f3f4f6" strokeWidth="3" />
-                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="url(#donutGrad)" strokeWidth="3" strokeDasharray="32 68" strokeLinecap="round" />
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="url(#donutGrad)" strokeWidth="3"
+                        strokeDasharray={dashVisible ? '32 68' : '0 100'} strokeLinecap="round"
+                        className={dashVisible ? 'donut-draw' : ''} />
                       <defs>
                         <linearGradient id="donutGrad" x1="0%" y1="0%" x2="100%" y2="0%">
                           <stop offset="0%" stopColor="#f97316" />
@@ -503,7 +551,7 @@ export default function HomePage() {
                       </defs>
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-2xl font-extrabold text-gray-900">68</span>
+                      <span ref={el => { dashNums.current[2] = el; }} className="text-2xl font-extrabold text-gray-900">0</span>
                       <span className="text-xs text-gray-400">/ 100</span>
                     </div>
                   </div>
@@ -519,7 +567,14 @@ export default function HomePage() {
                 <div className="flex items-end gap-1 h-16">
                   {[40, 55, 35, 60, 45, 70, 50].map((h, i) => (
                     <div key={i} className="flex-1 rounded-t"
-                      style={{ height: `${h}%`, background: `linear-gradient(to top, #3b82f6, #6366f1)`, opacity: 0.7 + i * 0.04 }} />
+                      style={{
+                        height: `${h}%`,
+                        background: `linear-gradient(to top, #3b82f6, #6366f1)`,
+                        opacity: 0.7 + i * 0.04,
+                        transform: dashVisible ? 'scaleY(1)' : 'scaleY(0)',
+                        transformOrigin: 'bottom',
+                        transition: `transform 0.55s ease ${0.3 + i * 0.07}s`,
+                      }} />
                   ))}
                 </div>
               </div>
@@ -533,10 +588,12 @@ export default function HomePage() {
               { label: "Proveedores monitoreados", value: "6", grad: "from-purple-300/40 to-violet-300/10", delay: "reveal-d2" },
               { label: "Activos críticos", value: "18", grad: "from-orange-300/40 to-amber-300/10", delay: "reveal-d3" },
               { label: "Documentos centralizados", value: "6", grad: "from-teal-300/40 to-green-300/10", delay: "reveal-d4" },
-            ].map((s) => (
+            ].map((s, si) => (
               <div key={s.label} className={`reveal ${s.delay} p-[1px] rounded-2xl bg-gradient-to-br ${s.grad} card-glow-light`}>
                 <div className="bg-white p-5 rounded-2xl text-center border border-gray-100">
-                  <div className="text-3xl font-extrabold text-gray-900">{s.value}</div>
+                  <div className="text-3xl font-extrabold text-gray-900">
+                    <span ref={el => { dashNums.current[3 + si] = el; }}>0</span>
+                  </div>
                   <div className="text-sm text-gray-500 mt-1">{s.label}</div>
                 </div>
               </div>
@@ -551,9 +608,9 @@ export default function HomePage() {
       <section className="relative py-28 px-4 overflow-hidden bg-white">
         {/* Parallax orbs */}
         <div className="parallax-orb w-[700px] h-[700px] top-[-200px] left-[-150px] opacity-[0.04]"
-          style={{ background: 'radial-gradient(circle, #3b82f6, transparent 70%)', transform: `translateY(${scrollY * 0.08}px)` }} />
+          style={{ background: 'radial-gradient(circle, #3b82f6, transparent 70%)' }} />
         <div className="parallax-orb w-[400px] h-[400px] bottom-[-100px] right-[10%] opacity-[0.05]"
-          style={{ background: 'radial-gradient(circle, #8b5cf6, transparent 70%)', transform: `translateY(${-scrollY * 0.06}px)` }} />
+          style={{ background: 'radial-gradient(circle, #8b5cf6, transparent 70%)' }} />
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16 reveal">
             <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-medium mb-5">
@@ -580,27 +637,48 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right — Chat mockup */}
+            {/* Right — Animated Chat */}
             <div className="reveal reveal-d2 p-[1px] rounded-2xl bg-gradient-to-br from-blue-300/40 via-indigo-300/20 to-purple-300/10 card-glow-light">
-              <div className="bg-white p-5 rounded-2xl border border-gray-100 space-y-4">
-                <div className="flex items-center gap-2 mb-2">
+              <div className="bg-white p-5 rounded-2xl border border-gray-100">
+                {/* Header */}
+                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
                   <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
                   <span className="text-xs text-gray-500 font-medium">Guardy AI — activo</span>
+                  <span className="ml-auto text-[10px] text-gray-300 font-mono">encrypted · guardy.ai</span>
                 </div>
-                {[
-                  { q: "¿Cuál es mi mayor riesgo hoy?", a: "Tu mayor riesgo es la falta de cifrado en 3 endpoints expuestos a internet. Te recomiendo priorizar el módulo de vulnerabilidades y cerrar esos hallazgos esta semana." },
-                  { q: "¿Cumplo con la Ley 21.663?", a: "Tienes 74 controles pendientes. Los más críticos son los de gestión de incidentes y notificación al CSIRT. Puedo mostrarte el plan de acción paso a paso." },
-                  { q: "¿Qué debo hacer primero?", a: "Activa el monitoreo continuo para los 6 proveedores críticos. Eso te cubre el 40% del riesgo de terceros con un solo clic." },
-                ].map((item, i) => (
-                  <div key={i} className="space-y-2">
-                    <div className="flex justify-end">
-                      <div className="bg-blue-600 text-white text-sm rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-xs">{item.q}</div>
+                {/* Messages */}
+                <div ref={chatScrollRef} className="space-y-3 h-72 overflow-y-auto pr-1">
+                  {chatMessages.map((msg, i) => (
+                    <div key={i} className={`flex chat-bubble ${ msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`text-sm rounded-2xl px-4 py-2.5 max-w-[82%] leading-relaxed ${
+                        msg.type === 'user'
+                          ? 'bg-blue-600 text-white rounded-tr-sm'
+                          : 'bg-gray-100 border border-gray-200 text-gray-700 rounded-tl-sm'
+                      }`}>
+                        {msg.text}
+                      </div>
                     </div>
-                    <div className="flex justify-start">
-                      <div className="bg-gray-100 border border-gray-200 text-gray-700 text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-sm leading-relaxed">{item.a}</div>
+                  ))}
+                  {chatTyping && (
+                    <div className="flex justify-start chat-bubble">
+                      <div className="bg-gray-100 border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:0ms]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:160ms]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce [animation-delay:320ms]" />
+                      </div>
                     </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+                {/* Input bar (decorative) */}
+                <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-2">
+                  <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-300 select-none">
+                    Escribe una pregunta...
                   </div>
-                ))}
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0">
+                    <ArrowRight className="h-3.5 w-3.5 text-white" />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -612,7 +690,7 @@ export default function HomePage() {
       {/* ─────────────────────── */}
       <section className="relative py-28 px-4 overflow-hidden bg-gray-50">
         <div className="parallax-orb w-[500px] h-[500px] top-[10%] right-[-80px] opacity-[0.05]"
-          style={{ background: 'radial-gradient(circle, #06b6d4, transparent 70%)', transform: `translateY(${scrollY * 0.05}px)` }} />
+          style={{ background: 'radial-gradient(circle, #06b6d4, transparent 70%)' }} />
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16 reveal">
             <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-200 border border-gray-300 text-gray-600 text-sm font-medium mb-5">Casos de uso</div>
@@ -647,7 +725,7 @@ export default function HomePage() {
       {/* ──────────────────────────── */}
       <section className="relative py-28 px-4 overflow-hidden bg-white">
         <div className="parallax-orb w-[600px] h-[600px] bottom-[-150px] left-[5%] opacity-[0.04]"
-          style={{ background: 'radial-gradient(circle, #10b981, transparent 70%)', transform: `translateY(${-scrollY * 0.04}px)` }} />
+          style={{ background: 'radial-gradient(circle, #10b981, transparent 70%)' }} />
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16 reveal">
             <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-green-50 border border-green-100 text-green-600 text-sm font-medium mb-5">Cumplimiento</div>
@@ -682,7 +760,7 @@ export default function HomePage() {
       {/* ──────────────────────── */}
       <section className="relative py-28 px-4 overflow-hidden bg-gray-50">
         <div className="parallax-orb w-[700px] h-[700px] top-[-100px] right-[-100px] opacity-[0.05]"
-          style={{ background: 'radial-gradient(circle, #a855f7, transparent 70%)', transform: `translateY(${scrollY * 0.07}px)` }} />
+          style={{ background: 'radial-gradient(circle, #a855f7, transparent 70%)' }} />
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16 reveal">
             <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-purple-600 text-sm font-medium mb-5">Diferenciación</div>
@@ -731,8 +809,8 @@ export default function HomePage() {
       {/* ─────────────────────── */}
       <section id="pricing" className="relative py-28 px-4 overflow-hidden bg-gray-50">
         <div className="parallax-orb w-[700px] h-[700px] top-[-100px] left-[20%] opacity-[0.05]"
-          style={{ background: 'radial-gradient(circle, #3b82f6, transparent 70%)', transform: `translateY(${scrollY * 0.05}px)` }} />
-        <div className="container mx-auto max-w-6xl relative z-10">
+          style={{ background: 'radial-gradient(circle, #3b82f6, transparent 70%)' }} />
+        <div className="container mx-auto max-w-7xl relative z-10">
           <div className="text-center mb-12 reveal">
             <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-medium mb-5">Planes</div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
@@ -773,7 +851,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {[
               {
                 badge: "Entrada", name: "Free", monthly: 0, annual: 0,
@@ -854,7 +932,7 @@ export default function HomePage() {
       {/* ─────────────────────── */}
       <section id="contact" className="relative py-28 px-4 overflow-hidden bg-white">
         <div className="parallax-orb w-[500px] h-[500px] bottom-[-80px] right-[-80px] opacity-[0.04]"
-          style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)', transform: `translateY(${-scrollY * 0.05}px)` }} />
+          style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }} />
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16 reveal">
             <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-medium mb-5">💬 Contacto</div>
@@ -892,7 +970,7 @@ export default function HomePage() {
                   <p className="text-sm text-blue-100 mb-3">Respuesta en menos de 24 horas hábiles para todos los planes.</p>
                   <div className="flex items-center gap-2 text-sm font-medium text-white">
                     <Phone className="h-4 w-4" />
-                    +56 9 8765 4321
+                    +56 9 9337 2630
                   </div>
                 </div>
               </div>
