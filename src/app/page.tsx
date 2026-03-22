@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Shield, Lock, FileCheck, TrendingUp, Users, Zap, ArrowRight, Play, Sparkles, ChevronRight, Globe, BarChart3, Eye, Mail, Phone, MapPin, Send, AlertTriangle, Activity, Server, Wifi, Database, Monitor } from "lucide-react";
+import { Check, Shield, Lock, FileCheck, TrendingUp, Users, Zap, ArrowRight, Globe, BarChart3, Eye, Mail, Phone, MapPin, Send } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
@@ -13,10 +13,12 @@ export default function HomePage() {
     name: "",
     email: "",
     company: "",
+    phone: "",
+    interest: "",
     message: ""
   });
   const [sending, setSending] = useState(false);
-  const [activeDemo, setActiveDemo] = useState("dashboard");
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
 
   // Smooth scroll function - fintech style
   const smoothScrollTo = (elementId: string) => {
@@ -39,7 +41,7 @@ export default function HomePage() {
     // Simular envío
     await new Promise(resolve => setTimeout(resolve, 1500));
     alert("¡Mensaje enviado! Nos pondremos en contacto contigo pronto.");
-    setContactForm({ name: "", email: "", company: "", message: "" });
+    setContactForm({ name: "", email: "", company: "", phone: "", interest: "", message: "" });
     setSending(false);
   };
 
@@ -108,889 +110,631 @@ export default function HomePage() {
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden pt-32 pb-20 px-4">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50 via-white to-white dark:from-gray-900 dark:via-gray-950 dark:to-gray-950" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-r from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl" />
-        
-        <div className="container mx-auto max-w-7xl relative z-10">
-          <div className="text-center max-w-4xl mx-auto">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-cyan-100 dark:from-blue-900/50 dark:to-cyan-900/50 px-4 py-2 rounded-full text-blue-700 dark:text-blue-300 text-sm font-medium mb-8 border border-blue-200 dark:border-blue-800">
-              <Sparkles className="h-4 w-4" />
-              Plataforma de Ciberseguridad #1 en Latinoamérica
-              <ChevronRight className="h-4 w-4" />
+      <section className="relative overflow-hidden pt-28 pb-24 px-4">
+        {/* Soft lavender-blue gradient background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50/60 to-indigo-100/80 dark:from-gray-900 dark:via-blue-950/40 dark:to-indigo-950/60" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-blue-200/30 to-purple-200/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-indigo-200/20 to-blue-100/30 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="container mx-auto max-w-5xl relative z-10">
+          <div className="max-w-3xl">
+            {/* Badge */}
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium mb-8 shadow-sm">
+              Sistema operativo de ciberseguridad
             </div>
-            
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6">
-              <span className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-200 dark:to-white bg-clip-text text-transparent">
-                Protege tu empresa
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 bg-clip-text text-transparent">
-                con inteligencia
-              </span>
+
+            {/* Title */}
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight text-gray-900 dark:text-white leading-[1.05] mb-6">
+              Tu empresa segura,<br />sin complejidad
             </h1>
-            
-            <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-10 max-w-3xl mx-auto leading-relaxed">
-              SIEM avanzado, gestión de riesgos cuantitativa, cumplimiento ISO 27001 y 
-              análisis de vulnerabilidades. Todo en una sola plataforma.
+
+            {/* Subtitle */}
+            <p className="text-lg md:text-xl text-gray-500 dark:text-gray-400 mb-10 max-w-2xl leading-relaxed">
+              Guardy centraliza vulnerabilidades, riesgos, cumplimiento, continuidad operativa y proveedores en un solo sistema inteligente.
             </p>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+
+            {/* Checkmarks 2x2 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10 max-w-xl">
+              {[
+                "Detecta riesgos automáticamente",
+                "Prioriza lo crítico",
+                "Cumple con ISO 27001 y Ley 21.663",
+                "Todo conectado en un solo panel",
+              ].map((item) => (
+                <div key={item} className="flex items-center gap-2.5">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="h-3 w-3 text-white stroke-[3]" />
+                  </div>
+                  <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{item}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 items-start">
               <Link href="/auth/register">
-                <Button size="lg" className="text-lg px-8 py-6 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 shadow-xl shadow-blue-500/30 transition-all hover:shadow-2xl hover:shadow-blue-500/40 hover:-translate-y-0.5">
-                  Contratar Plan
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                <Button size="lg" className="text-base px-7 py-6 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 transition-all hover:-translate-y-0.5 rounded-xl">
+                  Evaluar mi empresa
                 </Button>
               </Link>
-              <Button 
-                size="lg" 
-                variant="outline" 
-                className="text-lg px-8 py-6 border-2 hover:bg-gray-100 dark:hover:bg-gray-800"
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-base px-7 py-6 border-2 border-gray-300 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-800 rounded-xl"
                 onClick={() => smoothScrollTo('demo')}
               >
-                <Play className="mr-2 h-5 w-5" />
-                Ver Demo
+                Ver demo
               </Button>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-8 md:gap-16 pt-8 border-t border-gray-200 dark:border-gray-800">
-              <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">150+</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Empresas protegidas</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">2M+</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Amenazas detectadas</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">99.9%</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Uptime garantizado</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">24/7</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">Monitoreo continuo</div>
-              </div>
+            {/* Secondary CTA */}
+            <div className="flex flex-col sm:flex-row gap-3 items-start mt-4">
+              <Link href="/auth/register">
+                <Button size="lg" className="text-base px-7 py-6 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 transition-all hover:-translate-y-0.5 rounded-xl flex items-center gap-2">
+                  🚀 Probar gratis
+                </Button>
+              </Link>
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-base px-7 py-6 border-2 border-gray-300 dark:border-gray-600 hover:bg-white dark:hover:bg-gray-800 rounded-xl"
+                onClick={() => smoothScrollTo('demo')}
+              >
+                Ver demo
+              </Button>
             </div>
+            <p className="mt-3 text-sm text-gray-400">No necesitas tarjeta · Configuración en minutos</p>
           </div>
         </div>
       </section>
 
-      {/* Feature Highlights */}
-      <section className="py-16 px-4 bg-gray-50 dark:bg-gray-900/50">
-        <div className="container mx-auto max-w-7xl">
-          <div className="grid md:grid-cols-4 gap-6">
-            <div className="flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-              <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/50 rounded-xl flex items-center justify-center">
-                <Eye className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <div className="font-semibold text-gray-900 dark:text-white">SIEM Avanzado</div>
-                <div className="text-sm text-gray-500">Detección con ML</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-              <div className="h-12 w-12 bg-green-100 dark:bg-green-900/50 rounded-xl flex items-center justify-center">
-                <BarChart3 className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <div className="font-semibold text-gray-900 dark:text-white">Gestión de Riesgos</div>
-                <div className="text-sm text-gray-500">Análisis cuantitativo</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-              <div className="h-12 w-12 bg-purple-100 dark:bg-purple-900/50 rounded-xl flex items-center justify-center">
-                <FileCheck className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <div className="font-semibold text-gray-900 dark:text-white">ISO 27001</div>
-                <div className="text-sm text-gray-500">Cumplimiento total</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-              <div className="h-12 w-12 bg-orange-100 dark:bg-orange-900/50 rounded-xl flex items-center justify-center">
-                <Globe className="h-6 w-6 text-orange-600" />
-              </div>
-              <div>
-                <div className="font-semibold text-gray-900 dark:text-white">Ley 21.663</div>
-                <div className="text-sm text-gray-500">Marco ciberseguridad</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
+      {/* ──────────────────────────────────────── */}
+      {/* SECTION 2 — FEATURES GRID (12 modules) */}
+      {/* ──────────────────────────────────────── */}
       <section id="features" className="py-24 px-4 bg-white dark:bg-gray-950">
         <div className="container mx-auto max-w-7xl">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/50 px-4 py-2 rounded-full text-blue-700 dark:text-blue-300 text-sm font-medium mb-4">
-              <Zap className="h-4 w-4" />
-              Funcionalidades
+          {/* Badge + Heading */}
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-sm font-medium mb-5">
+              Todo en un solo lugar
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
-              Todo lo que necesitas
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
+              Una plataforma completa para gestionar<br className="hidden md:block" /> la seguridad de tu empresa
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Herramientas de nivel enterprise para proteger tu organización
+            <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+              Guardy no es solo un scanner. Es un sistema integral que conecta todos los vectores de riesgo en una vista operativa clara.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Card className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-gray-200 dark:border-gray-800 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
-              <CardHeader>
-                <div className="h-14 w-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-shadow">
-                  <Eye className="h-7 w-7 text-white" />
-                </div>
-                <CardTitle className="text-xl">SIEM Avanzado</CardTitle>
-                <CardDescription className="text-base">
-                  Sistema de monitoreo con machine learning para detección de anomalías en tiempo real
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-gray-200 dark:border-gray-800 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
-              <CardHeader>
-                <div className="h-14 w-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-green-500/20 group-hover:shadow-green-500/40 transition-shadow">
-                  <BarChart3 className="h-7 w-7 text-white" />
-                </div>
-                <CardTitle className="text-xl">Gestión de Riesgos</CardTitle>
-                <CardDescription className="text-base">
-                  Análisis cuantitativo con simulaciones Monte Carlo y Business Impact Analysis
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-gray-200 dark:border-gray-800 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
-              <CardHeader>
-                <div className="h-14 w-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-purple-500/20 group-hover:shadow-purple-500/40 transition-shadow">
-                  <FileCheck className="h-7 w-7 text-white" />
-                </div>
-                <CardTitle className="text-xl">Cumplimiento ISO 27001</CardTitle>
-                <CardDescription className="text-base">
-                  Controles y checklist completo para certificación internacional
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-gray-200 dark:border-gray-800 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
-              <CardHeader>
-                <div className="h-14 w-14 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-orange-500/20 group-hover:shadow-orange-500/40 transition-shadow">
-                  <Shield className="h-7 w-7 text-white" />
-                </div>
-                <CardTitle className="text-xl">Análisis de Vulnerabilidades</CardTitle>
-                <CardDescription className="text-base">
-                  Escaneo profundo de SSL, headers, puertos y configuraciones de seguridad
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-gray-200 dark:border-gray-800 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
-              <CardHeader>
-                <div className="h-14 w-14 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-cyan-500/20 group-hover:shadow-cyan-500/40 transition-shadow">
-                  <TrendingUp className="h-7 w-7 text-white" />
-                </div>
-                <CardTitle className="text-xl">Reportes Ejecutivos</CardTitle>
-                <CardDescription className="text-base">
-                  Genera informes PDF profesionales para directivos y auditorías
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            <Card className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-gray-200 dark:border-gray-800 bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800">
-              <CardHeader>
-                <div className="h-14 w-14 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-indigo-500/20 group-hover:shadow-indigo-500/40 transition-shadow">
-                  <Users className="h-7 w-7 text-white" />
-                </div>
-                <CardTitle className="text-xl">Comité de Seguridad</CardTitle>
-                <CardDescription className="text-base">
-                  Gestión de reuniones, actas y seguimiento de acciones del comité
-                </CardDescription>
-              </CardHeader>
-            </Card>
+          {/* 12-module grid */}
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+            {[
+              { emoji: "🌐", title: "Evaluación Web", desc: "Analiza certificados, DNS, cabeceras, tecnologías, cookies y WAF para detectar exposición." },
+              { emoji: "📊", title: "Monitoreo", desc: "Consolida score, severidad, tendencias y hallazgos en un panel simple y ejecutivo." },
+              { emoji: "⚠️", title: "Vulnerabilidades", desc: "Prioriza remediación por criticidad, estado y exposición con trazabilidad completa." },
+              { emoji: "🚨", title: "Incidentes", desc: "Registra eventos, seguimiento, SLA y resolución con visibilidad clara para el equipo." },
+              { emoji: "📉", title: "Riesgos", desc: "Evalúa impacto, probabilidad y tendencia con una visión cuantitativa del negocio." },
+              { emoji: "🖥️", title: "Activos", desc: "Mantén inventario tecnológico, criticidad, responsables, parches y contexto operativo." },
+              { emoji: "👥", title: "Trabajadores", desc: "Gestiona accesos críticos, roles, validaciones, capacitación y trazabilidad de personas." },
+              { emoji: "🤝", title: "Terceros", desc: "Evalúa proveedores, exposición, cumplimiento, contratos y nivel de riesgo de la cadena." },
+              { emoji: "✅", title: "Cumplimiento", desc: "Mapea controles, progreso y evidencias para ISO 27001:2022 y Ley 21.663 de Chile." },
+              { emoji: "📋", title: "BCP / DRP", desc: "Crea planes de continuidad y recuperación con métricas operativas como RTO y RPO." },
+              { emoji: "👔", title: "Comité", desc: "Formaliza miembros, decisiones y gobernanza del comité de ciberseguridad." },
+              { emoji: "📁", title: "Documentos", desc: "Centraliza políticas, contratos, certificaciones y documentación crítica de la empresa." },
+            ].map((m) => (
+              <div key={m.title} className="group p-5 bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                <div className="text-3xl mb-3">{m.emoji}</div>
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-1.5">{m.title}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{m.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Demo Section */}
-      <section id="demo" className="py-24 px-4 bg-gray-50 dark:bg-gray-900/50">
-        <div className="container mx-auto max-w-7xl">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center gap-2 bg-purple-100 dark:bg-purple-900/50 px-4 py-2 rounded-full text-purple-700 dark:text-purple-300 text-sm font-medium mb-4">
-              <Play className="h-4 w-4" />
-              Demo Interactiva
+      {/* ──────────────────────────────── */}
+      {/* SECTION 3 — DASHBOARD PREVIEW   */}
+      {/* ──────────────────────────────── */}
+      <section className="py-24 px-4 bg-gray-50 dark:bg-gray-900/60">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/40 border border-indigo-100 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 text-sm font-medium mb-5">
+              Visibilidad real
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
-              Explora el Dashboard
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
+              Datos claros para actuar,<br className="hidden md:block" /> no solo para mirar
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Vista previa de las principales funcionalidades con datos de ejemplo
+            <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+              La propuesta de Guardy es simple: traducir complejidad técnica en una vista ejecutiva que cualquier líder de empresa pueda entender.
             </p>
           </div>
 
-          {/* Demo Tabs */}
-          <div className="flex flex-wrap justify-center gap-2 mb-8">
+          <div className="grid lg:grid-cols-2 gap-6 mb-6">
+            {/* Left column — 3 metric cards */}
+            <div className="flex flex-col gap-4">
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Score de seguridad consolidado</div>
+                <div className="flex items-end gap-2 mb-1">
+                  <span className="text-5xl font-extrabold text-gray-900 dark:text-white">32</span>
+                  <span className="text-xl text-gray-400 mb-1">/ 100</span>
+                </div>
+                <div className="w-full bg-gray-100 dark:bg-gray-800 rounded-full h-2 mb-2">
+                  <div className="bg-orange-400 h-2 rounded-full" style={{ width: "32%" }} />
+                </div>
+                <p className="text-sm text-gray-500">Riesgo moderado basado en 24 escaneos</p>
+              </div>
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Hallazgos por prioridad</div>
+                <div className="text-5xl font-extrabold text-gray-900 dark:text-white mb-2">87</div>
+                <div className="flex gap-3 text-sm">
+                  <span className="text-red-500 font-semibold">15 altos</span>
+                  <span className="text-yellow-500 font-semibold">68 medios</span>
+                  <span className="text-green-500 font-semibold">4 bajos</span>
+                </div>
+              </div>
+              <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
+                <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Estado de cumplimiento</div>
+                <div className="text-5xl font-extrabold text-gray-900 dark:text-white mb-2">0%</div>
+                <p className="text-sm text-gray-500">74 controles pendientes de implementar</p>
+              </div>
+            </div>
+
+            {/* Right column — mock chart card */}
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+              <div className="font-semibold text-gray-900 dark:text-white mb-4">Monitoreo consolidado</div>
+              {/* Donut mock */}
+              <div className="flex items-center gap-6 mb-6">
+                <div className="relative w-28 h-28 flex-shrink-0">
+                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f3f4f6" strokeWidth="3" />
+                    <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f97316" strokeWidth="3" strokeDasharray="32 68" strokeLinecap="round" />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-extrabold text-gray-900 dark:text-white">68</span>
+                    <span className="text-xs text-gray-400">/ 100</span>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-red-500" /><span>Críticos <strong>0</strong></span></div>
+                  <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-orange-400" /><span>Altos <strong>15</strong></span></div>
+                  <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400" /><span>Medios <strong>68</strong></span></div>
+                  <div className="flex items-center gap-2"><div className="w-2.5 h-2.5 rounded-full bg-green-500" /><span>Bajos <strong>4</strong></span></div>
+                </div>
+              </div>
+              {/* Trend chart mock */}
+              <div className="text-xs text-gray-400 mb-2">Tendencia últimos 7 días</div>
+              <div className="flex items-end gap-1 h-16">
+                {[40, 55, 35, 60, 45, 70, 50].map((h, i) => (
+                  <div key={i} className="flex-1 rounded-t bg-blue-200 dark:bg-blue-800" style={{ height: `${h}%` }} />
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom stats row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { id: "dashboard", label: "Dashboard", icon: BarChart3 },
-              { id: "scans", label: "Escaneos", icon: Shield },
-              { id: "siem", label: "SIEM", icon: Eye },
-              { id: "incidents", label: "Incidentes", icon: AlertTriangle },
-              { id: "compliance", label: "Compliance", icon: FileCheck },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveDemo(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  activeDemo === tab.id
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-500/25"
-                    : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-              </button>
+              { label: "Escaneos completados", value: "24" },
+              { label: "Proveedores monitoreados", value: "6" },
+              { label: "Activos críticos", value: "18" },
+              { label: "Documentos centralizados", value: "6" },
+            ].map((s) => (
+              <div key={s.label} className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 text-center">
+                <div className="text-3xl font-extrabold text-gray-900 dark:text-white">{s.value}</div>
+                <div className="text-sm text-gray-500 mt-1">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────────────────── */}
+      {/* SECTION 4 — GUARDY AI    */}
+      {/* ───────────────────────── */}
+      <section className="py-24 px-4 bg-[#0f1729]">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-900/60 border border-blue-700 text-blue-300 text-sm font-medium mb-5">
+              Guardy AI
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+              Tu analista de ciberseguridad con IA
+            </h2>
+            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+              Guardy AI te explica lo importante con lenguaje claro, conecta módulos y convierte señales dispersas en decisiones concretas para el negocio.
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-10 items-center">
+            {/* Left */}
+            <div>
+              <h3 className="text-2xl font-bold text-white mb-4">Menos ruido técnico.<br />Más acción.</h3>
+              <p className="text-gray-400 mb-8 leading-relaxed">
+                Convierte alertas y hallazgos en recomendaciones concretas. Guardy AI contextualiza cada señal con el estado real de tu empresa y te dice exactamente qué hacer primero.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <span className="px-4 py-2 bg-blue-900/60 border border-blue-700 rounded-full text-blue-300 text-sm font-medium">Recomendaciones Priorizadas</span>
+                <span className="px-4 py-2 bg-indigo-900/60 border border-indigo-700 rounded-full text-indigo-300 text-sm font-medium">Explicación En simple</span>
+              </div>
+            </div>
+
+            {/* Right — Chat mockup */}
+            <div className="bg-[#151f38] rounded-2xl border border-gray-700 p-5 space-y-4">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-xs text-gray-400 font-medium">Guardy AI</span>
+              </div>
+              {[
+                { q: "¿Cuál es mi mayor riesgo hoy?", a: "Tu mayor riesgo es la falta de cifrado en 3 endpoints expuestos a internet. Te recomiendo priorizar el módulo de vulnerabilidades y cerrar esos hallazgos esta semana." },
+                { q: "¿Cumplo con la Ley 21.663?", a: "Tienes 74 controles pendientes. Los más críticos son los de gestión de incidentes y notificación al CSIRT. Puedo mostrarte el plan de acción paso a paso." },
+                { q: "¿Qué debo hacer primero?", a: "Activa el monitoreo continuo para los 6 proveedores críticos. Eso te cubre el 40% del riesgo de terceros con un solo clic." },
+              ].map((item, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-end">
+                    <div className="bg-blue-600 text-white text-sm rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-xs">{item.q}</div>
+                  </div>
+                  <div className="flex justify-start">
+                    <div className="bg-gray-800 text-gray-200 text-sm rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-sm">{item.a}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────── */}
+      {/* SECTION 5 — USE CASES  */}
+      {/* ─────────────────────── */}
+      <section className="py-24 px-4 bg-white dark:bg-gray-950">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 text-sm font-medium mb-5">
+              Casos de uso
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
+              Diseñado para empresas que necesitan<br className="hidden md:block" /> orden, trazabilidad y control
+            </h2>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-6">
+            {[
+              { emoji: "🔍", title: "No tienes equipo experto", desc: "Guardy actúa como tu departamento de ciberseguridad: detecta, prioriza y te guía sin necesitar un CISO interno." },
+              { emoji: "📜", title: "Necesitas cumplir normativas", desc: "Mapea controles para ISO 27001 y Ley 21.663 con evidencias, avance y alertas para tus próximas auditorías." },
+              { emoji: "🤝", title: "Trabajas con terceros críticos", desc: "Evalúa la exposición de tus proveedores, gestiona contratos y monitorea su cumplimiento en tiempo real." },
+              { emoji: "🔐", title: "Manejas datos sensibles", desc: "Protege activos críticos con inventario, clasificación, control de acceso y trazabilidad completa de cambios." },
+            ].map((uc) => (
+              <div key={uc.title} className="p-6 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 hover:shadow-md transition-shadow">
+                <div className="text-3xl mb-3">{uc.emoji}</div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">{uc.title}</h3>
+                <p className="text-gray-500 dark:text-gray-400 leading-relaxed">{uc.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ──────────────────────────── */}
+      {/* SECTION 6 — COMPLIANCE      */}
+      {/* ──────────────────────────── */}
+      <section className="py-24 px-4 bg-gray-50 dark:bg-gray-900/60">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-green-50 dark:bg-green-900/40 border border-green-100 dark:border-green-800 text-green-600 dark:text-green-400 text-sm font-medium mb-5">
+              Cumplimiento
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
+              Cumple con lo que te exige la ley,<br className="hidden md:block" /> sin perderte en la complejidad
+            </h2>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              { icon: "🏅", title: "ISO 27001:2022", desc: "Mapa completo de controles, evidencias y avance hacia la certificación internacional." },
+              { icon: "⚖️", title: "Ley 21.663 (Chile)", desc: "Seguimiento de obligaciones del marco de ciberseguridad nacional con alertas automáticas." },
+              { icon: "🔄", title: "BCP / DRP", desc: "Planes de continuidad y recuperación con métricas RTO/RPO operativas y actualizadas." },
+              { icon: "📂", title: "Repositorio central", desc: "Políticas, certificaciones y evidencias en un solo lugar, disponibles para auditorías." },
+            ].map((c) => (
+              <div key={c.title} className="p-6 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 hover:shadow-lg transition-shadow">
+                <div className="text-3xl mb-3">{c.icon}</div>
+                <h3 className="font-bold text-gray-900 dark:text-white mb-2">{c.title}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">{c.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ──────────────────────── */}
+      {/* SECTION 7 — WHY GUARDY  */}
+      {/* ──────────────────────── */}
+      <section className="py-24 px-4 bg-white dark:bg-gray-950">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-purple-50 dark:bg-purple-900/40 border border-purple-100 dark:border-purple-800 text-purple-600 dark:text-purple-400 text-sm font-medium mb-5">
+              Diferenciación
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
+              ¿Por qué Guardy?
+            </h2>
+            <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+              Porque una empresa real no necesita diez plataformas distintas. Necesita una sola vista que conecte todo y te diga qué hacer.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
+            {[
+              { emoji: "🔗", title: "Todo conectado", desc: "Vulnerabilidades, riesgos, incidentes, cumplimiento y continuidad en un solo sistema." },
+              { emoji: "🤖", title: "IA útil", desc: "No solo detecta, también explica y recomienda en lenguaje de negocio." },
+              { emoji: "⚙️", title: "Hecho para operar", desc: "Flujos de trabajo reales: SLA, asignaciones, evidencias, auditorías y reportes." },
+              { emoji: "🇨🇱", title: "Contexto local", desc: "Diseñado para las realidades regulatorias de Chile y Latinoamérica." },
+            ].map((d) => (
+              <div key={d.title} className="p-6 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
+                <div className="text-3xl mb-3">{d.emoji}</div>
+                <h3 className="font-bold text-gray-900 dark:text-white mb-2">{d.title}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{d.desc}</p>
+              </div>
             ))}
           </div>
 
-          {/* Demo Content */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            {/* Browser Chrome */}
-            <div className="bg-gray-100 dark:bg-gray-900 px-4 py-3 flex items-center gap-2 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex gap-1.5">
-                <div className="h-3 w-3 rounded-full bg-red-500" />
-                <div className="h-3 w-3 rounded-full bg-yellow-500" />
-                <div className="h-3 w-3 rounded-full bg-green-500" />
-              </div>
-              <div className="flex-1 mx-4">
-                <div className="bg-white dark:bg-gray-800 rounded-md px-3 py-1 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
-                  <Lock className="h-3 w-3 text-green-500" />
-                  app.guardyscan.com/dashboard
-                </div>
-              </div>
-            </div>
-
-            {/* Demo Dashboard Content */}
-            <div className="p-6 min-h-[500px]">
-              {activeDemo === "dashboard" && (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  {/* Stats Row */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
-                      <div className="text-sm text-blue-600 dark:text-blue-400 mb-1">Escaneos Totales</div>
-                      <div className="text-3xl font-bold text-blue-700 dark:text-blue-300">1,247</div>
-                      <div className="text-xs text-green-600 mt-1">↑ 12% vs mes anterior</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/30 dark:to-red-800/30 rounded-xl p-4 border border-red-200 dark:border-red-800">
-                      <div className="text-sm text-red-600 dark:text-red-400 mb-1">Vulnerabilidades</div>
-                      <div className="text-3xl font-bold text-red-700 dark:text-red-300">23</div>
-                      <div className="text-xs text-green-600 mt-1">↓ 8 resueltas esta semana</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-xl p-4 border border-green-200 dark:border-green-800">
-                      <div className="text-sm text-green-600 dark:text-green-400 mb-1">Score Seguridad</div>
-                      <div className="text-3xl font-bold text-green-700 dark:text-green-300">87%</div>
-                      <div className="text-xs text-green-600 mt-1">↑ 5 puntos</div>
-                    </div>
-                    <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl p-4 border border-purple-200 dark:border-purple-800">
-                      <div className="text-sm text-purple-600 dark:text-purple-400 mb-1">Activos Monitoreados</div>
-                      <div className="text-3xl font-bold text-purple-700 dark:text-purple-300">156</div>
-                      <div className="text-xs text-gray-500 mt-1">12 servidores, 144 endpoints</div>
-                    </div>
-                  </div>
-
-                  {/* Charts Row */}
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-                      <h4 className="font-semibold mb-4">Actividad de Escaneos (7 días)</h4>
-                      <div className="flex items-end gap-2 h-32">
-                        {[65, 45, 78, 52, 90, 67, 85].map((height, i) => (
-                          <div key={i} className="flex-1 bg-gradient-to-t from-blue-500 to-cyan-400 rounded-t" style={{ height: `${height}%` }} />
-                        ))}
-                      </div>
-                      <div className="flex justify-between text-xs text-gray-500 mt-2">
-                        <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
-                      <h4 className="font-semibold mb-4">Vulnerabilidades por Severidad</h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm w-20">Crítica</span>
-                          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                            <div className="bg-red-500 h-3 rounded-full" style={{ width: "15%" }} />
-                          </div>
-                          <span className="text-sm font-medium w-8">3</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm w-20">Alta</span>
-                          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                            <div className="bg-orange-500 h-3 rounded-full" style={{ width: "35%" }} />
-                          </div>
-                          <span className="text-sm font-medium w-8">8</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm w-20">Media</span>
-                          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                            <div className="bg-yellow-500 h-3 rounded-full" style={{ width: "45%" }} />
-                          </div>
-                          <span className="text-sm font-medium w-8">10</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm w-20">Baja</span>
-                          <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                            <div className="bg-blue-500 h-3 rounded-full" style={{ width: "10%" }} />
-                          </div>
-                          <span className="text-sm font-medium w-8">2</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeDemo === "scans" && (
-                <div className="space-y-4 animate-in fade-in duration-300">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-semibold">Escaneos Recientes</h3>
-                    <div className="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-3 py-1 rounded-full text-sm">+ Nuevo Escaneo</div>
-                  </div>
-                  {[
-                    { domain: "empresa.com", status: "Completado", score: 92, vulns: 2, date: "Hace 2 horas" },
-                    { domain: "api.empresa.com", status: "Completado", score: 78, vulns: 5, date: "Hace 5 horas" },
-                    { domain: "staging.empresa.com", status: "En progreso", score: null, vulns: null, date: "Ahora" },
-                    { domain: "mail.empresa.com", status: "Completado", score: 95, vulns: 1, date: "Ayer" },
-                    { domain: "cdn.empresa.com", status: "Completado", score: 88, vulns: 3, date: "Hace 2 días" },
-                  ].map((scan, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center gap-4">
-                        <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                          scan.status === "En progreso" ? "bg-yellow-100 dark:bg-yellow-900/50" : "bg-green-100 dark:bg-green-900/50"
-                        }`}>
-                          {scan.status === "En progreso" ? (
-                            <Activity className="h-5 w-5 text-yellow-600 animate-pulse" />
-                          ) : (
-                            <Globe className="h-5 w-5 text-green-600" />
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-medium">{scan.domain}</div>
-                          <div className="text-sm text-gray-500">{scan.date}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-6">
-                        {scan.score !== null && (
-                          <div className={`text-lg font-bold ${
-                            scan.score >= 90 ? "text-green-600" : scan.score >= 70 ? "text-yellow-600" : "text-red-600"
-                          }`}>
-                            {scan.score}%
-                          </div>
-                        )}
-                        {scan.vulns !== null && (
-                          <div className="text-sm text-gray-500">
-                            {scan.vulns} vulnerabilidades
-                          </div>
-                        )}
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          scan.status === "Completado" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                        }`}>
-                          {scan.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {activeDemo === "siem" && (
-                <div className="space-y-4 animate-in fade-in duration-300">
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    <div className="bg-red-50 dark:bg-red-900/30 rounded-xl p-4 border border-red-200 dark:border-red-800 text-center">
-                      <div className="text-3xl font-bold text-red-600">12</div>
-                      <div className="text-sm text-red-600">Alertas Críticas</div>
-                    </div>
-                    <div className="bg-yellow-50 dark:bg-yellow-900/30 rounded-xl p-4 border border-yellow-200 dark:border-yellow-800 text-center">
-                      <div className="text-3xl font-bold text-yellow-600">47</div>
-                      <div className="text-sm text-yellow-600">Eventos Sospechosos</div>
-                    </div>
-                    <div className="bg-green-50 dark:bg-green-900/30 rounded-xl p-4 border border-green-200 dark:border-green-800 text-center">
-                      <div className="text-3xl font-bold text-green-600">1.2M</div>
-                      <div className="text-sm text-green-600">Eventos Procesados</div>
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-semibold">Eventos en Tiempo Real</h3>
-                  <div className="bg-gray-900 rounded-xl p-4 font-mono text-sm text-green-400 h-64 overflow-hidden">
-                    <div className="space-y-1">
-                      <div><span className="text-gray-500">[14:32:15]</span> <span className="text-yellow-400">WARN</span> Múltiples intentos de login fallidos desde 192.168.1.45</div>
-                      <div><span className="text-gray-500">[14:32:12]</span> <span className="text-green-400">INFO</span> Escaneo de puertos completado en servidor web-prod-01</div>
-                      <div><span className="text-gray-500">[14:32:08]</span> <span className="text-red-400">ALERT</span> Posible SQL Injection detectado en /api/users</div>
-                      <div><span className="text-gray-500">[14:32:05]</span> <span className="text-green-400">INFO</span> Conexión SSL/TLS establecida correctamente</div>
-                      <div><span className="text-gray-500">[14:32:01]</span> <span className="text-yellow-400">WARN</span> Certificado expira en 15 días (cdn.empresa.com)</div>
-                      <div><span className="text-gray-500">[14:31:58]</span> <span className="text-green-400">INFO</span> Backup de configuración completado</div>
-                      <div><span className="text-gray-500">[14:31:55]</span> <span className="text-red-400">ALERT</span> Tráfico anómalo detectado en puerto 8080</div>
-                      <div><span className="text-gray-500">[14:31:52]</span> <span className="text-green-400">INFO</span> Regla de firewall actualizada correctamente</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeDemo === "incidents" && (
-                <div className="space-y-4 animate-in fade-in duration-300">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-semibold">Gestión de Incidentes</h3>
-                    <div className="flex gap-2">
-                      <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-medium">3 Abiertos</span>
-                      <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">5 En progreso</span>
-                      <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">28 Resueltos</span>
-                    </div>
-                  </div>
-                  {[
-                    { id: "INC-2024-089", title: "Intento de acceso no autorizado a base de datos", severity: "Crítico", status: "Abierto", assignee: "Carlos M.", time: "Hace 1 hora" },
-                    { id: "INC-2024-088", title: "Certificado SSL próximo a expirar", severity: "Medio", status: "En progreso", assignee: "Ana L.", time: "Hace 3 horas" },
-                    { id: "INC-2024-087", title: "Vulnerabilidad XSS en formulario de contacto", severity: "Alto", status: "En progreso", assignee: "Pedro R.", time: "Hace 5 horas" },
-                    { id: "INC-2024-086", title: "Actualización de parches pendiente en servidor", severity: "Medio", status: "Abierto", assignee: "Sin asignar", time: "Ayer" },
-                  ].map((incident, i) => (
-                    <div key={i} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm text-gray-500">{incident.id}</span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                              incident.severity === "Crítico" ? "bg-red-100 text-red-700" :
-                              incident.severity === "Alto" ? "bg-orange-100 text-orange-700" :
-                              "bg-yellow-100 text-yellow-700"
-                            }`}>
-                              {incident.severity}
-                            </span>
-                          </div>
-                          <div className="font-medium mb-2">{incident.title}</div>
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <span>Asignado: {incident.assignee}</span>
-                            <span>{incident.time}</span>
-                          </div>
-                        </div>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          incident.status === "Abierto" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"
-                        }`}>
-                          {incident.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {activeDemo === "compliance" && (
-                <div className="space-y-6 animate-in fade-in duration-300">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-semibold">ISO 27001</h4>
-                        <span className="text-2xl font-bold text-green-600">78%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-4">
-                        <div className="bg-green-500 h-3 rounded-full" style={{ width: "78%" }} />
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between"><span>A.5 Políticas de seguridad</span><span className="text-green-600">✓</span></div>
-                        <div className="flex justify-between"><span>A.6 Organización</span><span className="text-green-600">✓</span></div>
-                        <div className="flex justify-between"><span>A.7 Recursos humanos</span><span className="text-yellow-600">En progreso</span></div>
-                        <div className="flex justify-between"><span>A.8 Gestión de activos</span><span className="text-green-600">✓</span></div>
-                      </div>
-                    </div>
-                    <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-semibold">Ley 21.663</h4>
-                        <span className="text-2xl font-bold text-blue-600">92%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-4">
-                        <div className="bg-blue-500 h-3 rounded-full" style={{ width: "92%" }} />
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between"><span>Gobernanza de ciberseguridad</span><span className="text-green-600">✓</span></div>
-                        <div className="flex justify-between"><span>Gestión de incidentes</span><span className="text-green-600">✓</span></div>
-                        <div className="flex justify-between"><span>Continuidad operacional</span><span className="text-green-600">✓</span></div>
-                        <div className="flex justify-between"><span>Notificación CSIRT</span><span className="text-yellow-600">Pendiente</span></div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/30 dark:to-cyan-900/30 rounded-xl p-6 border border-blue-200 dark:border-blue-800">
-                    <h4 className="font-semibold mb-2">Próximas Auditorías</h4>
-                    <div className="grid md:grid-cols-3 gap-4">
-                      <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg">
-                        <div className="text-sm text-gray-500">ISO 27001</div>
-                        <div className="font-semibold">15 Feb 2026</div>
-                      </div>
-                      <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg">
-                        <div className="text-sm text-gray-500">Ley 21.663</div>
-                        <div className="font-semibold">28 Mar 2026</div>
-                      </div>
-                      <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg">
-                        <div className="text-sm text-gray-500">PCI DSS</div>
-                        <div className="font-semibold">10 Abr 2026</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* CTA under demo */}
-          <div className="text-center mt-8">
-            <p className="text-gray-600 dark:text-gray-400 mb-4">¿Te gustaría ver el dashboard completo?</p>
-            <Link href="/auth/register">
-              <Button className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 shadow-lg shadow-blue-500/25">
-                Contratar Plan
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+          {/* Quote */}
+          <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-8 text-center max-w-3xl mx-auto">
+            <p className="text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed mb-4">
+              &ldquo;Guardy transforma la ciberseguridad en algo entendible para la empresa: qué tengo, qué me falta, dónde está el riesgo y qué hago ahora.&rdquo;
+            </p>
+            <p className="text-sm text-gray-400">— Plataforma de gestión integral de ciberseguridad para empresas</p>
           </div>
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-24 px-4 bg-gray-50 dark:bg-gray-900/50">
-        <div className="container mx-auto max-w-7xl">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-green-100 dark:bg-green-900/50 px-4 py-2 rounded-full text-green-700 dark:text-green-300 text-sm font-medium mb-4">
-              <TrendingUp className="h-4 w-4" />
-              Precios
+      {/* ─────────────────────── */}
+      {/* SECTION 8 — PRICING     */}
+      {/* ─────────────────────── */}
+      <section id="pricing" className="py-24 px-4 bg-gray-50 dark:bg-gray-900/60">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-sm font-medium mb-5">
+              Planes
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
-              Planes para cada necesidad
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
+              Elige el nivel de control que necesitas
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Elige el plan que mejor se adapte a tu empresa
-            </p>
+            {/* Toggle */}
+            <div className="inline-flex items-center gap-0 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-1 mt-4">
+              <button
+                onClick={() => setBillingPeriod('monthly')}
+                className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${billingPeriod === 'monthly' ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+              >Mensual</button>
+              <button
+                onClick={() => setBillingPeriod('annual')}
+                className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${billingPeriod === 'annual' ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200'}`}
+              >Anual <span className="text-green-500 font-bold ml-1">-15%</span></button>
+            </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <Card className="relative hover:shadow-xl transition-all duration-300 border-gray-200 dark:border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-2xl">Básico</CardTitle>
-                <div className="mt-4">
-                  <span className="text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">$100</span>
-                  <span className="text-gray-600 dark:text-gray-400">/mes</span>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {[
+              {
+                badge: "Entrada", name: "Free", monthly: 0, annual: 0,
+                desc: "Descubre tu exposición",
+                features: ["Análisis puntual de una web", "SSL / DNS / Headers", "Vista general de hallazgos", "Alertas limitadas"],
+                cta: "Comenzar gratis", ctaVariant: "outline" as const, highlight: false,
+              },
+              {
+                badge: "Crecimiento", name: "Básico", monthly: 79, annual: 67,
+                desc: "Monitoreo continuo",
+                features: ["Monitoreo semanal", "Alertas automáticas", "Detección temprana", "Historial reciente"],
+                cta: "Elegir Básico", ctaVariant: "outline" as const, highlight: false,
+              },
+              {
+                badge: "Más popular", name: "Profesional", monthly: 299, annual: 254,
+                desc: "Control de riesgos",
+                features: ["Monitoreo avanzado", "Riesgos y vulnerabilidades", "Eventos e incidentes", "Cumplimiento base", "Integraciones"],
+                cta: "Elegir Profesional", ctaVariant: "default" as const, highlight: true,
+              },
+              {
+                badge: "Escala", name: "Enterprise", monthly: 899, annual: 764,
+                desc: "Gobierno y continuidad",
+                features: ["Seguridad a escala", "BCP / DRP completo", "Gestión de terceros", "Soporte dedicado", "SLA e integraciones custom"],
+                cta: "Hablar con ventas", ctaVariant: "outline" as const, highlight: false,
+              },
+            ].map((plan) => (
+              <div
+                key={plan.name}
+                className={`relative p-6 rounded-2xl border flex flex-col ${
+                  plan.highlight
+                    ? 'bg-white dark:bg-gray-900 border-blue-500 shadow-xl shadow-blue-500/10 ring-2 ring-blue-500'
+                    : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800'
+                }`}
+              >
+                {plan.highlight && (
+                  <div className="absolute -top-3.5 left-0 right-0 flex justify-center">
+                    <span className="bg-blue-600 text-white text-xs font-bold px-4 py-1 rounded-full shadow">Más popular</span>
+                  </div>
+                )}
+                <div className="mb-4">
+                  <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">{!plan.highlight ? plan.badge : ""}</span>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mt-1">{plan.name}</h3>
+                  <div className="flex items-end gap-1 mt-3">
+                    <span className="text-4xl font-extrabold text-gray-900 dark:text-white">
+                      ${billingPeriod === 'monthly' ? plan.monthly : plan.annual}
+                    </span>
+                    <span className="text-gray-400 text-sm mb-1">/mes</span>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1">{plan.desc}</p>
                 </div>
-                <CardDescription className="mt-2">
-                  Para pequeñas empresas y startups
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>50 escaneos/mes</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>1 empresa</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>Análisis de vulnerabilidades</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>Gestión de incidentes</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>Dashboard básico</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>Soporte por email</span>
-                  </li>
+                <ul className="space-y-2 flex-1 mb-6">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-300">
+                      <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      {f}
+                    </li>
+                  ))}
                 </ul>
-                <Link href="/auth/register">
-                  <Button className="w-full mt-6" variant="outline">Contratar Plan</Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            <Card className="relative border-2 border-blue-500 shadow-xl shadow-blue-500/10 scale-105">
-              <div className="absolute -top-4 left-0 right-0 flex justify-center">
-                <span className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white px-4 py-1 rounded-full text-sm font-medium shadow-lg">
-                  Más popular
-                </span>
-              </div>
-              <CardHeader>
-                <CardTitle className="text-2xl">Profesional</CardTitle>
-                <div className="mt-4">
-                  <span className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent">$300</span>
-                  <span className="text-gray-600 dark:text-gray-400">/mes</span>
-                </div>
-                <CardDescription className="mt-2">
-                  Para empresas en crecimiento
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>200 escaneos/mes</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>1 empresa</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>SIEM + Gestión de Riesgos</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>ISO 27001 + Ley 21.663</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>BCP / DRP completo</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>API access</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>Soporte prioritario</span>
-                  </li>
-                </ul>
-                <Link href="/auth/register">
-                  <Button className="w-full mt-6 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 shadow-lg">
-                    Contratar Plan
+                <Link href={plan.name === "Enterprise" ? "#contact" : "/auth/register"}>
+                  <Button
+                    variant={plan.ctaVariant}
+                    className={`w-full ${plan.highlight ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
+                  >
+                    {plan.cta}
                   </Button>
                 </Link>
-              </CardContent>
-            </Card>
-
-            <Card className="relative hover:shadow-xl transition-all duration-300 border-gray-200 dark:border-gray-800">
-              <CardHeader>
-                <CardTitle className="text-2xl">Enterprise</CardTitle>
-                <div className="mt-4">
-                  <span className="text-5xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">$900</span>
-                  <span className="text-gray-600 dark:text-gray-400">/mes</span>
-                </div>
-                <CardDescription className="mt-2">
-                  Para grandes organizaciones
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>Escaneos ilimitados</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span className="font-semibold text-blue-600">Hasta 30 empresas</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>Todas las funcionalidades</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>Multi-usuario por empresa</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>Consultoría incluida</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>Soporte 24/7</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <Check className="h-5 w-5 text-green-600 mt-0.5" />
-                    <span>SLA garantizado</span>
-                  </li>
-                </ul>
-                <Link href="/auth/register">
-                  <Button className="w-full mt-6" variant="outline">Contactar Ventas</Button>
-                </Link>
-              </CardContent>
-            </Card>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-24 px-4 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-600" />
-        
-        <div className="container mx-auto max-w-4xl text-center relative z-10">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-white">
-            ¿Listo para proteger tu empresa?
-          </h2>
-          <p className="text-xl mb-10 text-white/90 max-w-2xl mx-auto">
-            Únete a más de 150 empresas que confían en GuardyScan para su ciberseguridad
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/register">
-              <Button size="lg" className="text-lg px-8 py-6 bg-white text-blue-600 hover:bg-gray-100 shadow-xl">
-                Contratar Plan
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            </Link>
-            <Link href="/auth/login">
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6 bg-transparent text-white border-2 border-white hover:bg-white/10">
-                Ya tengo cuenta
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section id="contact" className="py-24 px-4 bg-gray-50 dark:bg-gray-900/50">
-        <div className="container mx-auto max-w-7xl">
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/50 px-4 py-2 rounded-full text-blue-700 dark:text-blue-300 text-sm font-medium mb-4">
-              <Mail className="h-4 w-4" />
-              Contacto
+      {/* ─────────────────────── */}
+      {/* SECTION 9 — CONTACT     */}
+      {/* ─────────────────────── */}
+      <section id="contact" className="py-24 px-4 bg-white dark:bg-gray-950">
+        <div className="container mx-auto max-w-6xl">
+          <div className="text-center mb-14">
+            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-sm font-medium mb-5">
+              💬 Contacto
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 tracking-tight">
               ¿Tienes preguntas?
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Nuestro equipo está listo para ayudarte a proteger tu empresa
+            <p className="text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto">
+              Nuestro equipo está listo para ayudarte. Cuéntanos en qué etapa estás y coordinemos la mejor forma de avanzar.
             </p>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-12">
-            {/* Contact Info */}
-            <div className="space-y-8">
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Mail className="h-6 w-6 text-white" />
+            {/* Left — contact info cards */}
+            <div className="space-y-4">
+              <div className="flex items-start gap-4 p-5 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
+                <div className="h-10 w-10 bg-blue-100 dark:bg-blue-900/50 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Mail className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1">Email</h3>
-                  <p className="text-gray-600 dark:text-gray-400">contacto@guardyscan.com</p>
-                  <p className="text-gray-600 dark:text-gray-400">soporte@guardyscan.com</p>
+                  <div className="font-semibold text-gray-900 dark:text-white mb-1">Email</div>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">contacto@guardyscan.com</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">soporte@guardyscan.com</p>
                 </div>
               </div>
-              
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Phone className="h-6 w-6 text-white" />
+              <div className="flex items-start gap-4 p-5 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
+                <div className="h-10 w-10 bg-green-100 dark:bg-green-900/50 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Phone className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1">Teléfono</h3>
-                  <p className="text-gray-600 dark:text-gray-400">+56 9 9337 2630</p>
-                  <p className="text-gray-600 dark:text-gray-400">Lunes a Viernes, 9:00 - 18:00</p>
+                  <div className="font-semibold text-gray-900 dark:text-white mb-1">Teléfono</div>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">+56 9 9337 2630</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">Lunes a Viernes, 9:00 – 18:00</p>
                 </div>
               </div>
-              
-              <div className="flex items-start gap-4">
-                <div className="h-12 w-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <MapPin className="h-6 w-6 text-white" />
+              <div className="flex items-start gap-4 p-5 bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800">
+                <div className="h-10 w-10 bg-purple-100 dark:bg-purple-900/50 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <MapPin className="h-5 w-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1">Oficinas</h3>
-                  <p className="text-gray-600 dark:text-gray-400 font-medium">Chile</p>
-                  <p className="text-gray-600 dark:text-gray-400">San Sebastián 2750, Oficina 902</p>
-                  <p className="text-gray-600 dark:text-gray-400 mb-3">Las Condes, Región Metropolitana</p>
-                  <p className="text-gray-600 dark:text-gray-400 font-medium">México</p>
-                  <p className="text-gray-600 dark:text-gray-400">Av. Solidaridad 1024 Oficina H3</p>
-                  <p className="text-gray-600 dark:text-gray-400">Playa del Carmen</p>
+                  <div className="font-semibold text-gray-900 dark:text-white mb-1">Oficinas</div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">🇨🇱 Chile</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">San Sebastián 2750, Oficina 902 · Las Condes</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 font-medium mt-2">🇲🇽 México</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Av. Solidaridad 1024 Oficina H3 · Playa del Carmen</p>
                 </div>
               </div>
-
-              <div className="p-6 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl text-white">
-                <h3 className="font-semibold text-lg mb-2">¿Necesitas ayuda urgente?</h3>
-                <p className="text-white/90 text-sm mb-4">
-                  Nuestro equipo de respuesta a incidentes está disponible 24/7 para clientes Enterprise.
-                </p>
+              <div className="p-5 bg-blue-600 rounded-2xl text-white">
+                <div className="font-semibold mb-1">¿Necesitas ayuda urgente?</div>
+                <p className="text-sm text-blue-100 mb-3">Respuesta en menos de 24 horas hábiles para todos los planes.</p>
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Phone className="h-4 w-4" />
-                  +56 9 8765 4321 (Emergencias)
+                  +56 9 8765 4321
                 </div>
               </div>
             </div>
 
-            {/* Contact Form */}
-            <Card className="border-0 shadow-xl">
-              <CardHeader>
-                <CardTitle>Envíanos un mensaje</CardTitle>
-                <CardDescription>
-                  Completa el formulario y te responderemos en menos de 24 horas
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleContactSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Nombre
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={contactForm.name}
-                        onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
-                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-all"
-                        placeholder="Tu nombre"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        value={contactForm.email}
-                        onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
-                        className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-all"
-                        placeholder="tu@email.com"
-                      />
-                    </div>
+            {/* Right — form */}
+            <div className="bg-gray-50 dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-8">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Agendemos una reunión</h3>
+              <form onSubmit={handleContactSubmit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
+                    <input
+                      type="text" required
+                      value={contactForm.name}
+                      onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      placeholder="Tu nombre"
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Empresa
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                    <input
+                      type="email" required
+                      value={contactForm.email}
+                      onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      placeholder="tu@email.com"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Empresa</label>
                     <input
                       type="text"
                       value={contactForm.company}
                       onChange={(e) => setContactForm({ ...contactForm, company: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-all"
-                      placeholder="Nombre de tu empresa"
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      placeholder="Tu empresa"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      Mensaje
-                    </label>
-                    <textarea
-                      required
-                      rows={4}
-                      value={contactForm.message}
-                      onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-all resize-none"
-                      placeholder="¿En qué podemos ayudarte?"
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Teléfono</label>
+                    <input
+                      type="tel"
+                      value={contactForm.phone}
+                      onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      placeholder="+56 9 ..."
                     />
                   </div>
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white py-6"
-                    disabled={sending}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">¿Qué te interesa?</label>
+                  <select
+                    value={contactForm.interest}
+                    onChange={(e) => setContactForm({ ...contactForm, interest: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                   >
-                    {sending ? (
-                      <>
-                        <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                        Enviando...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4 mr-2" />
-                        Enviar Mensaje
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                    <option value="">Seleccionar...</option>
+                    <option>Quiero probar el plan Free</option>
+                    <option>Necesito el plan Básico</option>
+                    <option>Me interesa el plan Profesional</option>
+                    <option>Necesito Enterprise / personalizado</option>
+                    <option>Tengo dudas generales</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mensaje</label>
+                  <textarea
+                    rows={3}
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
+                    className="w-full px-4 py-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
+                    placeholder="Cuéntanos en qué etapa está tu empresa..."
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 rounded-xl"
+                  disabled={sending}
+                >
+                  {sending ? (
+                    <><div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />Enviando...</>
+                  ) : "Agendemos una reunión"}
+                </Button>
+                <div className="text-center space-y-1">
+                  <button type="button" onClick={() => smoothScrollTo('demo')} className="text-sm text-blue-600 hover:underline">O ver una demo primero</button>
+                  <p className="text-xs text-gray-400">Respondemos en menos de 24 horas hábiles.</p>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       </section>
