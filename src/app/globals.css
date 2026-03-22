@@ -57,3 +57,163 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── Scroll Reveal ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.65s cubic-bezier(.4,0,.2,1),
+              transform 0.65s cubic-bezier(.4,0,.2,1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-d1 { transition-delay: 120ms; }
+.reveal-d2 { transition-delay: 240ms; }
+.reveal-d3 { transition-delay: 360ms; }
+.reveal-d4 { transition-delay: 480ms; }
+
+/* ── Hero Entrance ── */
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-el {
+  opacity: 0;
+  animation: heroFadeUp 0.75s cubic-bezier(.4,0,.2,1) forwards;
+}
+.hero-el-d1 { animation-delay: 0.15s; }
+.hero-el-d2 { animation-delay: 0.30s; }
+.hero-el-d3 { animation-delay: 0.45s; }
+.hero-el-d4 { animation-delay: 0.60s; }
+.hero-el-d5 { animation-delay: 0.75s; }
+.hero-el-d6 { animation-delay: 0.95s; }
+
+/* ── Floating Card Animations ── */
+@keyframes floatA {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-14px); }
+}
+@keyframes floatB {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-10px); }
+}
+@keyframes floatC {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-18px); }
+}
+
+/* ── Shimmer Effect ── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer-border {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(99,102,241,0.5) 25%,
+    rgba(139,92,246,0.7) 50%,
+    rgba(59,130,246,0.5) 75%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+/* ── Gradient Border Card ── */
+.grad-border {
+  position: relative;
+  border-radius: 1rem;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    rgba(99,102,241,0.35) 0%,
+    rgba(139,92,246,0.20) 40%,
+    rgba(30,41,59,0.0) 70%,
+    rgba(59,130,246,0.15) 100%
+  );
+}
+.grad-border-inner {
+  background: #0d1424;
+  border-radius: calc(1rem - 1px);
+  height: 100%;
+}
+.grad-border:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(99,102,241,0.6) 0%,
+    rgba(139,92,246,0.40) 40%,
+    rgba(30,41,59,0.10) 70%,
+    rgba(59,130,246,0.35) 100%
+  );
+  transition: background 0.4s ease;
+}
+
+/* ── Card Glow Hover ── */
+.card-glow {
+  transition: box-shadow 0.35s ease, transform 0.35s ease;
+}
+.card-glow:hover {
+  box-shadow: 0 0 42px rgba(99,102,241,0.18), 0 0 80px rgba(59,130,246,0.08);
+  transform: translateY(-3px);
+}
+
+/* ── Noise Texture Overlay ── */
+.noise-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  mix-blend-mode: overlay;
+}
+
+/* ── Gradient Text ── */
+.gradient-heading {
+  background: linear-gradient(
+    135deg,
+    #ffffff 0%,
+    #e2e8f0 45%,
+    #94a3b8 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Section Dark Badge ── */
+.dark-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.875rem;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgba(147,197,253,1);
+  letter-spacing: 0.01em;
+}
+
+/* ── Parallax Orb ── */
+.parallax-orb {
+  pointer-events: none;
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(72px);
+  will-change: transform;
+}
+
+/* ── Reveal stagger extras ── */
+.reveal-d5 { transition-delay: 600ms; }
+.reveal-d6 { transition-delay: 720ms; }
+.reveal-d7 { transition-delay: 840ms; }
+.reveal-d8 { transition-delay: 960ms; }
+.reveal-d9 { transition-delay: 1080ms; }
+.reveal-d10{ transition-delay: 1200ms; }
+.reveal-d11{ transition-delay: 1320ms; }
+.reveal-d12{ transition-delay: 1440ms; }
