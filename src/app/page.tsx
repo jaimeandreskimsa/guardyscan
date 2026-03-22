@@ -7,6 +7,21 @@ import Image from "next/image";
 import React, { useState, useEffect, useRef } from "react";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
+// ── Pricing by currency ─────────────────────────────────────────
+const PLAN_PRICES: Record<string, Record<'CLP' | 'MXN', { monthly: number; annual: number }>> = {
+  'Básico':      { CLP: { monthly: 75000,  annual: 64000  }, MXN: { monthly: 1490,  annual: 1270  } },
+  'Profesional': { CLP: { monthly: 284000, annual: 241000 }, MXN: { monthly: 5490,  annual: 4790  } },
+  'Enterprise':  { CLP: { monthly: 854000, annual: 726000 }, MXN: { monthly: 16490, annual: 13990 } },
+};
+
+/** Format price with thousands separator per locale */
+const fmtPrice = (name: string, period: 'monthly' | 'annual', curr: 'CLP' | 'MXN'): string => {
+  if (name === 'Free') return '0';
+  const val = PLAN_PRICES[name][curr][period];
+  const sep = curr === 'CLP' ? '.' : ',';
+  return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, sep);
+};
+
 export default function HomePage() {
   const [contactForm, setContactForm] = useState({
     name: "",
@@ -18,6 +33,7 @@ export default function HomePage() {
   });
   const [sending, setSending] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
+  const [currency, setCurrency] = useState<'CLP' | 'MXN'>('CLP');
   const heroRef = useRef<HTMLElement>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [scrollY, setScrollY] = useState(0);
@@ -722,16 +738,38 @@ export default function HomePage() {
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
               Elige el nivel de control que necesitas
             </h2>
-            {/* Toggle */}
-            <div className="inline-flex items-center gap-0 bg-white border border-gray-200 rounded-xl p-1 mt-4">
-              <button
-                onClick={() => setBillingPeriod('monthly')}
-                className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${billingPeriod === 'monthly' ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:text-gray-800'}`}
-              >Mensual</button>
-              <button
-                onClick={() => setBillingPeriod('annual')}
-                className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${billingPeriod === 'annual' ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:text-gray-800'}`}
-              >Anual <span className="text-green-500 font-bold ml-1">-15%</span></button>
+            {/* Toggles row */}
+            <div className="flex flex-col items-center gap-3 mt-4">
+              {/* Billing period */}
+              <div className="inline-flex items-center gap-0 bg-white border border-gray-200 rounded-xl p-1">
+                <button
+                  onClick={() => setBillingPeriod('monthly')}
+                  className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${billingPeriod === 'monthly' ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:text-gray-800'}`}
+                >Mensual</button>
+                <button
+                  onClick={() => setBillingPeriod('annual')}
+                  className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${billingPeriod === 'annual' ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:text-gray-800'}`}
+                >Anual <span className="text-green-500 font-bold ml-1">-15%</span></button>
+              </div>
+              {/* Currency / country */}
+              <div className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1">
+                <button
+                  onClick={() => setCurrency('CLP')}
+                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                    currency === 'CLP' ? 'bg-red-600 text-white shadow' : 'text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  <span>🇨🇱</span> Chile · CLP
+                </button>
+                <button
+                  onClick={() => setCurrency('MXN')}
+                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                    currency === 'MXN' ? 'bg-green-700 text-white shadow' : 'text-gray-500 hover:text-gray-800'
+                  }`}
+                >
+                  <span>🇲🇽</span> México · MXN
+                </button>
+              </div>
             </div>
           </div>
 
@@ -781,9 +819,9 @@ export default function HomePage() {
                     <h3 className="text-xl font-bold text-gray-900 mt-1">{plan.name}</h3>
                     <div className="flex items-end gap-1 mt-3">
                       <span className="text-4xl font-extrabold text-gray-900">
-                        ${billingPeriod === 'monthly' ? plan.monthly : plan.annual}
+                        ${fmtPrice(plan.name, billingPeriod, currency)}
                       </span>
-                      <span className="text-gray-400 text-sm mb-1">/mes</span>
+                      <span className="text-gray-400 text-sm mb-1 leading-none pb-1">{currency}/mes</span>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">{plan.desc}</p>
                   </div>
