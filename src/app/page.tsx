@@ -164,9 +164,9 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white scroll-smooth">
       {/* Navigation Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-200">
-        <div className="container mx-auto max-w-7xl px-4">
-          <div className="flex items-center justify-between h-16">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-2xl" style={{ boxShadow: '0 1px 0 rgba(0,0,0,0.06), 0 4px 20px rgba(0,0,0,0.04)' }}>
+        <div className="container mx-auto max-w-7xl px-5">
+          <div className="flex items-center justify-between h-[62px]">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
               <Image
@@ -180,44 +180,31 @@ export default function HomePage() {
             </Link>
 
             {/* Navigation Links */}
-            <nav className="hidden md:flex items-center gap-8">
-              <button 
-                onClick={() => smoothScrollTo('features')} 
-                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Características
-              </button>
-              <button 
-                onClick={() => smoothScrollTo('demo')} 
-                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Demo
-              </button>
-              <button 
-                onClick={() => smoothScrollTo('pricing')} 
-                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Precios
-              </button>
-              <button 
-                onClick={() => smoothScrollTo('contact')} 
-                className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                Contacto
-              </button>
+            <nav className="hidden md:flex items-center gap-7">
+              {[
+                { label: 'Características', id: 'features' },
+                { label: 'Demo',            id: 'demo' },
+                { label: 'Precios',         id: 'pricing' },
+                { label: 'Contacto',        id: 'contact' },
+              ].map(n => (
+                <button key={n.id} onClick={() => smoothScrollTo(n.id)}
+                  className="text-[13.5px] font-medium text-gray-500 hover:text-gray-900 transition-colors tracking-[-0.01em]">
+                  {n.label}
+                </button>
+              ))}
             </nav>
 
             {/* Auth Buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <Link href="/auth/login">
-                <Button variant="ghost" className="text-sm font-medium text-gray-600 hover:text-gray-900">
+                <Button variant="ghost" className="text-[13.5px] font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100/80 h-9 px-4 rounded-xl">
                   Iniciar Sesión
                 </Button>
               </Link>
               <Link href="/auth/register">
-                <Button className="text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-700/30 border border-blue-500/30">
+                <Button className="text-[13.5px] font-semibold h-9 px-5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-[0_2px_12px_rgba(79,70,229,0.35)] border-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_4px_20px_rgba(79,70,229,0.45)]">
                   Crear Cuenta
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                 </Button>
               </Link>
             </div>
@@ -444,18 +431,18 @@ export default function HomePage() {
       {/* ──────────────────────────────────────── */}
       {/* SECTION 2 — FEATURES GRID (12 modules) */}
       {/* ──────────────────────────────────────── */}
-      <section id="features" className="relative py-28 px-4 overflow-hidden bg-white">
+      <section id="features" className="relative py-28 px-4 overflow-hidden section-white">
         {/* Parallax orb */}
         <div className="parallax-orb w-[600px] h-[600px] top-[-100px] right-[-80px] opacity-[0.06]"
           style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }} />
         <div className="container mx-auto max-w-7xl relative z-10">
           {/* Badge + Heading */}
           <div className="text-center mb-16 reveal">
-            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-medium mb-5">Todo en un solo lugar</div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-              Una plataforma completa para gestionar<br className="hidden md:block" /> la seguridad de tu empresa
+            <div className="badge-prem mb-5"><span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" />Todo en un solo lugar</div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-5 tracking-[-0.03em] leading-[1.08]">
+              Una plataforma <span className="gradient-word">completa</span> para gestionar<br className="hidden md:block" /> la seguridad de tu empresa
             </h2>
-            <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
               Guardy no es solo un scanner. Es un sistema integral que conecta todos los vectores de riesgo en una vista operativa clara.
             </p>
           </div>
@@ -463,25 +450,25 @@ export default function HomePage() {
           {/* 12-module grid */}
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {([
-              { Icon: Globe,        grad: "from-blue-400/30 to-indigo-400/10",    ic: "text-blue-600",    bg: "bg-blue-50",    title: "Evaluación Web",  desc: "Analiza certificados, DNS, cabeceras, tecnologías, cookies y WAF para detectar exposición.", delay: "reveal-d1" },
-              { Icon: BarChart3,    grad: "from-indigo-400/30 to-purple-400/10",  ic: "text-indigo-600",  bg: "bg-indigo-50",  title: "Monitoreo",        desc: "Consolida score, severidad, tendencias y hallazgos en un panel simple y ejecutivo.", delay: "reveal-d2" },
-              { Icon: ShieldAlert,  grad: "from-orange-400/30 to-amber-400/10",   ic: "text-orange-600",  bg: "bg-orange-50",  title: "Vulnerabilidades",  desc: "Prioriza remediación por criticidad, estado y exposición con trazabilidad completa.", delay: "reveal-d3" },
-              { Icon: Bell,         grad: "from-red-400/30 to-rose-400/10",       ic: "text-red-600",     bg: "bg-red-50",     title: "Incidentes",      desc: "Registra eventos, seguimiento, SLA y resolución con visibilidad clara para el equipo.", delay: "reveal-d4" },
-              { Icon: TrendingDown, grad: "from-amber-400/30 to-yellow-400/10",   ic: "text-amber-600",   bg: "bg-amber-50",   title: "Riesgos",          desc: "Evalúa impacto, probabilidad y tendencia con una visión cuantitativa del negocio.", delay: "reveal-d5" },
-              { Icon: Monitor,      grad: "from-slate-400/30 to-gray-400/10",     ic: "text-slate-600",   bg: "bg-slate-100",  title: "Activos",          desc: "Mantén inventario tecnológico, criticidad, responsables, parches y contexto operativo.", delay: "reveal-d6" },
-              { Icon: Users,        grad: "from-violet-400/30 to-purple-400/10",  ic: "text-violet-600",  bg: "bg-violet-50",  title: "Trabajadores",    desc: "Gestiona accesos críticos, roles, validaciones, capacitación y trazabilidad de personas.", delay: "reveal-d7" },
-              { Icon: Building2,    grad: "from-sky-400/30 to-cyan-400/10",       ic: "text-sky-600",     bg: "bg-sky-50",     title: "Terceros",        desc: "Evalúa proveedores, exposición, cumplimiento, contratos y nivel de riesgo de la cadena.", delay: "reveal-d8" },
-              { Icon: BadgeCheck,   grad: "from-green-400/30 to-emerald-400/10",  ic: "text-green-600",   bg: "bg-green-50",   title: "Cumplimiento",    desc: "Mapea controles, progreso y evidencias para ISO 27001:2022 y Ley 21.663 de Chile.", delay: "reveal-d9" },
-              { Icon: RefreshCw,    grad: "from-teal-400/30 to-cyan-400/10",      ic: "text-teal-600",    bg: "bg-teal-50",    title: "BCP / DRP",       desc: "Crea planes de continuidad y recuperación con métricas operativas como RTO y RPO.", delay: "reveal-d10" },
-              { Icon: Crown,        grad: "from-yellow-400/30 to-amber-400/10",   ic: "text-yellow-600",  bg: "bg-yellow-50",  title: "Comité",          desc: "Formaliza miembros, decisiones y gobernanza del comité de ciberseguridad.", delay: "reveal-d11" },
-              { Icon: FolderOpen,   grad: "from-rose-400/30 to-pink-400/10",      ic: "text-rose-600",    bg: "bg-rose-50",    title: "Documentos",      desc: "Centraliza políticas, contratos, certificaciones y documentación crítica de la empresa.", delay: "reveal-d12" },
+              { Icon: Globe,        grad: "from-blue-400/55 via-blue-300/20 to-indigo-500/35",    ic: "text-blue-600",    bg: "bg-gradient-to-br from-blue-100 to-blue-50",    title: "Evaluación Web",  desc: "Analiza certificados, DNS, cabeceras, tecnologías, cookies y WAF para detectar exposición.", delay: "reveal-d1" },
+              { Icon: BarChart3,    grad: "from-indigo-400/55 via-indigo-300/20 to-purple-500/35",  ic: "text-indigo-600",  bg: "bg-gradient-to-br from-indigo-100 to-indigo-50",  title: "Monitoreo",        desc: "Consolida score, severidad, tendencias y hallazgos en un panel simple y ejecutivo.", delay: "reveal-d2" },
+              { Icon: ShieldAlert,  grad: "from-orange-400/55 via-orange-300/20 to-amber-500/35",   ic: "text-orange-600",  bg: "bg-gradient-to-br from-orange-100 to-amber-50",  title: "Vulnerabilidades",  desc: "Prioriza remediación por criticidad, estado y exposición con trazabilidad completa.", delay: "reveal-d3" },
+              { Icon: Bell,         grad: "from-red-400/55 via-red-300/20 to-rose-500/35",       ic: "text-red-600",     bg: "bg-gradient-to-br from-red-100 to-rose-50",     title: "Incidentes",      desc: "Registra eventos, seguimiento, SLA y resolución con visibilidad clara para el equipo.", delay: "reveal-d4" },
+              { Icon: TrendingDown, grad: "from-amber-400/55 via-amber-300/20 to-yellow-500/35",   ic: "text-amber-600",   bg: "bg-gradient-to-br from-amber-100 to-yellow-50",   title: "Riesgos",          desc: "Evalúa impacto, probabilidad y tendencia con una visión cuantitativa del negocio.", delay: "reveal-d5" },
+              { Icon: Monitor,      grad: "from-slate-400/55 via-slate-300/20 to-gray-500/35",     ic: "text-slate-600",   bg: "bg-gradient-to-br from-slate-100 to-gray-50",  title: "Activos",          desc: "Mantén inventario tecnológico, criticidad, responsables, parches y contexto operativo.", delay: "reveal-d6" },
+              { Icon: Users,        grad: "from-violet-400/55 via-violet-300/20 to-purple-500/35",  ic: "text-violet-600",  bg: "bg-gradient-to-br from-violet-100 to-purple-50",  title: "Trabajadores",    desc: "Gestiona accesos críticos, roles, validaciones, capacitación y trazabilidad de personas.", delay: "reveal-d7" },
+              { Icon: Building2,    grad: "from-sky-400/55 via-sky-300/20 to-cyan-500/35",       ic: "text-sky-600",     bg: "bg-gradient-to-br from-sky-100 to-cyan-50",     title: "Terceros",        desc: "Evalúa proveedores, exposición, cumplimiento, contratos y nivel de riesgo de la cadena.", delay: "reveal-d8" },
+              { Icon: BadgeCheck,   grad: "from-green-400/55 via-green-300/20 to-emerald-500/35",  ic: "text-green-600",   bg: "bg-gradient-to-br from-green-100 to-emerald-50",   title: "Cumplimiento",    desc: "Mapea controles, progreso y evidencias para ISO 27001:2022 y Ley 21.663 de Chile.", delay: "reveal-d9" },
+              { Icon: RefreshCw,    grad: "from-teal-400/55 via-teal-300/20 to-cyan-500/35",      ic: "text-teal-600",    bg: "bg-gradient-to-br from-teal-100 to-cyan-50",    title: "BCP / DRP",       desc: "Crea planes de continuidad y recuperación con métricas operativas como RTO y RPO.", delay: "reveal-d10" },
+              { Icon: Crown,        grad: "from-yellow-400/55 via-yellow-300/20 to-amber-500/35",   ic: "text-yellow-600",  bg: "bg-gradient-to-br from-yellow-100 to-amber-50",  title: "Comité",          desc: "Formaliza miembros, decisiones y gobernanza del comité de ciberseguridad.", delay: "reveal-d11" },
+              { Icon: FolderOpen,   grad: "from-rose-400/55 via-rose-300/20 to-pink-500/35",      ic: "text-rose-600",    bg: "bg-gradient-to-br from-rose-100 to-pink-50",    title: "Documentos",      desc: "Centraliza políticas, contratos, certificaciones y documentación crítica de la empresa.", delay: "reveal-d12" },
             ] as { Icon: React.ElementType; grad: string; ic: string; bg: string; title: string; desc: string; delay: string }[]).map((m) => (
-              <div key={m.title} className={`reveal ${m.delay} p-[1px] rounded-2xl bg-gradient-to-br ${m.grad} card-glow-light group`}>
-                <div className="bg-white p-5 rounded-2xl h-full border border-gray-100">
-                  <div className={`w-10 h-10 rounded-xl ${m.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+              <div key={m.title} className={`reveal ${m.delay} p-[1.5px] rounded-[22px] bg-gradient-to-br ${m.grad} card-glow-light group`}>
+                <div className="bg-white p-6 rounded-[20px] h-full">
+                  <div className={`icon-box-prem ${m.bg} mb-4`}>
                     <m.Icon className={`h-5 w-5 ${m.ic}`} />
                   </div>
-                  <h3 className="font-semibold text-gray-900 mb-1.5">{m.title}</h3>
+                  <h3 className="font-semibold text-gray-900 mb-2 tracking-[-0.02em] text-[15px]">{m.title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{m.desc}</p>
                 </div>
               </div>
@@ -493,17 +480,17 @@ export default function HomePage() {
       {/* ──────────────────────────────── */}
       {/* SECTION 3 — DASHBOARD PREVIEW   */}
       {/* ──────────────────────────────── */}
-      <section className="relative py-28 px-4 overflow-hidden bg-gray-50">
-        {/* Parallax orb */}
-        <div className="parallax-orb w-[500px] h-[500px] bottom-[-60px] left-[-60px] opacity-[0.05]"
+      <section className="relative py-28 px-4 overflow-hidden section-slate">
+        {/* Mesh orb */}
+        <div className="parallax-orb w-[500px] h-[500px] bottom-[-60px] left-[-60px] opacity-[0.06]"
           style={{ background: 'radial-gradient(circle, #8b5cf6, transparent 70%)' }} />
         <div ref={dashRef} className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16 reveal">
-            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 text-sm font-medium mb-5">Visibilidad real</div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-              Datos claros para actuar,<br className="hidden md:block" /> no solo para mirar
+            <div className="badge-prem-purple mb-5"><span className="w-1.5 h-1.5 rounded-full bg-violet-500 inline-block" />Visibilidad real</div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-5 tracking-[-0.03em] leading-[1.08]">
+              Datos <span className="gradient-word">claros</span> para actuar,<br className="hidden md:block" /> no solo para mirar
             </h2>
-            <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
               La propuesta de Guardy es simple: traducir complejidad técnica en una vista ejecutiva que cualquier líder de empresa pueda entender.
             </p>
           </div>
@@ -511,8 +498,8 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-6 mb-6">
             {/* Left column — 3 metric cards */}
             <div className="flex flex-col gap-4">
-              <div className="reveal reveal-d1 p-[1px] rounded-2xl bg-gradient-to-br from-orange-300/40 to-indigo-300/10 card-glow-light">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100">
+              <div className="reveal reveal-d1 p-[1.5px] rounded-[22px] bg-gradient-to-br from-orange-400/55 via-orange-300/20 to-indigo-400/35 card-glow-light">
+                <div className="bg-white p-6 rounded-[20px]">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Score de seguridad consolidado</div>
                   <div className="flex items-end gap-2 mb-1">
                     <span ref={el => { dashNums.current[0] = el; }} className="text-5xl font-extrabold text-gray-900">0</span>
@@ -524,8 +511,8 @@ export default function HomePage() {
                   <p className="text-sm text-gray-500">Riesgo moderado basado en 24 escaneos</p>
                 </div>
               </div>
-              <div className="reveal reveal-d2 p-[1px] rounded-2xl bg-gradient-to-br from-red-300/40 to-purple-300/10 card-glow-light">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100">
+              <div className="reveal reveal-d2 p-[1.5px] rounded-[22px] bg-gradient-to-br from-red-400/55 via-red-300/20 to-purple-400/35 card-glow-light">
+                <div className="bg-white p-6 rounded-[20px]">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Hallazgos por prioridad</div>
                   <div className="text-5xl font-extrabold text-gray-900 mb-2">
                     <span ref={el => { dashNums.current[1] = el; }}>0</span>
@@ -537,8 +524,8 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
-              <div className="reveal reveal-d3 p-[1px] rounded-2xl bg-gradient-to-br from-green-300/40 to-teal-300/10 card-glow-light">
-                <div className="bg-white p-5 rounded-2xl border border-gray-100">
+              <div className="reveal reveal-d3 p-[1.5px] rounded-[22px] bg-gradient-to-br from-green-400/55 via-green-300/20 to-teal-400/35 card-glow-light">
+                <div className="bg-white p-6 rounded-[20px]">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Estado de cumplimiento</div>
                   <div className="text-5xl font-extrabold text-gray-900 mb-2">0%</div>
                   <p className="text-sm text-gray-500">74 controles pendientes de implementar</p>
@@ -547,8 +534,8 @@ export default function HomePage() {
             </div>
 
             {/* Right column — mock chart card */}
-            <div className="reveal reveal-d2 p-[1px] rounded-2xl bg-gradient-to-br from-blue-300/40 via-indigo-300/20 to-purple-300/10 card-glow-light">
-              <div className="bg-white p-6 rounded-2xl h-full border border-gray-100">
+            <div className="reveal reveal-d2 p-[1.5px] rounded-[22px] bg-gradient-to-br from-blue-400/55 via-indigo-300/25 to-purple-400/35 card-glow-light">
+              <div className="bg-white p-6 rounded-[20px] h-full">
                 <div className="font-semibold text-gray-900 mb-4">Monitoreo consolidado</div>
                 {/* Donut mock */}
                 <div className="flex items-center gap-6 mb-6">
@@ -599,13 +586,13 @@ export default function HomePage() {
           {/* Bottom stats row */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: "Escaneos completados", value: "24", grad: "from-blue-300/40 to-indigo-300/10", delay: "reveal-d1" },
-              { label: "Proveedores monitoreados", value: "6", grad: "from-purple-300/40 to-violet-300/10", delay: "reveal-d2" },
-              { label: "Activos críticos", value: "18", grad: "from-orange-300/40 to-amber-300/10", delay: "reveal-d3" },
-              { label: "Documentos centralizados", value: "6", grad: "from-teal-300/40 to-green-300/10", delay: "reveal-d4" },
+              { label: "Escaneos completados",     value: "24", grad: "from-blue-400/55 via-blue-300/20 to-indigo-400/35",  delay: "reveal-d1" },
+              { label: "Proveedores monitoreados", value: "6",  grad: "from-purple-400/55 via-purple-300/20 to-violet-400/35", delay: "reveal-d2" },
+              { label: "Activos críticos",         value: "18", grad: "from-orange-400/55 via-orange-300/20 to-amber-400/35",  delay: "reveal-d3" },
+              { label: "Documentos centralizados", value: "6",  grad: "from-teal-400/55 via-teal-300/20 to-green-400/35",    delay: "reveal-d4" },
             ].map((s, si) => (
-              <div key={s.label} className={`reveal ${s.delay} p-[1px] rounded-2xl bg-gradient-to-br ${s.grad} card-glow-light`}>
-                <div className="bg-white p-5 rounded-2xl text-center border border-gray-100">
+              <div key={s.label} className={`reveal ${s.delay} p-[1.5px] rounded-[22px] bg-gradient-to-br ${s.grad} card-glow-light`}>
+                <div className="bg-white p-5 rounded-[20px] text-center">
                   <div className="text-3xl font-extrabold text-gray-900">
                     <span ref={el => { dashNums.current[3 + si] = el; }}>0</span>
                   </div>
@@ -620,7 +607,7 @@ export default function HomePage() {
       {/* ───────────────────────── */}
       {/* SECTION 4 — GUARDY AI    */}
       {/* ───────────────────────── */}
-      <section className="relative py-28 px-4 overflow-hidden bg-white">
+      <section id="demo" className="relative py-28 px-4 overflow-hidden section-white">
         {/* Parallax orbs */}
         <div className="parallax-orb w-[700px] h-[700px] top-[-200px] left-[-150px] opacity-[0.04]"
           style={{ background: 'radial-gradient(circle, #3b82f6, transparent 70%)' }} />
@@ -628,11 +615,9 @@ export default function HomePage() {
           style={{ background: 'radial-gradient(circle, #8b5cf6, transparent 70%)' }} />
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16 reveal">
-            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-medium mb-5">
-              ✦ Guardy AI
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-              Tu analista de ciberseguridad con IA
+            <div className="badge-prem mb-5"><span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block mr-1" />✦ Guardy AI</div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-[-0.03em] leading-[1.08]">
+              Tu analista de ciberseguridad <span className="gradient-word">con IA</span>
             </h2>
             <p className="text-lg text-gray-500 max-w-2xl mx-auto">
               Guardy AI te explica lo importante con lenguaje claro, conecta módulos y convierte señales dispersas en decisiones concretas para el negocio.
@@ -653,8 +638,8 @@ export default function HomePage() {
             </div>
 
             {/* Right — Animated Chat */}
-            <div className="reveal reveal-d2 p-[1px] rounded-2xl bg-gradient-to-br from-blue-300/40 via-indigo-300/20 to-purple-300/10 card-glow-light">
-              <div className="bg-white p-5 rounded-2xl border border-gray-100">
+            <div className="reveal reveal-d2 p-[1.5px] rounded-[22px] bg-gradient-to-br from-blue-400/55 via-indigo-300/25 to-purple-400/35 card-glow-light">
+              <div className="bg-white p-6 rounded-[20px]">
                 {/* Header */}
                 <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
                   <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
@@ -703,31 +688,31 @@ export default function HomePage() {
       {/* ─────────────────────── */}
       {/* SECTION 5 — USE CASES  */}
       {/* ─────────────────────── */}
-      <section className="relative py-28 px-4 overflow-hidden bg-gray-50">
-        <div className="parallax-orb w-[500px] h-[500px] top-[10%] right-[-80px] opacity-[0.05]"
+      <section className="relative py-28 px-4 overflow-hidden section-slate">
+        <div className="parallax-orb w-[500px] h-[500px] top-[10%] right-[-80px] opacity-[0.06]"
           style={{ background: 'radial-gradient(circle, #06b6d4, transparent 70%)' }} />
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16 reveal">
-            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-200 border border-gray-300 text-gray-600 text-sm font-medium mb-5">Casos de uso</div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-              Diseñado para empresas que necesitan<br className="hidden md:block" /> orden, trazabilidad y control
+            <div className="badge-prem-gray mb-5"><span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />Casos de uso</div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-[-0.03em] leading-[1.08]">
+              Diseñado para empresas que necesitan<br className="hidden md:block" /> <span className="gradient-word">orden, trazabilidad y control</span>
             </h2>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-5">
             {([
-              { Icon: Search,     grad: "from-blue-300/40 to-cyan-300/10",   ic: "text-blue-600",   bg: "bg-blue-50",   title: "No tienes equipo experto",      desc: "Guardy actúa como tu departamento de ciberseguridad: detecta, prioriza y te guía sin necesitar un CISO interno.", delay: "reveal-d1" },
-              { Icon: BadgeCheck, grad: "from-green-300/40 to-teal-300/10",  ic: "text-green-600",  bg: "bg-green-50",  title: "Necesitas cumplir normativas",   desc: "Mapea controles para ISO 27001 y Ley 21.663 con evidencias, avance y alertas para tus próximas auditorías.", delay: "reveal-d2" },
-              { Icon: Network,    grad: "from-violet-300/40 to-indigo-300/10",ic: "text-violet-600",bg: "bg-violet-50", title: "Trabajas con terceros críticos", desc: "Evalúa la exposición de tus proveedores, gestiona contratos y monitorea su cumplimiento en tiempo real.", delay: "reveal-d3" },
-              { Icon: KeyRound,   grad: "from-orange-300/40 to-amber-300/10", ic: "text-orange-600",bg: "bg-orange-50", title: "Manejas datos sensibles",        desc: "Protege activos críticos con inventario, clasificación, control de acceso y trazabilidad completa de cambios.", delay: "reveal-d4" },
+              { Icon: Search,     grad: "from-blue-400/55 via-blue-300/20 to-cyan-500/35",    ic: "text-blue-600",   bg: "bg-gradient-to-br from-blue-100 to-blue-50",   title: "No tienes equipo experto",      desc: "Guardy actúa como tu departamento de ciberseguridad: detecta, prioriza y te guía sin necesitar un CISO interno.", delay: "reveal-d1" },
+              { Icon: BadgeCheck, grad: "from-green-400/55 via-green-300/20 to-teal-500/35",  ic: "text-green-600",  bg: "bg-gradient-to-br from-green-100 to-green-50",  title: "Necesitas cumplir normativas",   desc: "Mapea controles para ISO 27001 y Ley 21.663 con evidencias, avance y alertas para tus próximas auditorías.", delay: "reveal-d2" },
+              { Icon: Network,    grad: "from-violet-400/55 via-violet-300/20 to-indigo-500/35", ic: "text-violet-600", bg: "bg-gradient-to-br from-violet-100 to-violet-50", title: "Trabajas con terceros críticos", desc: "Evalúa la exposición de tus proveedores, gestiona contratos y monitorea su cumplimiento en tiempo real.", delay: "reveal-d3" },
+              { Icon: KeyRound,   grad: "from-orange-400/55 via-orange-300/20 to-amber-500/35",  ic: "text-orange-600", bg: "bg-gradient-to-br from-orange-100 to-amber-50", title: "Manejas datos sensibles",        desc: "Protege activos críticos con inventario, clasificación, control de acceso y trazabilidad completa de cambios.", delay: "reveal-d4" },
             ] as { Icon: React.ElementType; grad: string; ic: string; bg: string; title: string; desc: string; delay: string }[]).map((uc) => (
-              <div key={uc.title} className={`reveal ${uc.delay} p-[1px] rounded-2xl bg-gradient-to-br ${uc.grad} card-glow-light group`}>
-                <div className="bg-white p-6 rounded-2xl h-full border border-gray-100">
-                  <div className={`w-10 h-10 rounded-xl ${uc.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+              <div key={uc.title} className={`reveal ${uc.delay} p-[1.5px] rounded-[22px] bg-gradient-to-br ${uc.grad} card-glow-light group`}>
+                <div className="bg-white p-7 rounded-[20px] h-full">
+                  <div className={`icon-box-prem ${uc.bg} mb-5`}>
                     <uc.Icon className={`h-5 w-5 ${uc.ic}`} />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{uc.title}</h3>
-                  <p className="text-gray-500 leading-relaxed">{uc.desc}</p>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2.5 tracking-[-0.02em]">{uc.title}</h3>
+                  <p className="text-gray-500 leading-relaxed text-[15px]">{uc.desc}</p>
                 </div>
               </div>
             ))}
@@ -738,30 +723,30 @@ export default function HomePage() {
       {/* ──────────────────────────── */}
       {/* SECTION 6 — COMPLIANCE      */}
       {/* ──────────────────────────── */}
-      <section className="relative py-28 px-4 overflow-hidden bg-white">
-        <div className="parallax-orb w-[600px] h-[600px] bottom-[-150px] left-[5%] opacity-[0.04]"
+      <section className="relative py-28 px-4 overflow-hidden section-white">
+        <div className="parallax-orb w-[600px] h-[600px] bottom-[-150px] left-[5%] opacity-[0.05]"
           style={{ background: 'radial-gradient(circle, #10b981, transparent 70%)' }} />
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16 reveal">
-            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-green-50 border border-green-100 text-green-600 text-sm font-medium mb-5">Cumplimiento</div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-              Cumple con lo que te exige la ley,<br className="hidden md:block" /> sin perderte en la complejidad
+            <div className="badge-prem-green mb-5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />Cumplimiento</div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-[-0.03em] leading-[1.08]">
+              Cumple con lo que te exige <span className="gradient-word">la ley</span>,<br className="hidden md:block" /> sin perderte en la complejidad
             </h2>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {([
-              { Icon: Award,     grad: "from-amber-300/40 to-yellow-300/10",  ic: "text-amber-600",  bg: "bg-amber-50",  title: "ISO 27001:2022",      desc: "Mapa completo de controles, evidencias y avance hacia la certificación internacional.", delay: "reveal-d1" },
-              { Icon: Scale,     grad: "from-blue-300/40 to-indigo-300/10",   ic: "text-blue-600",   bg: "bg-blue-50",   title: "Ley 21.663 (Chile)",  desc: "Seguimiento de obligaciones del marco de ciberseguridad nacional con alertas automáticas.", delay: "reveal-d2" },
-              { Icon: RefreshCw, grad: "from-teal-300/40 to-cyan-300/10",     ic: "text-teal-600",   bg: "bg-teal-50",   title: "BCP / DRP",           desc: "Planes de continuidad y recuperación con métricas RTO/RPO operativas y actualizadas.", delay: "reveal-d3" },
-              { Icon: Archive,   grad: "from-rose-300/40 to-pink-300/10",     ic: "text-rose-600",   bg: "bg-rose-50",   title: "Repositorio central", desc: "Políticas, certificaciones y evidencias en un solo lugar, disponibles para auditorías.", delay: "reveal-d4" },
+              { Icon: Award,     grad: "from-amber-400/55 via-amber-300/20 to-yellow-500/35",  ic: "text-amber-600",  bg: "bg-gradient-to-br from-amber-100 to-yellow-50",  title: "ISO 27001:2022",      desc: "Mapa completo de controles, evidencias y avance hacia la certificación internacional.", delay: "reveal-d1" },
+              { Icon: Scale,     grad: "from-blue-400/55 via-blue-300/20 to-indigo-500/35",   ic: "text-blue-600",   bg: "bg-gradient-to-br from-blue-100 to-blue-50",   title: "Ley 21.663 (Chile)",  desc: "Seguimiento de obligaciones del marco de ciberseguridad nacional con alertas automáticas.", delay: "reveal-d2" },
+              { Icon: RefreshCw, grad: "from-teal-400/55 via-teal-300/20 to-cyan-500/35",     ic: "text-teal-600",   bg: "bg-gradient-to-br from-teal-100 to-cyan-50",   title: "BCP / DRP",           desc: "Planes de continuidad y recuperación con métricas RTO/RPO operativas y actualizadas.", delay: "reveal-d3" },
+              { Icon: Archive,   grad: "from-rose-400/55 via-rose-300/20 to-pink-500/35",     ic: "text-rose-600",   bg: "bg-gradient-to-br from-rose-100 to-pink-50",   title: "Repositorio central", desc: "Políticas, certificaciones y evidencias en un solo lugar, disponibles para auditorías.", delay: "reveal-d4" },
             ] as { Icon: React.ElementType; grad: string; ic: string; bg: string; title: string; desc: string; delay: string }[]).map((c) => (
-              <div key={c.title} className={`reveal ${c.delay} p-[1px] rounded-2xl bg-gradient-to-br ${c.grad} card-glow-light group`}>
-                <div className="bg-white p-6 rounded-2xl h-full border border-gray-100">
-                  <div className={`w-10 h-10 rounded-xl ${c.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+              <div key={c.title} className={`reveal ${c.delay} p-[1.5px] rounded-[22px] bg-gradient-to-br ${c.grad} card-glow-light group`}>
+                <div className="bg-white p-6 rounded-[20px] h-full">
+                  <div className={`icon-box-prem ${c.bg} mb-4`}>
                     <c.Icon className={`h-5 w-5 ${c.ic}`} />
                   </div>
-                  <h3 className="font-bold text-gray-900 mb-2">{c.title}</h3>
+                  <h3 className="font-bold text-gray-900 mb-2 tracking-[-0.02em]">{c.title}</h3>
                   <p className="text-sm text-gray-500 leading-relaxed">{c.desc}</p>
                 </div>
               </div>
@@ -773,33 +758,33 @@ export default function HomePage() {
       {/* ──────────────────────── */}
       {/* SECTION 7 — WHY GUARDY  */}
       {/* ──────────────────────── */}
-      <section className="relative py-28 px-4 overflow-hidden bg-gray-50">
-        <div className="parallax-orb w-[700px] h-[700px] top-[-100px] right-[-100px] opacity-[0.05]"
+      <section className="relative py-28 px-4 overflow-hidden section-slate">
+        <div className="parallax-orb w-[700px] h-[700px] top-[-100px] right-[-100px] opacity-[0.06]"
           style={{ background: 'radial-gradient(circle, #a855f7, transparent 70%)' }} />
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16 reveal">
-            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-purple-50 border border-purple-100 text-purple-600 text-sm font-medium mb-5">Diferenciación</div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-              ¿Por qué Guardy?
+            <div className="badge-prem-purple mb-5"><span className="w-1.5 h-1.5 rounded-full bg-purple-500 inline-block" />Diferenciación</div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-[-0.03em] leading-[1.08]">
+              ¿Por qué <span className="gradient-word">Guardy</span>?
             </h2>
-            <p className="text-lg text-gray-500 max-w-2xl mx-auto">
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
               Porque una empresa real no necesita diez plataformas distintas. Necesita una sola vista que conecte todo y te diga qué hacer.
             </p>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
             {([
-              { Icon: Workflow,  grad: "from-blue-300/40 to-indigo-300/10",    ic: "text-blue-600",    bg: "bg-blue-50",   title: "Todo conectado",   desc: "Vulnerabilidades, riesgos, incidentes, cumplimiento y continuidad en un solo sistema.", delay: "reveal-d1" },
-              { Icon: Bot,       grad: "from-violet-300/40 to-purple-300/10",   ic: "text-violet-600",  bg: "bg-violet-50", title: "IA útil",           desc: "No solo detecta, también explica y recomienda en lenguaje de negocio.", delay: "reveal-d2" },
-              { Icon: Settings2, grad: "from-orange-300/40 to-amber-300/10",    ic: "text-orange-600",  bg: "bg-orange-50", title: "Hecho para operar", desc: "Flujos de trabajo reales: SLA, asignaciones, evidencias, auditorías y reportes.", delay: "reveal-d3" },
-              { Icon: MapPin,    grad: "from-green-300/40 to-emerald-300/10",   ic: "text-green-600",   bg: "bg-green-50",  title: "Contexto local",   desc: "Diseñado para las realidades regulatorias de Chile y Latinoamérica.", delay: "reveal-d4" },
+              { Icon: Workflow,  grad: "from-blue-400/55 via-blue-300/20 to-indigo-500/35",    ic: "text-blue-600",    bg: "bg-gradient-to-br from-blue-100 to-blue-50",   title: "Todo conectado",   desc: "Vulnerabilidades, riesgos, incidentes, cumplimiento y continuidad en un solo sistema.", delay: "reveal-d1" },
+              { Icon: Bot,       grad: "from-violet-400/55 via-violet-300/20 to-purple-500/35",   ic: "text-violet-600",  bg: "bg-gradient-to-br from-violet-100 to-purple-50", title: "IA útil",           desc: "No solo detecta, también explica y recomienda en lenguaje de negocio.", delay: "reveal-d2" },
+              { Icon: Settings2, grad: "from-orange-400/55 via-orange-300/20 to-amber-500/35",    ic: "text-orange-600",  bg: "bg-gradient-to-br from-orange-100 to-amber-50", title: "Hecho para operar", desc: "Flujos de trabajo reales: SLA, asignaciones, evidencias, auditorías y reportes.", delay: "reveal-d3" },
+              { Icon: MapPin,    grad: "from-green-400/55 via-green-300/20 to-emerald-500/35",   ic: "text-green-600",   bg: "bg-gradient-to-br from-green-100 to-emerald-50",  title: "Contexto local",   desc: "Diseñado para las realidades regulatorias de Chile y Latinoamérica.", delay: "reveal-d4" },
             ] as { Icon: React.ElementType; grad: string; ic: string; bg: string; title: string; desc: string; delay: string }[]).map((d) => (
-              <div key={d.title} className={`reveal ${d.delay} p-[1px] rounded-2xl bg-gradient-to-br ${d.grad} card-glow-light group`}>
-                <div className="bg-white p-6 rounded-2xl h-full border border-gray-100">
-                  <div className={`w-10 h-10 rounded-xl ${d.bg} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+              <div key={d.title} className={`reveal ${d.delay} p-[1.5px] rounded-[22px] bg-gradient-to-br ${d.grad} card-glow-light group`}>
+                <div className="bg-white p-6 rounded-[20px] h-full">
+                  <div className={`icon-box-prem ${d.bg} mb-4`}>
                     <d.Icon className={`h-5 w-5 ${d.ic}`} />
                   </div>
-                  <h3 className="font-bold text-gray-900 mb-2">{d.title}</h3>
+                  <h3 className="font-bold text-gray-900 mb-2 tracking-[-0.02em]">{d.title}</h3>
                   <p className="text-sm text-gray-500">{d.desc}</p>
                 </div>
               </div>
@@ -807,13 +792,13 @@ export default function HomePage() {
           </div>
 
           {/* Quote */}
-          <div className="reveal p-[1px] rounded-2xl bg-gradient-to-br from-indigo-300/40 via-purple-300/20 to-blue-300/10 max-w-3xl mx-auto">
-            <div className="bg-white p-8 rounded-2xl text-center border border-gray-100">
-              <div className="text-4xl text-indigo-300 font-serif mb-3">&ldquo;</div>
-              <p className="text-xl font-medium text-gray-800 leading-relaxed mb-4">
+          <div className="reveal p-[1.5px] rounded-[22px] bg-gradient-to-br from-indigo-400/55 via-purple-300/25 to-blue-400/35 max-w-3xl mx-auto">
+            <div className="bg-white p-10 rounded-[20px] text-center">
+              <div className="text-5xl gradient-word font-serif mb-4 leading-none">&ldquo;</div>
+              <p className="text-xl font-medium text-gray-800 leading-relaxed mb-5 tracking-[-0.01em]">
                 Guardy transforma la ciberseguridad en algo entendible para la empresa: qué tengo, qué me falta, dónde está el riesgo y qué hago ahora.
               </p>
-              <p className="text-sm text-gray-400">— Plataforma de gestión integral de ciberseguridad para empresas</p>
+              <p className="text-sm text-gray-400 tracking-wide">— Plataforma de gestión integral de ciberseguridad para empresas</p>
             </div>
           </div>
         </div>
@@ -822,14 +807,14 @@ export default function HomePage() {
       {/* ─────────────────────── */}
       {/* SECTION 8 — PRICING     */}
       {/* ─────────────────────── */}
-      <section id="pricing" className="relative py-28 px-4 overflow-hidden bg-gray-50">
+      <section id="pricing" className="relative py-28 px-4 overflow-hidden section-white">
         <div className="parallax-orb w-[700px] h-[700px] top-[-100px] left-[20%] opacity-[0.05]"
           style={{ background: 'radial-gradient(circle, #3b82f6, transparent 70%)' }} />
         <div className="container mx-auto max-w-7xl relative z-10">
           <div className="text-center mb-12 reveal">
-            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-medium mb-5">Planes</div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-              Elige el nivel de control que necesitas
+            <div className="badge-prem mb-5"><span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block mr-1" />Planes</div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-[-0.03em] leading-[1.08]">
+              Elige el <span className="gradient-word">nivel de control</span> que necesitas
             </h2>
             {/* Toggles row */}
             <div className="flex flex-col items-center gap-3 mt-4">
@@ -873,55 +858,55 @@ export default function HomePage() {
                 desc: "Descubre tu exposición",
                 features: ["Análisis puntual de una web", "SSL / DNS / Headers", "Vista general de hallazgos", "Alertas limitadas"],
                 cta: "Comenzar gratis", highlight: false,
-                grad: "from-slate-300/40 to-slate-200/10",
+                grad: "from-slate-400/55 via-slate-300/20 to-gray-500/35",
               },
               {
                 badge: "Crecimiento", name: "Básico", monthly: 79, annual: 67,
                 desc: "Monitoreo continuo",
                 features: ["Monitoreo semanal", "Alertas automáticas", "Detección temprana", "Historial reciente"],
                 cta: "Elegir Básico", highlight: false,
-                grad: "from-blue-300/40 to-indigo-300/10",
+                grad: "from-blue-400/55 via-blue-300/20 to-indigo-500/35",
               },
               {
                 badge: "Más popular", name: "Profesional", monthly: 299, annual: 254,
                 desc: "Control de riesgos",
                 features: ["Monitoreo avanzado", "Riesgos y vulnerabilidades", "Eventos e incidentes", "Cumplimiento base", "Integraciones"],
                 cta: "Elegir Profesional", highlight: true,
-                grad: "from-blue-500/50 via-indigo-400/30 to-blue-300/20",
+                grad: "from-indigo-500/80 via-blue-500/60 to-violet-500/70",
               },
               {
                 badge: "Escala", name: "Enterprise", monthly: 899, annual: 764,
                 desc: "Gobierno y continuidad",
                 features: ["Seguridad a escala", "BCP / DRP completo", "Gestión de terceros", "Soporte dedicado", "SLA e integraciones custom"],
                 cta: "Hablar con ventas", highlight: false,
-                grad: "from-violet-300/40 to-purple-300/10",
+                grad: "from-violet-400/55 via-violet-300/20 to-purple-500/35",
               },
             ].map((plan, pi) => (
               <div
                 key={plan.name}
-                className={`reveal reveal-d${pi + 1} relative p-[1px] rounded-2xl bg-gradient-to-br ${plan.grad} ${plan.highlight ? 'card-glow-light scale-[1.02]' : 'card-glow-light'}`}
+                className={`reveal reveal-d${pi + 1} relative p-[1.5px] rounded-[22px] bg-gradient-to-br ${plan.grad} ${plan.highlight ? 'card-glow-light scale-[1.03]' : 'card-glow-light'}`}
               >
                 {plan.highlight && (
                   <div className="absolute -top-4 left-0 right-0 flex justify-center z-10">
-                    <span className="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/30">✦ Más popular</span>
+                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg shadow-blue-500/40">✦ Más popular</span>
                   </div>
                 )}
-                <div className={`bg-white p-6 rounded-2xl flex flex-col h-full border ${plan.highlight ? 'border-blue-200' : 'border-gray-100'}`}>
+                <div className={`${plan.highlight ? 'pricing-popular' : 'bg-white'} p-6 rounded-[20px] flex flex-col h-full`}>
                   <div className="mb-4">
-                    <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">{!plan.highlight ? plan.badge : ""}</span>
-                    <h3 className="text-xl font-bold text-gray-900 mt-1">{plan.name}</h3>
+                    <span className={`text-xs font-semibold uppercase tracking-widest ${plan.highlight ? 'text-blue-200' : 'text-gray-400'}`}>{!plan.highlight ? plan.badge : ""}</span>
+                    <h3 className={`text-xl font-bold mt-1 ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
                     <div className="flex items-end gap-1 mt-3">
-                      <span className="text-4xl font-extrabold text-gray-900">
+                      <span className={`text-4xl font-extrabold ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
                         ${fmtPrice(plan.name, billingPeriod, currency)}
                       </span>
-                      <span className="text-gray-400 text-sm mb-1 leading-none pb-1">{currency}/mes</span>
+                      <span className={`text-sm mb-1 leading-none pb-1 ${plan.highlight ? 'text-blue-200' : 'text-gray-400'}`}>{currency}/mes</span>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">{plan.desc}</p>
+                    <p className={`text-sm mt-1 ${plan.highlight ? 'text-blue-100' : 'text-gray-500'}`}>{plan.desc}</p>
                   </div>
                   <ul className="space-y-2.5 flex-1 mb-6">
                     {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2 text-sm text-gray-600">
-                        <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                      <li key={f} className={`flex items-start gap-2 text-sm ${plan.highlight ? 'text-blue-50' : 'text-gray-600'}`}>
+                        <Check className={`h-4 w-4 mt-0.5 flex-shrink-0 ${plan.highlight ? 'text-blue-200' : 'text-green-500'}`} />
                         {f}
                       </li>
                     ))}
@@ -929,7 +914,7 @@ export default function HomePage() {
                   <Link href={plan.name === "Enterprise" ? "#contact" : "/auth/register"}>
                     <Button
                       className={`w-full transition-all ${plan.highlight
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25 border-0'
+                        ? 'bg-white hover:bg-blue-50 text-blue-700 font-bold shadow-none border-0'
                         : 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-200'}`}
                     >
                       {plan.cta}
@@ -945,14 +930,14 @@ export default function HomePage() {
       {/* ─────────────────────── */}
       {/* SECTION 9 — CONTACT     */}
       {/* ─────────────────────── */}
-      <section id="contact" className="relative py-28 px-4 overflow-hidden bg-white">
+      <section id="contact" className="relative py-28 px-4 overflow-hidden section-slate">
         <div className="parallax-orb w-[500px] h-[500px] bottom-[-80px] right-[-80px] opacity-[0.04]"
           style={{ background: 'radial-gradient(circle, #6366f1, transparent 70%)' }} />
         <div className="container mx-auto max-w-6xl relative z-10">
           <div className="text-center mb-16 reveal">
-            <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-medium mb-5">💬 Contacto</div>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-tight">
-              ¿Tienes preguntas?
+            <div className="badge-prem mb-5"><span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block mr-1" />💬 Contacto</div>
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-[-0.03em] leading-[1.08]">
+              ¿Tienes <span className="gradient-word">preguntas</span>?
             </h2>
             <p className="text-lg text-gray-500 max-w-2xl mx-auto">
               Nuestro equipo está listo para ayudarte. Cuéntanos en qué etapa estás y coordinemos la mejor forma de avanzar.
@@ -963,13 +948,13 @@ export default function HomePage() {
             {/* Left — contact info cards */}
             <div className="space-y-4">
               {[
-                { Icon: Mail,  grad: "from-blue-300/40 to-indigo-300/10",   ic: "text-blue-600",   bg: "bg-blue-100",    title: "Email",     lines: ["contacto@guardyscan.com", "soporte@guardyscan.com"], delay: "reveal-d1" },
-                { Icon: Phone, grad: "from-green-300/40 to-teal-300/10",    ic: "text-green-600",  bg: "bg-green-100",  title: "Teléfono",  lines: ["+56 9 9337 2630", "Lunes a Viernes, 9:00 – 18:00"], delay: "reveal-d2" },
-                { Icon: MapPin,grad: "from-purple-300/40 to-violet-300/10", ic: "text-purple-600", bg: "bg-purple-100", title: "Oficinas",  lines: ["🇨🇱 San Sebastián 2750, Of. 902 · Las Condes", "🇲🇽 Av. Solidaridad 1024 Of. H3 · Playa del Carmen"], delay: "reveal-d3" },
+                { Icon: Mail,  grad: "from-blue-400/55 via-blue-300/20 to-indigo-500/35",      ic: "text-blue-600",    bg: "bg-gradient-to-br from-blue-100 to-blue-50",     title: "Email",    lines: ["contacto@guardyscan.com", "soporte@guardyscan.com"], delay: "reveal-d1" },
+                { Icon: Phone, grad: "from-green-400/55 via-green-300/20 to-teal-500/35",    ic: "text-green-600",   bg: "bg-gradient-to-br from-green-100 to-emerald-50",  title: "Teléfono", lines: ["+56 9 9337 2630", "Lunes a Viernes, 9:00 – 18:00"], delay: "reveal-d2" },
+                { Icon: MapPin,grad: "from-purple-400/55 via-purple-300/20 to-violet-500/35", ic: "text-purple-600", bg: "bg-gradient-to-br from-purple-100 to-violet-50",  title: "Oficinas", lines: ["🇨🇱 San Sebastián 2750, Of. 902 · Las Condes", "🇲🇽 Av. Solidaridad 1024 Of. H3 · Playa del Carmen"], delay: "reveal-d3" },
               ].map((c) => (
-                <div key={c.title} className={`reveal ${c.delay} p-[1px] rounded-2xl bg-gradient-to-br ${c.grad} card-glow-light`}>
-                  <div className="bg-gray-50 p-5 rounded-2xl flex items-start gap-4 border border-gray-100">
-                    <div className={`h-10 w-10 ${c.bg} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                <div key={c.title} className={`reveal ${c.delay} p-[1.5px] rounded-[22px] bg-gradient-to-br ${c.grad} card-glow-light`}>
+                  <div className="bg-white p-5 rounded-[20px] flex items-start gap-4">
+                    <div className={`icon-box-prem ${c.bg} flex-shrink-0`}>
                       <c.Icon className={`h-5 w-5 ${c.ic}`} />
                     </div>
                     <div>
@@ -979,8 +964,8 @@ export default function HomePage() {
                   </div>
                 </div>
               ))}
-              <div className="reveal reveal-d4 p-[1px] rounded-2xl bg-gradient-to-br from-blue-400/50 to-indigo-600/40">
-                <div className="rounded-2xl p-5 bg-gradient-to-br from-blue-600/90 to-indigo-700/90">
+              <div className="reveal reveal-d4 p-[1.5px] rounded-[22px] bg-gradient-to-br from-blue-500/70 to-indigo-600/60">
+                <div className="rounded-[20px] p-5 bg-gradient-to-br from-blue-600 to-indigo-700">
                   <div className="font-semibold text-white mb-1">¿Necesitas ayuda urgente?</div>
                   <p className="text-sm text-blue-100 mb-3">Respuesta en menos de 24 horas hábiles para todos los planes.</p>
                   <div className="flex items-center gap-2 text-sm font-medium text-white">
@@ -992,8 +977,8 @@ export default function HomePage() {
             </div>
 
             {/* Right — form */}
-            <div className="reveal reveal-d2 p-[1px] rounded-2xl bg-gradient-to-br from-indigo-300/40 via-blue-300/20 to-purple-300/10 card-glow-light">
-              <div className="bg-gray-50 p-8 rounded-2xl border border-gray-100">
+            <div className="reveal reveal-d2 p-[1.5px] rounded-[22px] bg-gradient-to-br from-indigo-400/55 via-blue-300/25 to-purple-400/35 card-glow-light">
+              <div className="bg-white p-8 rounded-[20px]">
                 <h3 className="text-xl font-bold text-gray-900 mb-6">Agendemos una reunión</h3>
                 <form onSubmit={handleContactSubmit} className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
