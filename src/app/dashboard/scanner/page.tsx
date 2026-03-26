@@ -1186,7 +1186,76 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
               subtitle="Gestión de sesiones y protección de datos del usuario"
             >
               {(() => {
-                const cookies: any[] = scan.cookies || [];
+                const rawCookies = scan.cookies;
+                // Scanner stores cookies as aggregate object {total, secure, httpOnly, sameSite}
+                // or as an array of individual cookie objects — handle both formats
+                const cookieList: any[] = Array.isArray(rawCookies) ? rawCookies : [];
+                const cookieStats = !Array.isArray(rawCookies) && rawCookies && typeof rawCookies === 'object' ? rawCookies : null;
+                const totalCount = cookieStats ? (cookieStats.total || 0) : cookieList.length;
+
+                if (cookieStats) {
+                  // Aggregate format from scanner: {total, secure, httpOnly, sameSite}
+                  const secureCount = cookieStats.secure || 0;
+                  const httpOnlyCount = cookieStats.httpOnly || 0;
+                  const sameSite = cookieStats.sameSite || 'None';
+                  const secureLevel = secureCount === totalCount && httpOnlyCount === totalCount && sameSite !== 'None' ? 'ok' : secureCount === 0 && httpOnlyCount === 0 ? 'critical' : 'warn';
+                  return (
+                    <div className="space-y-2">
+                      {totalCount === 0 ? (
+                        <div className="flex items-center gap-2 py-2">
+                          <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                          <span className="text-sm text-gray-600 dark:text-gray-400">No se detectaron cookies en la respuesta</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${httpOnlyCount === totalCount ? 'bg-emerald-400' : httpOnlyCount > 0 ? 'bg-amber-400' : 'bg-red-500'}`} />
+                                <span className="text-sm text-gray-600 dark:text-gray-400">HttpOnly</span>
+                              </div>
+                              <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{httpOnlyCount}/{totalCount}</span>
+                            </div>
+                            <div className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${secureCount === totalCount ? 'bg-emerald-400' : secureCount > 0 ? 'bg-amber-400' : 'bg-red-500'}`} />
+                                <span className="text-sm text-gray-600 dark:text-gray-400">Secure</span>
+                              </div>
+                              <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{secureCount}/{totalCount}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between py-1.5">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">SameSite</span>
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${sameSite === 'None' || sameSite === 'No disponible' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>{sameSite}</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700/50">
+                            <div className="bg-gray-50 dark:bg-gray-800/30 rounded-lg p-2.5 text-center">
+                              <div className="text-lg font-bold text-gray-700 dark:text-gray-300">{totalCount}</div>
+                              <div className="text-[10px] font-semibold text-gray-500 uppercase">Total</div>
+                            </div>
+                            <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-lg p-2.5 text-center">
+                              <div className="text-lg font-bold text-emerald-600">{secureCount}</div>
+                              <div className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase">Seguras</div>
+                              <div className="text-[10px] text-gray-500 mt-0.5">Atributo Secure</div>
+                            </div>
+                            <div className={`${httpOnlyCount < totalCount ? 'bg-amber-50 dark:bg-amber-900/10' : 'bg-emerald-50 dark:bg-emerald-900/10'} rounded-lg p-2.5 text-center`}>
+                              <div className={`text-lg font-bold ${httpOnlyCount < totalCount ? 'text-amber-600' : 'text-emerald-600'}`}>{httpOnlyCount}</div>
+                              <div className={`text-[10px] font-semibold ${httpOnlyCount < totalCount ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'} uppercase`}>HttpOnly</div>
+                              <div className="text-[10px] text-gray-500 mt-0.5">Protegidas de JS</div>
+                            </div>
+                          </div>
+                          <div className="mt-2 flex items-center justify-end">
+                            <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${secureLevel === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : secureLevel === 'warn' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
+                              {secureLevel === 'critical' ? 'COOKIES SIN PROTECCIÓN' : secureLevel === 'warn' ? 'PROTECCIÓN PARCIAL' : 'CORRECTAMENTE CONFIGURADAS'}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                }
+
+                // Array format (individual cookie objects)
                 const classifyCookie = (c: any) => {
                   const hasHttpOnly = c.httpOnly === true;
                   const hasSecure = c.secure === true;
@@ -1196,18 +1265,18 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                   if (score >= 1) return 'warn';
                   return 'critical';
                 };
-                const okCookies = cookies.filter(c => classifyCookie(c) === 'ok');
-                const warnCookies = cookies.filter(c => classifyCookie(c) === 'warn');
-                const critCookies = cookies.filter(c => classifyCookie(c) === 'critical');
+                const okCookies = cookieList.filter(c => classifyCookie(c) === 'ok');
+                const warnCookies = cookieList.filter(c => classifyCookie(c) === 'warn');
+                const critCookies = cookieList.filter(c => classifyCookie(c) === 'critical');
                 return (
                   <div className="space-y-1">
-                    {cookies.length === 0 && (
+                    {cookieList.length === 0 && (
                       <div className="flex items-center gap-2 py-2">
                         <div className="w-2 h-2 rounded-full bg-emerald-400" />
                         <span className="text-sm text-gray-600 dark:text-gray-400">No se detectaron cookies expuestas</span>
                       </div>
                     )}
-                    {cookies.map((c: any, i: number) => {
+                    {cookieList.map((c: any, i: number) => {
                       const level = classifyCookie(c);
                       return (
                         <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
@@ -1226,7 +1295,7 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                         </div>
                       );
                     })}
-                    {cookies.length > 0 && (
+                    {cookieList.length > 0 && (
                       <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
                         <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-lg p-2.5 text-center">
                           <div className="text-lg font-bold text-emerald-600">{okCookies.length}</div>
@@ -1254,11 +1323,22 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                   <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {(scan.cookies || []).some((c: any) => !c.httpOnly && !c.secure)
-                    ? 'Cookies sin protección detectadas — un atacante puede robar sesiones de usuarios con un script malicioso (XSS), obteniendo acceso completo a sus cuentas sin necesidad de contraseña'
-                    : (scan.cookies || []).length === 0
-                    ? 'No se detectaron cookies expuestas en el análisis externo'
-                    : 'Cookies correctamente protegidas — las sesiones de usuario están resguardadas contra robo y suplantación de identidad'}
+                  {(() => {
+                    const rawC = scan.cookies;
+                    if (!rawC) return 'No se detectaron cookies expuestas en el análisis externo';
+                    if (!Array.isArray(rawC) && typeof rawC === 'object') {
+                      const total = rawC.total || 0;
+                      const httpOnly = rawC.httpOnly || 0;
+                      const secure = rawC.secure || 0;
+                      if (total === 0) return 'No se detectaron cookies en la respuesta del servidor';
+                      if (httpOnly < total || secure < total) return 'Cookies sin protección completa detectadas — un atacante puede robar sesiones de usuarios con un script malicioso (XSS), obteniendo acceso completo a sus cuentas sin necesidad de contraseña';
+                      return 'Cookies correctamente protegidas — las sesiones de usuario están resguardadas contra robo y suplantación de identidad';
+                    }
+                    const arr: any[] = rawC;
+                    if (arr.length === 0) return 'No se detectaron cookies expuestas en el análisis externo';
+                    if (arr.some((c: any) => !c.httpOnly && !c.secure)) return 'Cookies sin protección detectadas — un atacante puede robar sesiones de usuarios con un script malicioso (XSS), obteniendo acceso completo a sus cuentas sin necesidad de contraseña';
+                    return 'Cookies correctamente protegidas — las sesiones de usuario están resguardadas contra robo y suplantación de identidad';
+                  })()}
                 </p>
               </div>
             </SectionCard>
@@ -1270,7 +1350,31 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
               subtitle="Archivos sensibles accesibles públicamente"
             >
               {(() => {
-                const configFiles: any[] = scan.configFiles || scan.exposedFiles || [];
+                const rawFiles = scan.configFiles || scan.exposedFiles;
+                // Scanner stores configFiles as {robots_txt: bool, sitemap_xml: bool, ...}
+                // or as an array of strings/objects — handle both formats
+                const FILE_KEY_MAP: Record<string, string> = {
+                  robots_txt: 'robots.txt',
+                  sitemap_xml: 'sitemap.xml',
+                  security_txt: 'security.txt',
+                  _wellKnownsecurity_txt: '.well-known/security.txt',
+                  wellKnown_security_txt: '.well-known/security.txt',
+                };
+                // Normalize to array of {name, found} objects
+                let configFiles: { name: string; found?: boolean }[] = [];
+                if (Array.isArray(rawFiles)) {
+                  configFiles = rawFiles.map((f: any) => ({
+                    name: typeof f === 'string' ? f : (f.name || f.path || 'archivo'),
+                    found: true,
+                  }));
+                } else if (rawFiles && typeof rawFiles === 'object') {
+                  // Object format from scanner: {robots_txt: bool, ...}
+                  configFiles = Object.entries(rawFiles as Record<string, any>)
+                    .map(([key, val]) => ({
+                      name: FILE_KEY_MAP[key] || key.replace(/_/g, '.'),
+                      found: val === true,
+                    }));
+                }
                 const HIGH_RISK_FILES = ['.env', '.env.production', 'config.php', 'wp-config.php', '.git/config', 'database.yml', 'settings.py', 'application.properties', 'credentials', 'secret', 'private_key', 'id_rsa'];
                 const MED_RISK_FILES = ['.env.example', '.env.sample', 'README.md', 'composer.json', 'package.json', 'Dockerfile', 'docker-compose.yml', '.htaccess', 'robots.txt', 'sitemap.xml', 'crossdomain.xml'];
                 const classifyFile = (name: string) => {
@@ -1278,8 +1382,8 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                   if (MED_RISK_FILES.some(f => name.toLowerCase().includes(f.replace('.', '.')))) return 'warn';
                   return 'ok';
                 };
-                const critFiles = configFiles.filter(f => classifyFile(typeof f === 'string' ? f : f.name || '') === 'critical');
-                const warnFiles = configFiles.filter(f => classifyFile(typeof f === 'string' ? f : f.name || '') === 'warn');
+                const critFiles = configFiles.filter(f => classifyFile(f.name) === 'critical');
+                const warnFiles = configFiles.filter(f => classifyFile(f.name) === 'warn');
                 return (
                   <div className="space-y-1">
                     {configFiles.length === 0 && (
@@ -1288,30 +1392,36 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                         <span className="text-sm text-gray-600 dark:text-gray-400">No se detectaron archivos de configuración expuestos</span>
                       </div>
                     )}
-                    {configFiles.map((f: any, i: number) => {
-                      const fname = typeof f === 'string' ? f : (f.name || f.path || 'archivo');
-                      const level = classifyFile(fname);
+                    {configFiles.map((f, i) => {
+                      const level = classifyFile(f.name);
                       return (
                         <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
                           <div className="flex items-center gap-2">
                             <div className={`w-2 h-2 rounded-full ${ level === 'critical' ? 'bg-red-500' : level === 'warn' ? 'bg-amber-400' : 'bg-emerald-400' }`} />
-                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200 font-mono">{fname}</span>
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200 font-mono">{f.name}</span>
+                            {f.found !== undefined && (
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${f.found ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-400'}`}>
+                                {f.found ? 'Accesible' : 'No encontrado'}
+                              </span>
+                            )}
                           </div>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ level === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : level === 'warn' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' }`}>
-                            {level === 'critical' ? 'CRÍTICO' : level === 'warn' ? 'ATENCIÓN' : 'OK'}
-                          </span>
+                          {f.found !== false && (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ level === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : level === 'warn' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' }`}>
+                              {level === 'critical' ? 'CRÍTICO' : level === 'warn' ? 'ATENCIÓN' : 'OK'}
+                            </span>
+                          )}
                         </div>
                       );
                     })}
-                    {configFiles.length > 0 && (
+                    {configFiles.filter(f => f.found !== false).length > 0 && (
                       <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
                         <div className="bg-red-50 dark:bg-red-900/10 rounded-lg p-2.5 text-center">
-                          <div className="text-lg font-bold text-red-600">{critFiles.length}</div>
+                          <div className="text-lg font-bold text-red-600">{critFiles.filter(f => f.found !== false).length}</div>
                           <div className="text-[10px] font-semibold text-red-700 dark:text-red-400 uppercase">Críticos</div>
                           <div className="text-[10px] text-gray-500 mt-0.5">.env / config / credenciales — remover inmediatamente</div>
                         </div>
                         <div className="bg-amber-50 dark:bg-amber-900/10 rounded-lg p-2.5 text-center">
-                          <div className="text-lg font-bold text-amber-600">{warnFiles.length}</div>
+                          <div className="text-lg font-bold text-amber-600">{warnFiles.filter(f => f.found !== false).length}</div>
                           <div className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase">Revisar</div>
                           <div className="text-[10px] text-gray-500 mt-0.5">Archivos informativos que revelan estructura</div>
                         </div>
@@ -1326,9 +1436,21 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                   <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {(scan.configFiles || scan.exposedFiles || []).length === 0
-                    ? 'No se detectaron archivos sensibles accesibles públicamente — infraestructura correctamente protegida'
-                    : 'Archivos de configuración expuestos — un atacante puede obtener credenciales de base de datos, claves API o secretos que permiten acceso total al sistema sin necesidad de ningún ataque sofisticado'}
+                  {(() => {
+                    const rawF = scan.configFiles || scan.exposedFiles;
+                    if (!rawF) return 'No se detectaron archivos sensibles accesibles públicamente — infraestructura correctamente protegida';
+                    if (!Array.isArray(rawF) && typeof rawF === 'object') {
+                      // Check if any sensitive files were found
+                      const hasSensitive = Object.entries(rawF as Record<string, any>).some(([, v]) => v === true);
+                      return hasSensitive
+                        ? 'Archivos de configuración accesibles detectados — un atacante puede obtener credenciales de base de datos, claves API o secretos que permiten acceso total al sistema sin necesidad de ningún ataque sofisticado'
+                        : 'No se detectaron archivos sensibles accesibles públicamente — infraestructura correctamente protegida';
+                    }
+                    const arr: any[] = rawF;
+                    return arr.length === 0
+                      ? 'No se detectaron archivos sensibles accesibles públicamente — infraestructura correctamente protegida'
+                      : 'Archivos de configuración expuestos — un atacante puede obtener credenciales de base de datos, claves API o secretos que permiten acceso total al sistema sin necesidad de ningún ataque sofisticado';
+                  })()}
                 </p>
               </div>
             </SectionCard>
