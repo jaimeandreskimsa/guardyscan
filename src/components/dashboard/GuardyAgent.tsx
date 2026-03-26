@@ -22,14 +22,14 @@ interface Message {
 }
 
 const QUICK_QUESTIONS = [
-  { label: "📊 Mi estado", text: "¿Cuál es mi estado de seguridad actual?" },
-  { label: "⚠️ Vulnerabilidades", text: "¿Qué vulnerabilidades críticas tengo?" },
-  { label: "🚨 Incidentes", text: "¿Hay incidentes abiertos que deba atender?" },
-  { label: "📈 Escaneos", text: "¿Cómo van mis últimos escaneos?" },
-  { label: "🔒 Cumplimiento", text: "¿Cómo está mi cumplimiento normativo?" },
-  { label: "📋 Riesgos", text: "¿Qué riesgos tengo identificados?" },
-  { label: "🏢 Proveedores", text: "¿Cómo están mis proveedores?" },
-  { label: "💡 Recomendaciones", text: "¿Qué debo priorizar para mejorar mi seguridad?" },
+  { label: "Estado de seguridad", text: "¿Cuál es mi estado de seguridad actual?" },
+  { label: "Vulnerabilidades críticas", text: "¿Qué vulnerabilidades críticas tengo?" },
+  { label: "Incidentes abiertos", text: "¿Hay incidentes abiertos que deba atender?" },
+  { label: "Últimos escaneos", text: "¿Cómo van mis últimos escaneos?" },
+  { label: "Cumplimiento normativo", text: "¿Cómo está mi cumplimiento normativo?" },
+  { label: "Riesgos identificados", text: "¿Qué riesgos tengo identificados?" },
+  { label: "Estado de proveedores", text: "¿Cómo están mis proveedores?" },
+  { label: "Qué priorizar", text: "¿Qué debo priorizar para mejorar mi seguridad?" },
 ];
 
 export function GuardyAgent() {
@@ -112,7 +112,7 @@ export function GuardyAgent() {
           {
             id: (Date.now() + 1).toString(),
             role: "assistant",
-            content: "⚠️ Error de conexión. Verifica tu conexión a internet e intenta de nuevo.",
+            content: "Error de conexión. Verifica tu conexión a internet e intenta de nuevo.",
             timestamp: new Date(),
           },
         ]);
@@ -217,7 +217,7 @@ export function GuardyAgent() {
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-md p-4 shadow-sm flex-1">
                   <p className="text-sm text-gray-700 dark:text-gray-200">
-                    🛡️ ¡Hola! Soy <strong>Guardy</strong>, tu asistente de
+                    ¡Hola! Soy <strong>Guardy</strong>, tu asistente de
                     ciberseguridad con IA.
                   </p>
                   <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
@@ -364,10 +364,10 @@ export function GuardyAgent() {
           </div>
           <div className="flex items-center justify-between mt-2 px-1">
             <p className="text-[10px] text-gray-400">
-              Guardy Agente · Powered by IA 🛡️
+              Guardy Agente · Powered by IA
             </p>
             <p className="text-[10px] text-gray-400">
-              ⌘⇧A para abrir/cerrar
+              Cmd+Shift+A para abrir/cerrar
             </p>
           </div>
         </form>

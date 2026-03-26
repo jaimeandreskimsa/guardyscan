@@ -1089,27 +1089,72 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
               title="Stack Tecnológico Detectado"
               subtitle="Tecnologías identificadas en la aplicación"
             >
-              <div className="space-y-1">
-                {(scan.technologies?.length > 0
+              {(() => {
+                const TECH_CRITICAL_PATTERNS = ['jQuery 1.', 'jQuery 2.', 'PHP 5', 'PHP 4', 'Drupal 7', 'Drupal 6', 'WordPress 4.', 'WordPress 3.', 'SSL 2', 'TLS 1.0', 'Flash', 'Struts', 'log4j', 'ShellShock', 'OpenSSL 1.0.0'];
+                const TECH_WARN_PATTERNS = ['jQuery 3.', 'Bootstrap 3', 'Bootstrap 2', 'PHP 7.0', 'PHP 7.1', 'PHP 7.2', 'Angular 1', 'Vue 2', 'MySQL 5.5', 'MySQL 5.6', 'Apache 2.2', 'Nginx 1.1', 'Node.js 14', 'Node.js 12', 'Node.js 10', 'WordPress 5.', 'Python 2'];
+                const techList = scan.technologies?.length > 0
                   ? scan.technologies.map((t: any) => typeof t === 'string' ? { name: t, version: '-' } : t)
-                  : [{ name: 'No se detectaron tecnologías', version: '-' }]
-                ).map((tech: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-cyan-400" />
-                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{tech.name}</span>
-                    </div>
-                    <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{tech.version}</span>
+                  : [];
+                const classifyTech = (name: string, version: string) => {
+                  const full = `${name} ${version}`;
+                  if (TECH_CRITICAL_PATTERNS.some(p => full.includes(p) || name.includes(p))) return 'critical';
+                  if (TECH_WARN_PATTERNS.some(p => full.includes(p) || name.includes(p))) return 'warn';
+                  return 'ok';
+                };
+                const okTechs = techList.filter((t: any) => classifyTech(t.name, t.version) === 'ok');
+                const warnTechs = techList.filter((t: any) => classifyTech(t.name, t.version) === 'warn');
+                const critTechs = techList.filter((t: any) => classifyTech(t.name, t.version) === 'critical');
+                return (
+                  <div className="space-y-1">
+                    {techList.length === 0 && <p className="text-sm text-gray-400 py-2">No se detectaron tecnologías</p>}
+                    {techList.map((tech: any, i: number) => {
+                      const level = classifyTech(tech.name, tech.version);
+                      return (
+                        <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${ level === 'critical' ? 'bg-red-500' : level === 'warn' ? 'bg-amber-400' : 'bg-emerald-400' }`} />
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{tech.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded font-mono">{tech.version}</span>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ level === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : level === 'warn' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' }`}>
+                              {level === 'critical' ? 'CRÍTICO' : level === 'warn' ? 'ATENCIÓN' : 'OK'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {techList.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                        <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-emerald-600">{okTechs.length}</div>
+                          <div className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase">Actualizadas</div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">Versiones vigentes, sin vulnerabilidades conocidas</div>
+                        </div>
+                        <div className="bg-amber-50 dark:bg-amber-900/10 rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-amber-600">{warnTechs.length}</div>
+                          <div className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase">Requieren Revisión</div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">Versiones próximas a fin de soporte</div>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-900/10 rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-red-600">{critTechs.length}</div>
+                          <div className="text-[10px] font-semibold text-red-700 dark:text-red-400 uppercase">Vulnerables</div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">Versiones con exploits públicos conocidos</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
               <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
                   <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  La exposición de tecnologías y versiones facilita ataques dirigidos. Mantener versiones actualizadas reduce el riesgo de exploits conocidos
+                  {(scan.technologies || []).length === 0
+                    ? 'No se detectaron tecnologías expuestas. Buena práctica de ocultamiento de la infraestructura.'
+                    : 'Las tecnologías marcadas como Críticas o Atención representan vectores de ataque activos. Un atacante puede identificar estas versiones en minutos y ejecutar exploits automatizados para comprometer datos o interrumpir el servicio.'}
                 </p>
               </div>
             </SectionCard>
@@ -1134,39 +1179,245 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
               </div>
             </SectionCard>
 
-            {/* Servicios de Red */}
+            {/* Cookies y Privacidad */}
             <SectionCard
-              icon={<Database className="h-5 w-5 text-orange-600" />}
-              title="Servicios de Red Expuestos"
-              subtitle="Puertos abiertos y servicios accesibles"
+              icon={<Shield className="h-5 w-5 text-pink-600" />}
+              title="Cookies y Privacidad"
+              subtitle="Gestión de sesiones y protección de datos del usuario"
             >
-              <div className="space-y-2">
-                {(scan.openPorts?.length > 0
-                  ? scan.openPorts
-                  : [{ port: '—', service: 'Sin puertos detectados', status: '-' }]
-                ).map((p: any, i: number) => (
-                  <div key={i} className="flex items-center justify-between py-1.5">
-                    <div className="flex items-center gap-3">
-                      <span className="bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400 text-xs font-mono font-bold px-2.5 py-1 rounded-lg">{p.port}</span>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">{p.service}</span>
-                    </div>
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                      p.status === 'open'
-                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                    }`}>{p.status === 'open' ? 'Abierto' : p.status}</span>
+              {(() => {
+                const cookies: any[] = scan.cookies || [];
+                const classifyCookie = (c: any) => {
+                  const hasHttpOnly = c.httpOnly === true;
+                  const hasSecure = c.secure === true;
+                  const hasSameSite = !!c.sameSite && c.sameSite.toLowerCase() !== 'none';
+                  const score = (hasHttpOnly ? 1 : 0) + (hasSecure ? 1 : 0) + (hasSameSite ? 1 : 0);
+                  if (score === 3) return 'ok';
+                  if (score >= 1) return 'warn';
+                  return 'critical';
+                };
+                const okCookies = cookies.filter(c => classifyCookie(c) === 'ok');
+                const warnCookies = cookies.filter(c => classifyCookie(c) === 'warn');
+                const critCookies = cookies.filter(c => classifyCookie(c) === 'critical');
+                return (
+                  <div className="space-y-1">
+                    {cookies.length === 0 && (
+                      <div className="flex items-center gap-2 py-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">No se detectaron cookies expuestas</span>
+                      </div>
+                    )}
+                    {cookies.map((c: any, i: number) => {
+                      const level = classifyCookie(c);
+                      return (
+                        <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${ level === 'critical' ? 'bg-red-500' : level === 'warn' ? 'bg-amber-400' : 'bg-emerald-400' }`} />
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200 font-mono">{c.name || 'cookie'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                            {c.httpOnly && <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-1.5 py-0.5 rounded font-mono">HttpOnly</span>}
+                            {c.secure && <span className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-1.5 py-0.5 rounded font-mono">Secure</span>}
+                            {c.sameSite && <span className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 px-1.5 py-0.5 rounded font-mono">SameSite={c.sameSite}</span>}
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ml-1 ${ level === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : level === 'warn' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' }`}>
+                              {level === 'critical' ? 'CRÍTICO' : level === 'warn' ? 'ATENCIÓN' : 'OK'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {cookies.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                        <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-emerald-600">{okCookies.length}</div>
+                          <div className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase">Seguras</div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">HttpOnly + Secure + SameSite</div>
+                        </div>
+                        <div className="bg-amber-50 dark:bg-amber-900/10 rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-amber-600">{warnCookies.length}</div>
+                          <div className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase">Mejorar</div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">Faltan algunos atributos de seguridad</div>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-900/10 rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-red-600">{critCookies.length}</div>
+                          <div className="text-[10px] font-semibold text-red-700 dark:text-red-400 uppercase">Vulnerables</div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">Sin protección — robables por scripts</div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
               <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
                   <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {(scan.openPorts || []).length > 3
-                    ? `${(scan.openPorts || []).length} puertos expuestos — superficie de ataque amplia que aumenta el riesgo de acceso no autorizado a sistemas internos`
-                    : 'Exposición de puertos controlada — la superficie de ataque es reducida, minimizando vectores de intrusión'}
+                  {(scan.cookies || []).some((c: any) => !c.httpOnly && !c.secure)
+                    ? 'Cookies sin protección detectadas — un atacante puede robar sesiones de usuarios con un script malicioso (XSS), obteniendo acceso completo a sus cuentas sin necesidad de contraseña'
+                    : (scan.cookies || []).length === 0
+                    ? 'No se detectaron cookies expuestas en el análisis externo'
+                    : 'Cookies correctamente protegidas — las sesiones de usuario están resguardadas contra robo y suplantación de identidad'}
+                </p>
+              </div>
+            </SectionCard>
+
+            {/* Archivos de Configuración */}
+            <SectionCard
+              icon={<FileText className="h-5 w-5 text-violet-600" />}
+              title="Archivos de Configuración Expuestos"
+              subtitle="Archivos sensibles accesibles públicamente"
+            >
+              {(() => {
+                const configFiles: any[] = scan.configFiles || scan.exposedFiles || [];
+                const HIGH_RISK_FILES = ['.env', '.env.production', 'config.php', 'wp-config.php', '.git/config', 'database.yml', 'settings.py', 'application.properties', 'credentials', 'secret', 'private_key', 'id_rsa'];
+                const MED_RISK_FILES = ['.env.example', '.env.sample', 'README.md', 'composer.json', 'package.json', 'Dockerfile', 'docker-compose.yml', '.htaccess', 'robots.txt', 'sitemap.xml', 'crossdomain.xml'];
+                const classifyFile = (name: string) => {
+                  if (HIGH_RISK_FILES.some(f => name.toLowerCase().includes(f))) return 'critical';
+                  if (MED_RISK_FILES.some(f => name.toLowerCase().includes(f.replace('.', '.')))) return 'warn';
+                  return 'ok';
+                };
+                const critFiles = configFiles.filter(f => classifyFile(typeof f === 'string' ? f : f.name || '') === 'critical');
+                const warnFiles = configFiles.filter(f => classifyFile(typeof f === 'string' ? f : f.name || '') === 'warn');
+                return (
+                  <div className="space-y-1">
+                    {configFiles.length === 0 && (
+                      <div className="flex items-center gap-2 py-2">
+                        <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                        <span className="text-sm text-gray-600 dark:text-gray-400">No se detectaron archivos de configuración expuestos</span>
+                      </div>
+                    )}
+                    {configFiles.map((f: any, i: number) => {
+                      const fname = typeof f === 'string' ? f : (f.name || f.path || 'archivo');
+                      const level = classifyFile(fname);
+                      return (
+                        <div key={i} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${ level === 'critical' ? 'bg-red-500' : level === 'warn' ? 'bg-amber-400' : 'bg-emerald-400' }`} />
+                            <span className="text-sm font-medium text-gray-800 dark:text-gray-200 font-mono">{fname}</span>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ level === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : level === 'warn' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' }`}>
+                            {level === 'critical' ? 'CRÍTICO' : level === 'warn' ? 'ATENCIÓN' : 'OK'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {configFiles.length > 0 && (
+                      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                        <div className="bg-red-50 dark:bg-red-900/10 rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-red-600">{critFiles.length}</div>
+                          <div className="text-[10px] font-semibold text-red-700 dark:text-red-400 uppercase">Críticos</div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">.env / config / credenciales — remover inmediatamente</div>
+                        </div>
+                        <div className="bg-amber-50 dark:bg-amber-900/10 rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-amber-600">{warnFiles.length}</div>
+                          <div className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase">Revisar</div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">Archivos informativos que revelan estructura</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
+                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {(scan.configFiles || scan.exposedFiles || []).length === 0
+                    ? 'No se detectaron archivos sensibles accesibles públicamente — infraestructura correctamente protegida'
+                    : 'Archivos de configuración expuestos — un atacante puede obtener credenciales de base de datos, claves API o secretos que permiten acceso total al sistema sin necesidad de ningún ataque sofisticado'}
+                </p>
+              </div>
+            </SectionCard>
+
+            {/* Servicios de Red */}
+            <SectionCard
+              icon={<Database className="h-5 w-5 text-orange-600" />}
+              title="Servicios de Red Expuestos"
+              subtitle="Puertos abiertos y servicios accesibles"
+            >
+              {(() => {
+                const PORTS_EXPECTED = [80, 443, 25, 587, 465, 993, 995, 53];
+                const PORTS_SENSITIVE = [22, 3306, 5432, 6379, 27017, 1433, 5984, 9200, 2181, 11211];
+                const PORTS_CRITICAL = [21, 23, 3389, 445, 135, 139, 1080, 4444, 8080, 8443, 9000, 2049, 111];
+                const classifyPort = (port: number | string) => {
+                  const n = typeof port === 'string' ? parseInt(port, 10) : port;
+                  if (PORTS_CRITICAL.includes(n)) return 'critical';
+                  if (PORTS_SENSITIVE.includes(n)) return 'sensitive';
+                  if (PORTS_EXPECTED.includes(n)) return 'ok';
+                  return 'ok';
+                };
+                const portLabels: Record<number, string> = {
+                  80: 'HTTP (web)', 443: 'HTTPS (web segura)', 25: 'SMTP (correo)', 587: 'SMTP (correo cifrado)',
+                  465: 'SMTPS (correo)', 993: 'IMAPS (correo)', 995: 'POP3S (correo)', 53: 'DNS',
+                  22: 'SSH (acceso remoto)', 3306: 'MySQL (base de datos)', 5432: 'PostgreSQL (base de datos)',
+                  6379: 'Redis (caché)', 27017: 'MongoDB (base de datos)', 1433: 'SQL Server', 9200: 'Elasticsearch',
+                  21: 'FTP (transferencia insegura)', 23: 'Telnet (protocolo inseguro)', 3389: 'RDP (escritorio remoto)',
+                  445: 'SMB (compartición archivos)', 8080: 'HTTP alternativo (admin?)', 8443: 'HTTPS alternativo',
+                };
+                const ports = scan.openPorts?.length > 0 ? scan.openPorts : [];
+                const critPorts = ports.filter((p: any) => classifyPort(p.port) === 'critical');
+                const sensPorts = ports.filter((p: any) => classifyPort(p.port) === 'sensitive');
+                const okPorts = ports.filter((p: any) => classifyPort(p.port) === 'ok');
+                return (
+                  <div className="space-y-2">
+                    {ports.length === 0 && <p className="text-sm text-gray-400 py-2">Sin puertos detectados</p>}
+                    {ports.map((p: any, i: number) => {
+                      const level = classifyPort(p.port);
+                      const portN = typeof p.port === 'string' ? parseInt(p.port, 10) : p.port;
+                      const label = portLabels[portN] || p.service || 'Servicio desconocido';
+                      return (
+                        <div key={i} className="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                          <div className="flex items-center gap-3">
+                            <span className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg ${ level === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400' : level === 'sensitive' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400' }`}>{p.port}</span>
+                            <div>
+                              <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
+                              {level === 'critical' && <span className="ml-2 text-[10px] font-bold text-red-600 dark:text-red-400">RIESGO ALTO</span>}
+                              {level === 'sensitive' && <span className="ml-2 text-[10px] font-semibold text-amber-600 dark:text-amber-400">RESTRINGIR ACCESO</span>}
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ level === 'critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' : level === 'sensitive' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' }`}>
+                            {level === 'critical' ? 'CRÍTICO' : level === 'sensitive' ? 'SENSIBLE' : 'ESPERADO'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                    {ports.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                        <div className="bg-emerald-50 dark:bg-emerald-900/10 rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-emerald-600">{okPorts.length}</div>
+                          <div className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase">Esperados</div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">HTTP/HTTPS y servicios estándar</div>
+                        </div>
+                        <div className="bg-amber-50 dark:bg-amber-900/10 rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-amber-600">{sensPorts.length}</div>
+                          <div className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase">Sensibles</div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">BD, SSH — acceso solo desde red interna</div>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-900/10 rounded-lg p-2.5 text-center">
+                          <div className="text-lg font-bold text-red-600">{critPorts.length}</div>
+                          <div className="text-[10px] font-semibold text-red-700 dark:text-red-400 uppercase">Críticos</div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">Telnet/FTP/RDP — deben cerrarse de inmediato</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+              <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="h-3.5 w-3.5 text-purple-500" />
+                  <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Impacto al Negocio</span>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {(scan.openPorts || []).some((p: any) => [21,23,3389,445].includes(parseInt(p.port,10)))
+                    ? 'Puertos de alto riesgo detectados — protocolos inseguros o acceso remoto expuesto públicamente representan una vía directa de entrada para atacantes sin necesidad de credenciales'
+                    : (scan.openPorts || []).some((p: any) => [3306,5432,6379,27017,22].includes(parseInt(p.port,10)))
+                    ? 'Puertos sensibles expuestos — bases de datos o acceso SSH accesibles desde internet aumentan el riesgo de exfiltración de datos o acceso no autorizado'
+                    : 'Exposición de puertos controlada — solo servicios estándar visibles, superficie de ataque minimizada'}
                 </p>
               </div>
             </SectionCard>
