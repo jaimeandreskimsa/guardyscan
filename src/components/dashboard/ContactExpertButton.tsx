@@ -39,19 +39,14 @@ export function ContactExpertButton() {
 
   return (
     <>
-      {/* Floating Button */}
+      {/* Header Button */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-50 group flex items-center gap-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 text-white pl-4 pr-5 py-3 rounded-full shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 transition-all duration-300 hover:scale-105"
+        className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-sm font-semibold shadow-sm shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all duration-200 hover:scale-[1.03]"
         aria-label="Contactar Experto"
       >
-        <div className="p-1.5 bg-white/20 rounded-full backdrop-blur-sm group-hover:scale-110 transition-transform duration-300">
-          <Headphones className="h-5 w-5 text-white" />
-        </div>
-        <span className="font-semibold text-sm whitespace-nowrap">Contactar Experto</span>
-
-        {/* Pulse animation */}
-        <span className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 animate-ping opacity-20 pointer-events-none"></span>
+        <Headphones className="h-4 w-4" />
+        <span className="hidden sm:inline">Contactar Experto</span>
       </button>
 
       {/* Modal */}

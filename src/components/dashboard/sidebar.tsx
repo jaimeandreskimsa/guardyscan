@@ -152,31 +152,6 @@ export function Sidebar({ user }: SidebarProps) {
         )}
       </div>
 
-      {/* User Profile */}
-      <div className={`mx-3 mt-3 mb-2 p-3 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/50 border border-gray-100/80 flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
-        {user.image ? (
-          <img
-            src={user.image}
-            alt={user.name || "Usuario"}
-            className="h-9 w-9 rounded-full object-cover ring-2 ring-white shadow-sm flex-shrink-0"
-          />
-        ) : (
-          <div className={`h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0 shadow-sm ring-2 ring-white`}>
-            {getInitials(user.name)}
-          </div>
-        )}
-        {!collapsed && (
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-gray-900 text-[13px] truncate leading-tight">
-              {user.name || "Usuario"}
-            </p>
-            <p className="text-[11px] text-gray-400 truncate leading-tight mt-0.5">
-              {user.role === "admin" ? "Administrador" : "Usuario"}
-            </p>
-          </div>
-        )}
-      </div>
-
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3 px-3">
         {getNavigationGroups(user.role).map((group, groupIndex) => (

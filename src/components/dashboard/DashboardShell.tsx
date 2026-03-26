@@ -36,6 +36,12 @@ function TopBar({ user }: { user: any }) {
   return (
     <header className="sticky top-0 z-30 h-16 flex items-center justify-end gap-0.5 px-5 bg-white/80 backdrop-blur-xl border-b border-gray-100/90 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
 
+      {/* Contact Expert — inline header button */}
+      <ContactExpertButton />
+
+      {/* Divider */}
+      <div className="w-px h-5 bg-gray-200/80 mx-1" />
+
       {/* Notifications */}
       <button className="relative p-2.5 rounded-xl hover:bg-gray-50/80 transition-all duration-200 group">
         <Bell className="h-[18px] w-[18px] text-gray-400 group-hover:text-gray-600 transition-colors" />
@@ -151,7 +157,6 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
           </main>
         </div>
         <GuardyAgent />
-        <ContactExpertButton />
       </div>
     </AgentProvider>
   );
