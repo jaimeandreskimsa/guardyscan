@@ -36,27 +36,6 @@ function TopBar({ user }: { user: any }) {
   return (
     <header className="sticky top-0 z-30 h-16 flex items-center justify-end gap-0.5 px-5 bg-white/80 backdrop-blur-xl border-b border-gray-100/90 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
 
-      {/* Billing — visible en pantallas medianas+ */}
-      <Link
-        href="/dashboard/billing"
-        className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-50/80 transition-all duration-200 text-sm font-medium"
-      >
-        <CreditCard className="h-4 w-4 text-gray-400" />
-        <span>Facturación</span>
-      </Link>
-
-      {/* Settings — visible en pantallas medianas+ */}
-      <Link
-        href="/dashboard/settings"
-        className="hidden md:flex items-center gap-2 px-3.5 py-2 rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-50/80 transition-all duration-200 text-sm font-medium"
-      >
-        <Settings className="h-4 w-4 text-gray-400" />
-        <span>Configuración</span>
-      </Link>
-
-      {/* Divider */}
-      <div className="hidden md:block w-px h-5 bg-gray-200/80 mx-2" />
-
       {/* Notifications */}
       <button className="relative p-2.5 rounded-xl hover:bg-gray-50/80 transition-all duration-200 group">
         <Bell className="h-[18px] w-[18px] text-gray-400 group-hover:text-gray-600 transition-colors" />
