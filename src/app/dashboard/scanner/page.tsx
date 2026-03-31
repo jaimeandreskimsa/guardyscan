@@ -587,7 +587,7 @@ export default function ScannerPage() {
                               <MetricCard
                                 icon={<Shield className="h-4 w-4" />}
                                 label="Cabeceras de Seguridad"
-                                value={`${scan.headers?.count || 6} de 8`}
+                                value={`${['strict-transport-security','x-content-type-options','x-frame-options','content-security-policy','x-xss-protection','referrer-policy'].filter(h => scan.securityHeaders?.headers?.[h]).length} de 6`}
                                 status="info"
                               />
                               <MetricCard
