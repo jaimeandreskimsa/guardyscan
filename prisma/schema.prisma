@@ -67,6 +67,10 @@ model User {
   password      String
   image         String?
   company       String?
+  website       String?
+  industry      String?
+  companySize   String?
+  onboardingCompleted Boolean @default(false)
   role          String    @default("user")
   resetToken    String?
   resetTokenExpiry DateTime?

@@ -50,7 +50,7 @@ export default function RegisterPage() {
         setError("Cuenta creada, por favor inicia sesión");
         router.push("/auth/login");
       } else {
-        router.push("/dashboard");
+        router.push("/onboarding");
       }
     } catch (err: any) {
       setError(err.message);
