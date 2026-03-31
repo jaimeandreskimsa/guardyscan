@@ -7,10 +7,10 @@ import { Button } from "@/components/ui/button";
 
 const MOTIVOS = [
   { value: "",                    label: "Selecciona un motivo..." },
-  { value: "Contacto general",    label: "💬 Contacto general" },
-  { value: "Solicitar servicios", label: "🛡️ Solicitar servicios" },
-  { value: "Ley marco",           label: "⚖️ Ley marco" },
-  { value: "Reportar bug",        label: "🐛 Reportar bug del sistema" },
+  { value: "Contacto general",    label: "Contacto general" },
+  { value: "Solicitar servicios", label: "Solicitar servicios" },
+  { value: "Ley marco",           label: "Ley marco" },
+  { value: "Reportar bug",        label: "Reportar bug del sistema" },
 ];
 
 export function ContactExpertButton() {
