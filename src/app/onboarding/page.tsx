@@ -110,13 +110,29 @@ export default function OnboardingPage() {
   const handleComplete = async (startScan = false) => {
     setLoading(true);
     try {
+      // 1. Save onboarding data + create organization
       await fetch("/api/onboarding", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ company, website, industry, companySize }),
       });
+
       if (startScan && website) {
-        router.push(`/dashboard/scanner?url=${encodeURIComponent(website)}`);
+        // 2. Normalize URL
+        let url = website.trim();
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+          url = "https://" + url;
+        }
+
+        // 3. Launch the scan directly
+        const scanRes = await fetch("/api/scans", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetUrl: url, scanType: "FULL" }),
+        });
+
+        // 4. Redirect to scanner history tab so user sees it processing
+        router.push("/dashboard/scanner?tab=history");
       } else {
         router.push("/dashboard");
       }

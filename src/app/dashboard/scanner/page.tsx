@@ -99,7 +99,13 @@ export default function ScannerPage() {
   }
 
   // ── Auto-fill URL from ?url= query param or user profile website ──
+  // Also read ?tab= to open directly on history after wizard scan
   useEffect(() => {
+    const tabParam = searchParams.get('tab') as ActiveTab | null
+    if (tabParam && ['web', 'technical', 'history'].includes(tabParam)) {
+      setActiveTab(tabParam)
+    }
+
     const urlParam = searchParams.get('url')
     if (urlParam) {
       setTargetUrl(urlParam)
