@@ -1,22 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { Headphones, Loader2, CheckCircle, MessageSquare, Send, X } from "lucide-react";
+import { Headphones, Loader2, CheckCircle, MessageSquare, Send, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+const MOTIVOS = [
+  { value: "",                    label: "Selecciona un motivo..." },
+  { value: "Contacto general",    label: "💬 Contacto general" },
+  { value: "Solicitar servicios", label: "🛡️ Solicitar servicios" },
+  { value: "Ley marco",           label: "⚖️ Ley marco" },
+  { value: "Reportar bug",        label: "🐛 Reportar bug del sistema" },
+];
 
 export function ContactExpertButton() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
 
+  const handleClose = () => { setOpen(false); setMessage(""); setSubject(""); };
+
   const handleSubmit = async () => {
+    if (!subject) return;
     setLoading(true);
     try {
       const res = await fetch("/api/advisory", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: message.trim() || undefined }),
+        body: JSON.stringify({ subject, message: message.trim() || undefined }),
       });
 
       if (!res.ok) {
@@ -27,8 +39,7 @@ export function ContactExpertButton() {
       setSent(true);
       setTimeout(() => {
         setSent(false);
-        setOpen(false);
-        setMessage("");
+        handleClose();
       }, 3000);
     } catch (err: any) {
       alert(err.message || "Error al enviar la solicitud");
@@ -89,38 +100,63 @@ export function ContactExpertButton() {
                   </div>
                 </div>
                 <div className="p-6 space-y-4">
+                  {/* Motivo */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      Motivo del contacto <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <select
+                        value={subject}
+                        onChange={e => setSubject(e.target.value)}
+                        className={`w-full px-4 py-3 pr-10 border rounded-xl bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all appearance-none ${
+                          !subject
+                            ? "border-gray-300 dark:border-gray-600 text-gray-400"
+                            : "border-indigo-400 dark:border-indigo-500 text-gray-900 dark:text-gray-100"
+                        }`}
+                      >
+                        {MOTIVOS.map(m => (
+                          <option key={m.value} value={m.value} disabled={m.value === ""}>{m.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Mensaje */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                       <MessageSquare className="h-4 w-4 inline mr-1.5" />
-                      Mensaje (opcional)
+                      Mensaje adicional <span className="text-gray-400 font-normal">(opcional)</span>
                     </label>
                     <textarea
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Describa brevemente en qué podemos ayudarle: auditorías, implementación ISO 27001, respuesta a incidentes, pentest..."
-                      rows={4}
+                      placeholder={
+                        subject === "Solicitar servicios" ? "Describa el servicio que necesita: auditorías, pentest, ISO 27001..."
+                        : subject === "Ley marco" ? "Indique en qué aspectos de la ley marco necesita orientación..."
+                        : subject === "Reportar bug" ? "Describa el problema: qué ocurrió, en qué sección y cómo reproducirlo..."
+                        : "Cuéntenos en qué podemos ayudarle..."
+                      }
+                      rows={3}
                       className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                     />
                   </div>
 
-                  <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border border-indigo-100 dark:border-indigo-800">
+                  <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-3.5 border border-indigo-100 dark:border-indigo-800">
                     <p className="text-sm text-indigo-700 dark:text-indigo-300">
                       <strong>¿Qué incluye?</strong> Un especialista certificado analizará su caso y le contactará para ofrecerle una solución personalizada.
                     </p>
                   </div>
 
-                  <div className="flex gap-3 pt-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => { setOpen(false); setMessage(""); }}
-                    >
+                  <div className="flex gap-3 pt-1">
+                    <Button variant="outline" className="flex-1" onClick={handleClose}>
                       Cancelar
                     </Button>
                     <Button
-                      className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white"
+                      className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white disabled:opacity-50"
                       onClick={handleSubmit}
-                      disabled={loading}
+                      disabled={loading || !subject}
                     >
                       {loading ? (
                         <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>

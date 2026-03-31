@@ -1095,6 +1095,7 @@ model AdvisoryRequest {
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   
+  subject   String?  // Motivo del contacto
   message   String?  @db.Text
   status    String   @default("PENDING") // PENDING, CONTACTED, RESOLVED
   

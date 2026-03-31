@@ -12,6 +12,7 @@ import {
 
 interface AdvisoryRequest {
   id: string;
+  subject: string | null;
   message: string | null;
   status: "PENDING" | "CONTACTED" | "RESOLVED";
   createdAt: string;
@@ -91,7 +92,8 @@ export default function AdvisoryRequestsPage() {
       r.user.name?.toLowerCase().includes(q) ||
       r.user.email.toLowerCase().includes(q) ||
       r.user.company?.toLowerCase().includes(q) ||
-      r.message?.toLowerCase().includes(q);
+      r.message?.toLowerCase().includes(q) ||
+      r.subject?.toLowerCase().includes(q);
     return matchStatus && matchSearch;
   });
 
@@ -284,8 +286,14 @@ export default function AdvisoryRequestsPage() {
                     </div>
 
                     {/* Message */}
+                    {req.subject && (
+                      <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700">
+                        <MessageSquare className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                        <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">{req.subject}</span>
+                      </div>
+                    )}
                     {req.message && (
-                      <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
+                      <div className="mt-2 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700">
                         <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap leading-relaxed">
                           {req.message}
                         </p>

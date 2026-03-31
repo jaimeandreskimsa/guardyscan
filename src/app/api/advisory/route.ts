@@ -24,6 +24,7 @@ export async function POST(req: Request) {
     const advisory = await prisma.advisoryRequest.create({
       data: {
         userId: user.id,
+        subject: body.subject || null,
         message: body.message || null,
       },
     });
