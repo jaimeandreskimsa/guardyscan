@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Headphones, Loader2, CheckCircle, MessageSquare, Send, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -18,6 +19,9 @@ export function ContactExpertButton() {
   const [sent, setSent] = useState(false);
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const handleClose = () => { setOpen(false); setMessage(""); setSubject(""); };
 
@@ -60,10 +64,14 @@ export function ContactExpertButton() {
         <span className="hidden sm:inline">Contactar Experto</span>
       </button>
 
-      {/* Modal */}
-      {open && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden my-auto">
+      {/* Modal — rendered via portal to escape overflow:hidden parent */}
+      {mounted && open && createPortal(
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-[9999] p-4 overflow-y-auto"
+          onClick={e => { if (e.target === e.currentTarget) handleClose(); }}
+        >
+          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full shadow-2xl my-auto"
+               onClick={e => e.stopPropagation()}>
             {sent ? (
               <div className="p-10 text-center">
                 <div className="w-20 h-20 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-5">
@@ -169,7 +177,8 @@ export function ContactExpertButton() {
               </>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
