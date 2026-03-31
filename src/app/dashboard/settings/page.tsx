@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { 
   Shield, Calendar, AlertCircle, CreditCard, ChevronRight, 
   Building2, Users, Plus, Mail, Crown, ShieldCheck, Eye, 
-  UserPlus, Trash2, X, Check, Loader2
+  UserPlus, Trash2, X, Check, Loader2, Globe, Briefcase, UserCircle2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
@@ -82,6 +82,16 @@ export default function SettingsPage() {
   });
   const { toast } = useToast();
 
+  // User profile state
+  const [profile, setProfile] = useState({
+    name: "",
+    company: "",
+    website: "",
+    industry: "",
+    companySize: "",
+  });
+  const [profileLoading, setProfileLoading] = useState(false);
+
   // Organization state
   const [organizations, setOrganizations] = useState<{
     owned: Organization[];
@@ -116,7 +126,43 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchConfig();
     fetchOrganizations();
+    fetchProfile();
   }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch("/api/user/profile");
+      if (res.ok) {
+        const data = await res.json();
+        setProfile({
+          name: data.name || "",
+          company: data.company || "",
+          website: data.website || "",
+          industry: data.industry || "",
+          companySize: data.companySize || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    setProfileLoading(true);
+    try {
+      const res = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profile),
+      });
+      if (!res.ok) throw new Error("Error al guardar");
+      toast({ title: "✅ Perfil actualizado", description: "Los datos de tu empresa han sido guardados" });
+    } catch (error: any) {
+      toast({ title: "❌ Error", description: error.message, variant: "destructive" });
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   const fetchConfig = async () => {
     try {
@@ -351,6 +397,87 @@ export default function SettingsPage() {
           Gestiona tu cuenta, empresa y preferencias
         </p>
       </div>
+
+      {/* Profile / Company Section */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+              <UserCircle2 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <CardTitle>Perfil de empresa</CardTitle>
+              <CardDescription>Información sobre tu empresa guardada en tu cuenta</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Nombre</label>
+              <input
+                type="text"
+                value={profile.name}
+                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                placeholder="Tu nombre"
+                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Empresa</label>
+              <input
+                type="text"
+                value={profile.company}
+                onChange={(e) => setProfile({ ...profile, company: e.target.value })}
+                placeholder="Nombre de tu empresa"
+                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sitio web</label>
+              <input
+                type="url"
+                value={profile.website}
+                onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                placeholder="https://tuempresa.com"
+                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sector</label>
+              <select
+                value={profile.industry}
+                onChange={(e) => setProfile({ ...profile, industry: e.target.value })}
+                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Seleccionar sector</option>
+                {industries.map((ind) => (
+                  <option key={ind} value={ind}>{ind}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Tamaño de empresa</label>
+              <select
+                value={profile.companySize}
+                onChange={(e) => setProfile({ ...profile, companySize: e.target.value })}
+                className="w-full px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Seleccionar tamaño</option>
+                {companySizes.map((s) => (
+                  <option key={s.value} value={s.value}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button onClick={handleSaveProfile} disabled={profileLoading} className="gap-2">
+              {profileLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+              Guardar perfil
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Organization Section */}
       <Card>
