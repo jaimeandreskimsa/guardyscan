@@ -8,7 +8,7 @@ import {
   ShieldAlert, Building2, Radar, Eye,
   FolderArchive, Network, ChevronLeft, ChevronRight, Shield,
   Users, DollarSign, UserCheck, Laptop, Target,
-  Sparkles, Bot
+  Sparkles, Bot, MessageSquare
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAgent } from "@/components/dashboard/AgentContext";
@@ -72,6 +72,7 @@ const getNavigationGroups = (userRole: string) => {
       items: [
         { name: "Usuarios Activos", href: "/dashboard/admin/users", icon: UserCheck },
         { name: "Finanzas", href: "/dashboard/admin/finance", icon: DollarSign },
+        { name: "Solicitudes de Asesoría", href: "/dashboard/admin/advisory", icon: MessageSquare },
       ]
     });
   }
