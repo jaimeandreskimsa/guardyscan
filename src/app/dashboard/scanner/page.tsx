@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -56,6 +57,7 @@ function getRiskLevel(score: number | null | undefined) {
 // ─── Main Component ──────────────────────────────────────────────
 export default function ScannerPage() {
   const { data: session } = useSession()
+  const searchParams = useSearchParams()
   const [activeTab, setActiveTab] = useState<ActiveTab>('web')
 
   // ── Web scan state ──
@@ -95,6 +97,22 @@ export default function ScannerPage() {
       setScans(Array.isArray(data) ? data : [])
     } catch { setScans([]) }
   }
+
+  // ── Auto-fill URL from ?url= query param or user profile website ──
+  useEffect(() => {
+    const urlParam = searchParams.get('url')
+    if (urlParam) {
+      setTargetUrl(urlParam)
+      return
+    }
+    // Fall back to the website saved in the user profile
+    fetch('/api/user/profile')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.website) setTargetUrl(data.website)
+      })
+      .catch(() => {})
+  }, [searchParams])
 
   useEffect(() => { loadScans() }, [])
 
