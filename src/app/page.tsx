@@ -7,20 +7,95 @@ import Image from "next/image";
 import React, { useState, useEffect, useRef } from "react";
 import WhatsAppButton from "@/components/WhatsAppButton";
 
-// ── Pricing by currency ─────────────────────────────────────────
-const PLAN_PRICES: Record<string, Record<'CLP' | 'MXN', { monthly: number; annual: number }>> = {
-  'Básico':      { CLP: { monthly: 75000,  annual: 64000  }, MXN: { monthly: 1490,  annual: 1270  } },
-  'Profesional': { CLP: { monthly: 284000, annual: 241000 }, MXN: { monthly: 5490,  annual: 4790  } },
-  'Enterprise':  { CLP: { monthly: 854000, annual: 726000 }, MXN: { monthly: 16490, annual: 13990 } },
-};
-
-/** Format price with thousands separator per locale */
-const fmtPrice = (name: string, period: 'monthly' | 'annual', curr: 'CLP' | 'MXN'): string => {
-  if (name === 'Free') return '0';
-  const val = PLAN_PRICES[name][curr][period];
-  const sep = curr === 'CLP' ? '.' : ',';
-  return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, sep);
-};
+// ── Plan data ───────────────────────────────────────────────────
+const HOME_PLANS = [
+  {
+    key: "FREE",
+    badge: "Siempre gratis",
+    name: "Free",
+    tagline: "\u00bfS\u00e9 d\u00f3nde est\u00e1s expuesto?",
+    price: "0",
+    priceLabel: "Gratis",
+    note: "",
+    desc: "Radiograf\u00eda inicial",
+    features: [
+      "Centro de An\u00e1lisis (1 escaneo)",
+      "Score de riesgo inicial",
+      "Screenshot de hallazgos",
+      "Vista general de exposici\u00f3n",
+    ],
+    cta: "Comenzar gratis",
+    highlight: false,
+    hasAI: false,
+    grad: "from-slate-400/55 via-slate-300/20 to-gray-500/35",
+  },
+  {
+    key: "BASIC",
+    badge: "Detecci\u00f3n continua",
+    name: "Essential",
+    tagline: "Sabes d\u00f3nde est\u00e1s vulnerable",
+    price: "12.000",
+    priceLabel: "CLP 12.000",
+    note: "+ I.V.A / mes",
+    desc: "Vigilancia continua",
+    features: [
+      "Centro de An\u00e1lisis continuo",
+      "Monitoreo de Seguridad",
+      "Vulnerabilidades",
+      "Alertas b\u00e1sicas autom\u00e1ticas",
+      "Informe mensual",
+    ],
+    cta: "Elegir Essential",
+    highlight: false,
+    hasAI: false,
+    grad: "from-emerald-400/55 via-emerald-300/20 to-teal-500/35",
+  },
+  {
+    key: "PROFESSIONAL",
+    badge: "M\u00e1s popular",
+    name: "Professional",
+    tagline: "Controlas y gestionas tu riesgo",
+    price: "59.000",
+    priceLabel: "CLP 59.000",
+    note: "+ I.V.A / mes",
+    desc: "Control y gesti\u00f3n",
+    features: [
+      "Todo Essential incluido",
+      "Incidentes",
+      "Riesgos",
+      "Documentos",
+      "Guardy Agente IA",
+      "Diagn\u00f3stico IA",
+      "Informe cada 15 d\u00edas",
+    ],
+    cta: "Elegir Professional",
+    highlight: true,
+    hasAI: true,
+    grad: "from-indigo-500/80 via-blue-500/60 to-violet-500/70",
+  },
+  {
+    key: "ENTERPRISE",
+    badge: "Gobernanza completa",
+    name: "Enterprise",
+    tagline: "Cumples, gestionas y delegas",
+    price: "299.000",
+    priceLabel: "CLP 299.000",
+    note: "+ I.V.A / mes",
+    desc: "Gobierno corporativo",
+    features: [
+      "Todo Professional incluido",
+      "Cumplimiento Normativo",
+      "Continuidad de Negocio",
+      "Comit\u00e9",
+      "Terceros",
+      "Inventario de Activos y Trabajadores",
+    ],
+    cta: "Hablar con ventas",
+    highlight: false,
+    hasAI: true,
+    grad: "from-violet-400/55 via-violet-300/20 to-purple-500/35",
+  },
+];
 
 // ── Chat simulation script ────────────────────────────────────
 const CHAT_SCRIPT = [
@@ -42,8 +117,6 @@ export default function HomePage() {
     message: ""
   });
   const [sending, setSending] = useState(false);
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
-  const [currency, setCurrency] = useState<'CLP' | 'MXN'>('CLP');
   const [chatMessages, setChatMessages] = useState<{ type: 'user' | 'ai'; text: string }[]>([]);
   const [chatTyping, setChatTyping] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
@@ -811,79 +884,18 @@ export default function HomePage() {
         <div className="parallax-orb w-[700px] h-[700px] top-[-100px] left-[20%] opacity-[0.05]"
           style={{ background: 'radial-gradient(circle, #3b82f6, transparent 70%)' }} />
         <div className="container mx-auto max-w-7xl relative z-10">
-          <div className="text-center mb-12 reveal">
+          <div className="text-center mb-14 reveal">
             <div className="badge-prem mb-5"><span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block mr-1" />Planes</div>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4 tracking-[-0.03em] leading-[1.08]">
               Elige el <span className="gradient-word">nivel de control</span> que necesitas
             </h2>
-            {/* Toggles row */}
-            <div className="flex flex-col items-center gap-3 mt-4">
-              {/* Billing period */}
-              <div className="inline-flex items-center gap-0 bg-white border border-gray-200 rounded-xl p-1">
-                <button
-                  onClick={() => setBillingPeriod('monthly')}
-                  className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${billingPeriod === 'monthly' ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:text-gray-800'}`}
-                >Mensual</button>
-                <button
-                  onClick={() => setBillingPeriod('annual')}
-                  className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${billingPeriod === 'annual' ? 'bg-blue-600 text-white shadow' : 'text-gray-500 hover:text-gray-800'}`}
-                >Anual <span className="text-green-500 font-bold ml-1">-15%</span></button>
-              </div>
-              {/* Currency / country */}
-              <div className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-xl p-1">
-                <button
-                  onClick={() => setCurrency('CLP')}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                    currency === 'CLP' ? 'bg-red-600 text-white shadow' : 'text-gray-500 hover:text-gray-800'
-                  }`}
-                >
-                  <span>🇨🇱</span> Chile · CLP
-                </button>
-                <button
-                  onClick={() => setCurrency('MXN')}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                    currency === 'MXN' ? 'bg-green-700 text-white shadow' : 'text-gray-500 hover:text-gray-800'
-                  }`}
-                >
-                  <span>🇲🇽</span> México · MXN
-                </button>
-              </div>
-            </div>
+            <p className="text-gray-500 text-lg max-w-xl mx-auto">Todos los planes incluyen escaneo de tu empresa. Sin compromisos, cancela cuando quieras.</p>
           </div>
 
           <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-6">
-            {[
-              {
-                badge: "Entrada", name: "Free", monthly: 0, annual: 0,
-                desc: "Descubre tu exposición",
-                features: ["Análisis puntual de una web", "SSL / DNS / Headers", "Vista general de hallazgos", "Alertas limitadas"],
-                cta: "Comenzar gratis", highlight: false,
-                grad: "from-slate-400/55 via-slate-300/20 to-gray-500/35",
-              },
-              {
-                badge: "Crecimiento", name: "Básico", monthly: 79, annual: 67,
-                desc: "Monitoreo continuo",
-                features: ["Monitoreo semanal", "Alertas automáticas", "Detección temprana", "Historial reciente"],
-                cta: "Elegir Básico", highlight: false,
-                grad: "from-blue-400/55 via-blue-300/20 to-indigo-500/35",
-              },
-              {
-                badge: "Más popular", name: "Profesional", monthly: 299, annual: 254,
-                desc: "Control de riesgos",
-                features: ["Monitoreo avanzado", "Riesgos y vulnerabilidades", "Eventos e incidentes", "Cumplimiento base", "Integraciones"],
-                cta: "Elegir Profesional", highlight: true,
-                grad: "from-indigo-500/80 via-blue-500/60 to-violet-500/70",
-              },
-              {
-                badge: "Escala", name: "Enterprise", monthly: 899, annual: 764,
-                desc: "Gobierno y continuidad",
-                features: ["Seguridad a escala", "BCP / DRP completo", "Gestión de terceros", "Soporte dedicado", "SLA e integraciones custom"],
-                cta: "Hablar con ventas", highlight: false,
-                grad: "from-violet-400/55 via-violet-300/20 to-purple-500/35",
-              },
-            ].map((plan, pi) => (
+            {HOME_PLANS.map((plan, pi) => (
               <div
-                key={plan.name}
+                key={plan.key}
                 className={`reveal reveal-d${pi + 1} relative p-[1.5px] rounded-[22px] bg-gradient-to-br ${plan.grad} ${plan.highlight ? 'card-glow-light scale-[1.03]' : 'card-glow-light'}`}
               >
                 {plan.highlight && (
@@ -892,16 +904,29 @@ export default function HomePage() {
                   </div>
                 )}
                 <div className={`${plan.highlight ? 'pricing-popular' : 'bg-white'} p-6 rounded-[20px] flex flex-col h-full`}>
-                  <div className="mb-4">
-                    <span className={`text-xs font-semibold uppercase tracking-widest ${plan.highlight ? 'text-blue-200' : 'text-gray-400'}`}>{!plan.highlight ? plan.badge : ""}</span>
-                    <h3 className={`text-xl font-bold mt-1 ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
-                    <div className="flex items-end gap-1 mt-3">
-                      <span className={`text-4xl font-extrabold ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
-                        ${fmtPrice(plan.name, billingPeriod, currency)}
-                      </span>
-                      <span className={`text-sm mb-1 leading-none pb-1 ${plan.highlight ? 'text-blue-200' : 'text-gray-400'}`}>{currency}/mes</span>
+                  <div className="mb-5">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`text-xs font-semibold uppercase tracking-widest ${plan.highlight ? 'text-blue-200' : 'text-gray-400'}`}>{plan.badge}</span>
+                      {plan.hasAI && (
+                        <span className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          plan.highlight ? 'bg-white/20 text-white' : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                        }`}>✦ IA</span>
+                      )}
                     </div>
-                    <p className={`text-sm mt-1 ${plan.highlight ? 'text-blue-100' : 'text-gray-500'}`}>{plan.desc}</p>
+                    <h3 className={`text-xl font-bold mt-1 ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>{plan.name}</h3>
+                    <p className={`text-xs italic mt-0.5 ${plan.highlight ? 'text-blue-200' : 'text-gray-400'}`}>{plan.tagline}</p>
+                    <div className="mt-3">
+                      {plan.price === "0" ? (
+                        <span className={`text-4xl font-extrabold ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>Gratis</span>
+                      ) : (
+                        <>
+                          <div className={`text-3xl font-extrabold ${plan.highlight ? 'text-white' : 'text-gray-900'}`}>
+                            CLP {plan.price}
+                          </div>
+                          <p className={`text-xs mt-0.5 ${plan.highlight ? 'text-blue-200' : 'text-gray-400'}`}>{plan.note}</p>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <ul className="space-y-2.5 flex-1 mb-6">
                     {plan.features.map((f) => (
@@ -911,7 +936,7 @@ export default function HomePage() {
                       </li>
                     ))}
                   </ul>
-                  <Link href={plan.name === "Enterprise" ? "#contact" : "/auth/register"}>
+                  <Link href={plan.key === "ENTERPRISE" ? "#contact" : "/auth/register"}>
                     <Button
                       className={`w-full transition-all ${plan.highlight
                         ? 'bg-white hover:bg-blue-50 text-blue-700 font-bold shadow-none border-0'
