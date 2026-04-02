@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /**
- * Injects `x-pathname` header so that server-side layouts can read
- * the current URL path (Next.js App Router layouts don't expose it directly).
+ * Injects `x-pathname` as a REQUEST header so server components
+ * can read it via headers(). Response headers are NOT readable by
+ * server components — the header must be forwarded on the request.
  */
 export function middleware(req: NextRequest) {
-  const res = NextResponse.next();
-  res.headers.set("x-pathname", req.nextUrl.pathname);
-  return res;
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-pathname", req.nextUrl.pathname);
+
+  return NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 }
 
 export const config = {

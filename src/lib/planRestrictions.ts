@@ -58,7 +58,14 @@ export function planHasAgent(plan: string): boolean {
 export function planCanAccessPath(plan: string, path: string): boolean {
   const allowed = PLAN_NAV_PATHS[plan as PlanKey] ?? PLAN_NAV_PATHS.FREE
   if (allowed === null) return true
-  return allowed.some(p => path === p || path.startsWith(p + '/'))
+  return allowed.some(p => {
+    // Exact match always works
+    if (path === p) return true
+    // Prefix match only for routes deeper than /dashboard (e.g. /dashboard/scanner)
+    // This prevents /dashboard from matching /dashboard/siem, /dashboard/compliance, etc.
+    if (p !== '/dashboard' && path.startsWith(p + '/')) return true
+    return false
+  })
 }
 
 export function planDisplayName(plan: string): string {
