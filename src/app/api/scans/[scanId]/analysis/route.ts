@@ -5,13 +5,16 @@ import { prisma } from "@/lib/prisma";
 import { generateScanAnalysis } from "@/lib/claude-report";
 import { getLastDiagnostic, saveDiagnostic } from "@/lib/claude";
 
-// Allow up to 60 seconds — Claude can take 15-30 s on first call
+// Claude can take 15–30 s — give Vercel enough time
 export const maxDuration = 60;
+export const dynamic = "force-dynamic";
 
 /**
- * GET /api/scans/[scanId]/analysis
+ * GET /api/scans/[scanId]/analysis?force=true
  * Returns Claude AI analysis for a scan.
- * Strategy: serve cached DB result instantly if available, otherwise call Claude.
+ * - Serves DB-cached result instantly (zero latency, zero API cost)
+ * - ?force=true bypasses cache and regenerates (used by Retry button)
+ * - Pre-generation happens in scanner.ts after scan completes
  */
 export async function GET(
   request: NextRequest,
@@ -37,27 +40,22 @@ export async function GET(
       return NextResponse.json({ error: "Escaneo no encontrado" }, { status: 404 });
     }
 
-    // ── 1. Try cached result first (instant, no API cost) ──────────
-    const cached = await getLastDiagnostic(user.id, `scan_analysis_${params.scanId}`);
-    if (cached) {
-      try {
-        return NextResponse.json({ analysis: JSON.parse(cached), cached: true });
-      } catch (_) { /* corrupted — regenerate below */ }
+    const force = request.nextUrl.searchParams.get("force") === "true";
+
+    // ── 1. Scan-specific cache (instant) ──────────────────────────
+    if (!force) {
+      const cached = await getLastDiagnostic(user.id, `scan_analysis_${params.scanId}`);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (parsed?.diagnosticoEjecutivo) {
+            return NextResponse.json({ analysis: parsed, cached: true });
+          }
+        } catch (_) { /* corrupted, regenerate */ }
+      }
     }
 
-    // ── 2. Also accept generic scan_analysis as fallback ──────────
-    const genericCached = await getLastDiagnostic(user.id, "scan_analysis");
-    if (genericCached) {
-      try {
-        const parsed = JSON.parse(genericCached);
-        // Verify it has the expected keys before serving
-        if (parsed.diagnosticoEjecutivo || parsed.analisisTecnico) {
-          return NextResponse.json({ analysis: parsed, cached: true });
-        }
-      } catch (_) { /* corrupted, proceed */ }
-    }
-
-    // ── 3. No cache — call Claude ──────────────────────────────────
+    // ── 2. Call Claude with full scan data ─────────────────────────
     const scanData = {
       domain: (scan as any).targetUrl || "Dominio",
       score: ((scan as any).score as number) || 0,
@@ -67,13 +65,17 @@ export async function GET(
       sslInfo: ((scan as any).sslInfo as any) || {},
       securityHeaders: ((scan as any).securityHeaders as any) || {},
       performance: ((scan as any).performance as any) || {},
+      firewall: ((scan as any).firewall as any) || {},
+      compliance: ((scan as any).compliance as any) || {},
+      dnsRecords: ((scan as any).dnsRecords as any) || {},
+      cookies: ((scan as any).cookies as any) || {},
     };
 
     let analysis: any = null;
     try {
       analysis = await generateScanAnalysis(scanData, user.id);
-      // Save with scan-specific key so future opens are instant
       if (analysis) {
+        // Save with scan-specific key — next open is instant
         await saveDiagnostic({
           userId: user.id,
           type: `scan_analysis_${params.scanId}`,
@@ -82,15 +84,14 @@ export async function GET(
         });
       }
     } catch (claudeErr) {
-      console.error("[analysis route] Claude and DB fallback both failed:", claudeErr);
-      // Return null analysis — UI shows friendly message, not error
+      console.error("[analysis route] Claude failed:", claudeErr);
       return NextResponse.json({ analysis: null });
     }
 
     return NextResponse.json({ analysis });
   } catch (error) {
-    console.error("Scan analysis route error:", error);
-    // Always return 200 with null so the UI shows the friendly empty state
+    console.error("[analysis route] Unexpected error:", error);
     return NextResponse.json({ analysis: null });
   }
 }
+

@@ -114,6 +114,12 @@ export async function generateScanAnalysis(
     technologies: any[];
     sslInfo?: any;
     headers?: any;
+    securityHeaders?: any;
+    firewall?: any;
+    compliance?: any;
+    dnsRecords?: any;
+    cookies?: any;
+    performance?: any;
   },
   userId?: string
 ): Promise<{
@@ -122,32 +128,84 @@ export async function generateScanAnalysis(
   impactoNegocio: string;
   planRemediacion: string;
 }> {
-  const prompt = `Analiza los resultados del siguiente escaneo de seguridad web para el dominio "${scanData.domain}" y genera un informe profesional en dos idiomas: técnico y de negocio.
+  // Build a compact but complete summary to keep the prompt short and fast
+  const vulns = scanData.vulnerabilities || [];
+  const ports = scanData.openPorts || [];
+  const techs = scanData.technologies || [];
+  const ssl = scanData.sslInfo || {};
+  const headers = scanData.securityHeaders || scanData.headers || {};
+  const firewall = scanData.firewall || {};
+  const compliance = scanData.compliance || {};
 
-RESULTADOS DEL ESCANEO:
-${JSON.stringify(scanData, null, 2)}
+  const criticalVulns = vulns.filter((v: any) =>
+    ["critical", "crítico", "critico"].includes((v.severity || "").toLowerCase())
+  );
+  const highVulns = vulns.filter((v: any) =>
+    ["high", "alto"].includes((v.severity || "").toLowerCase())
+  );
+  const mediumVulns = vulns.filter((v: any) =>
+    ["medium", "medio", "moderate"].includes((v.severity || "").toLowerCase())
+  );
 
-Responde en JSON con exactamente estas claves:
+  const activeHeaders = [
+    "strict-transport-security","x-content-type-options","x-frame-options",
+    "content-security-policy","x-xss-protection","referrer-policy",
+  ].filter((h) => headers?.headers?.[h]);
+
+  const summary = {
+    domain: scanData.domain,
+    score: scanData.score,
+    ssl: { valid: ssl.valid, issuer: ssl.issuer, daysLeft: ssl.daysUntilExpiry },
+    securityHeaders: { active: activeHeaders.length, outOf: 6, missing: 6 - activeHeaders.length },
+    vulnerabilities: {
+      total: vulns.length,
+      critical: criticalVulns.length,
+      high: highVulns.length,
+      medium: mediumVulns.length,
+      items: vulns.slice(0, 8).map((v: any) => ({
+        title: v.title,
+        severity: v.severity,
+        description: v.description?.substring(0, 120),
+        recommendation: v.recommendation?.substring(0, 100),
+      })),
+    },
+    openPorts: ports.slice(0, 10).map((p: any) => ({ port: p.port, service: p.service })),
+    technologies: techs.slice(0, 10),
+    firewall: { waf: firewall.waf, ddos: firewall.ddos, rateLimit: firewall.rateLimit },
+    compliance: {
+      iso27001: compliance?.iso27001?.score,
+      gdpr: compliance?.gdpr?.score,
+    },
+  };
+
+  const prompt = `Analiza este escaneo de seguridad web y responde SOLO con JSON válido, sin texto extra.
+
+DATOS DEL ESCANEO (${scanData.domain}):
+${JSON.stringify(summary, null, 1)}
+
+JSON requerido (4 claves, cada valor 120-200 palabras en español profesional):
 {
-  "diagnosticoEjecutivo": "2-3 párrafos para el CEO: qué encontramos, qué significa y por qué importa ahora",
-  "analisisTecnico": "Análisis técnico detallado: CVEs, CVSS, vectores de ataque, puertos críticos, análisis SSL/TLS, headers de seguridad faltantes, tecnologías vulnerables con versiones",
-  "impactoNegocio": "Traducción a impacto empresarial: riesgo financiero estimado, exposición regulatoria (GDPR, Ley 21.663, PCI-DSS según aplique), impacto reputacional, riesgo operativo",
-  "planRemediacion": "Plan de remediación priorizado: INMEDIATO (0-7 días), CORTO PLAZO (30 días), MEDIANO PLAZO (90 días). Con responsables sugeridos y criterios de verificación"
+  "diagnosticoEjecutivo": "Para el CEO/directivo: qué encontramos, nivel de riesgo, y por qué actuar ahora",
+  "impactoNegocio": "Riesgo financiero, regulatorio (GDPR/PCI-DSS/Ley 21.663) y reputacional concreto",
+  "analisisTecnico": "Análisis técnico: CVEs, SSL/TLS, headers HTTP faltantes, vectores de ataque, tecnologías",
+  "planRemediacion": "INMEDIATO (0-7d): X acciones. CORTO PLAZO (30d): Y acciones. MEDIANO PLAZO (90d): Z acciones"
 }`;
 
   try {
     const raw = await askClaude({
       system: REPORT_SYSTEM_PROMPT,
       messages: [{ role: "user", content: prompt }],
-      maxTokens: 2500,
-      temperature: 0.4,
+      maxTokens: 1800,
+      temperature: 0.3,
     });
 
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("Claude no devolvió JSON válido en el análisis del escaneo");
+    if (!jsonMatch) throw new Error("Claude no devolvió JSON válido");
     const analysis = JSON.parse(jsonMatch[0]);
 
-    // Guardar en la BD
+    if (!analysis.diagnosticoEjecutivo) throw new Error("JSON incompleto de Claude");
+
+    // Save generic key too for fallback
     if (userId) {
       await saveDiagnostic({
         userId,
@@ -159,17 +217,7 @@ Responde en JSON con exactamente estas claves:
 
     return analysis;
   } catch (err) {
-    console.error("[generateScanAnalysis] Claude falló, buscando diagnóstico guardado:", err);
-
-    if (userId) {
-      const last = await getLastDiagnostic(userId, "scan_analysis");
-      if (last) {
-        try {
-          return JSON.parse(last);
-        } catch (_) { /* JSON corrupto, continúa */ }
-      }
-    }
-
+    console.error("[generateScanAnalysis] Claude falló:", err);
     throw err;
   }
 }

@@ -2,6 +2,8 @@ import { prisma } from "./prisma";
 import axios from "axios";
 import * as https from "https";
 import * as dns from "dns/promises";
+import { generateScanAnalysis } from "./claude-report";
+import { saveDiagnostic } from "./claude";
 
 interface ScanResult {
   ssl: any;
@@ -144,6 +146,35 @@ export async function performSecurityScan(
       },
     });
     console.log(`Scan ${scanId} saved to database`);
+
+    // ── Pre-generate Claude analysis in background (non-blocking) ──
+    // This ensures 'Ver Informe' shows the AI analysis instantly when opened.
+    if (userId && process.env.ANTHROPIC_API_KEY) {
+      generateScanAnalysis(
+        {
+          domain: targetUrl,
+          score: finalScore,
+          vulnerabilities: results.vulnerabilities || [],
+          openPorts: results.openPorts || [],
+          technologies: results.technologies || [],
+          sslInfo: results.sslInfo || {},
+          headers: results.securityHeaders || {},
+        },
+        userId
+      )
+        .then((analysis) => {
+          // Save with scan-specific key for instant retrieval
+          return saveDiagnostic({
+            userId: userId!,
+            type: `scan_analysis_${scanId}`,
+            content: JSON.stringify(analysis),
+            context: `${targetUrl} — score ${finalScore}`,
+          });
+        })
+        .catch((err) =>
+          console.error(`[scanner] Background Claude analysis failed for ${scanId}:`, err)
+        );
+    }
   } catch (error) {
     console.error("❌ Scan error:", error);
     console.error("Error details:", error instanceof Error ? error.message : String(error));

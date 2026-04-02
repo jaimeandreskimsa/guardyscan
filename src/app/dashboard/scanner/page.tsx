@@ -908,7 +908,10 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
     if (!scan?.id) { setClaudeLoading(false); return }
     setClaudeLoading(true)
     setClaudeData(null)
-    fetch(`/api/scans/${scan.id}/analysis`)
+    const url = claudeRetry > 0
+      ? `/api/scans/${scan.id}/analysis?force=true`
+      : `/api/scans/${scan.id}/analysis`
+    fetch(url)
       .then(r => r.json())
       .then(d => { setClaudeData(d.analysis || null); setClaudeLoading(false) })
       .catch(() => { setClaudeData(null); setClaudeLoading(false) })
