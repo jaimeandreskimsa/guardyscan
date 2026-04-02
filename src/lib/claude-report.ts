@@ -1,4 +1,4 @@
-import { askClaude } from "./claude";
+import { askClaude, saveDiagnostic, getLastDiagnostic } from "./claude";
 
 /**
  * System prompt para informes ejecutivos — Claude como CISO senior
@@ -21,17 +21,21 @@ Transformar datos técnicos de seguridad en lenguaje de negocio claro, accionabl
 8. Formato: texto continuo profesional (no Markdown con #, ya que irá en PDF).`;
 
 /**
- * Genera el análisis ejecutivo completo para el informe PDF mensual
+ * Genera el análisis ejecutivo completo para el informe PDF mensual.
+ * Guarda el resultado en la BD. Si Claude falla, retorna el último análisis guardado.
  */
-export async function generateReportAnalysis(data: {
-  company: string;
-  period: string;
-  summary: any;
-  scans: any[];
-  incidents: any[];
-  vulnerabilities: any[];
-  compliance: any[];
-}): Promise<{
+export async function generateReportAnalysis(
+  data: {
+    company: string;
+    period: string;
+    summary: any;
+    scans: any[];
+    incidents: any[];
+    vulnerabilities: any[];
+    compliance: any[];
+  },
+  userId?: string
+): Promise<{
   resumenEjecutivo: string;
   analisisEscaneos: string;
   analisisIncidentes: string;
@@ -56,31 +60,63 @@ Responde en JSON con exactamente estas claves:
   "conclusionesYPlan": "..."
 }`;
 
-  const raw = await askClaude({
-    system: REPORT_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: prompt }],
-    maxTokens: 3000,
-    temperature: 0.4,
-  });
+  try {
+    const raw = await askClaude({
+      system: REPORT_SYSTEM_PROMPT,
+      messages: [{ role: "user", content: prompt }],
+      maxTokens: 3000,
+      temperature: 0.4,
+    });
 
-  // Extraer JSON de la respuesta
-  const jsonMatch = raw.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("Claude no devolvió JSON válido en el análisis del informe");
-  return JSON.parse(jsonMatch[0]);
+    // Extraer JSON de la respuesta
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Claude no devolvió JSON válido en el análisis del informe");
+    const analysis = JSON.parse(jsonMatch[0]);
+
+    // Guardar en la BD para uso futuro como fallback
+    if (userId) {
+      await saveDiagnostic({
+        userId,
+        type: "report_analysis",
+        content: JSON.stringify(analysis),
+        context: `${data.company} — ${data.period}`,
+      });
+    }
+
+    return analysis;
+  } catch (err) {
+    console.error("[generateReportAnalysis] Claude falló, buscando diagnóstico guardado:", err);
+
+    // Fallback: último análisis guardado para este usuario
+    if (userId) {
+      const last = await getLastDiagnostic(userId, "report_analysis");
+      if (last) {
+        try {
+          return JSON.parse(last);
+        } catch (_) { /* JSON corrupto, continúa */ }
+      }
+    }
+
+    throw err; // propagar si no hay fallback disponible
+  }
 }
 
 /**
- * Genera el análisis técnico + ejecutivo de un escaneo individual
+ * Genera el análisis técnico + ejecutivo de un escaneo individual.
+ * Guarda el resultado en la BD. Si Claude falla, retorna el último análisis guardado.
  */
-export async function generateScanAnalysis(scanData: {
-  domain: string;
-  score: number;
-  vulnerabilities: any[];
-  openPorts: any[];
-  technologies: any[];
-  sslInfo?: any;
-  headers?: any;
-}): Promise<{
+export async function generateScanAnalysis(
+  scanData: {
+    domain: string;
+    score: number;
+    vulnerabilities: any[];
+    openPorts: any[];
+    technologies: any[];
+    sslInfo?: any;
+    headers?: any;
+  },
+  userId?: string
+): Promise<{
   diagnosticoEjecutivo: string;
   analisisTecnico: string;
   impactoNegocio: string;
@@ -99,14 +135,41 @@ Responde en JSON con exactamente estas claves:
   "planRemediacion": "Plan de remediación priorizado: INMEDIATO (0-7 días), CORTO PLAZO (30 días), MEDIANO PLAZO (90 días). Con responsables sugeridos y criterios de verificación"
 }`;
 
-  const raw = await askClaude({
-    system: REPORT_SYSTEM_PROMPT,
-    messages: [{ role: "user", content: prompt }],
-    maxTokens: 2500,
-    temperature: 0.4,
-  });
+  try {
+    const raw = await askClaude({
+      system: REPORT_SYSTEM_PROMPT,
+      messages: [{ role: "user", content: prompt }],
+      maxTokens: 2500,
+      temperature: 0.4,
+    });
 
-  const jsonMatch = raw.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("Claude no devolvió JSON válido en el análisis del escaneo");
-  return JSON.parse(jsonMatch[0]);
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Claude no devolvió JSON válido en el análisis del escaneo");
+    const analysis = JSON.parse(jsonMatch[0]);
+
+    // Guardar en la BD
+    if (userId) {
+      await saveDiagnostic({
+        userId,
+        type: "scan_analysis",
+        content: JSON.stringify(analysis),
+        context: `${scanData.domain} — score ${scanData.score}`,
+      });
+    }
+
+    return analysis;
+  } catch (err) {
+    console.error("[generateScanAnalysis] Claude falló, buscando diagnóstico guardado:", err);
+
+    if (userId) {
+      const last = await getLastDiagnostic(userId, "scan_analysis");
+      if (last) {
+        try {
+          return JSON.parse(last);
+        } catch (_) { /* JSON corrupto, continúa */ }
+      }
+    }
+
+    throw err;
+  }
 }

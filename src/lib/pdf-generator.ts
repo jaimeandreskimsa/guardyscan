@@ -66,9 +66,9 @@ export async function generateExecutiveReportPDF({
   doc.text("Resumen Ejecutivo", 14, 20);
   doc.setFontSize(12);
 
-  // Si hay análisis de Claude, mostrarlo; si no, texto genérico
-  const resumenText = claudeAnalysis?.resumenEjecutivo ||
-    "Este informe consolida el estado de ciberseguridad de la organización en los últimos 30 días, incluyendo escaneos, incidentes, vulnerabilidades y cumplimiento normativo.";
+  // Texto generado por Claude; si no disponible, indicar al lector
+  const resumenText = claudeAnalysis?.resumenEjecutivo ??
+    "Análisis ejecutivo no disponible para este período. Verifique la conectividad con el servicio de análisis inteligente o contacte a soporte.";
   const resumenLines = doc.splitTextToSize(resumenText, 182);
   doc.text(resumenLines, 14, 28);
   const resumenY = 28 + resumenLines.length * 6 + 4;
@@ -110,8 +110,8 @@ export async function generateExecutiveReportPDF({
   doc.setTextColor(...COLORS.muted);
   const scansTableY = (doc as any).lastAutoTable.finalY;
 
-  const scansAnalysis = claudeAnalysis?.analisisEscaneos ||
-    "Análisis técnico: El score refleja la postura de seguridad técnica del dominio. Impacto en el negocio: Un score bajo puede significar riesgo de multas, pérdida de clientes o incidentes.";
+  const scansAnalysis = claudeAnalysis?.analisisEscaneos ??
+    "Análisis de escaneos no disponible. Ejecute un nuevo informe para obtener el análisis inteligente generado caso a caso."
   const scansLines = doc.splitTextToSize(scansAnalysis, 182);
   doc.text(scansLines, 14, scansTableY + 8);
 
@@ -137,8 +137,8 @@ export async function generateExecutiveReportPDF({
   doc.setTextColor(...COLORS.muted);
   const incidentsTableY = (doc as any).lastAutoTable.finalY;
 
-  const incidentsAnalysis = claudeAnalysis?.analisisIncidentes ||
-    "Análisis técnico: Incidentes clasificados por severidad y estado. Impacto en el negocio: Incidentes críticos pueden afectar operaciones, reputación y finanzas.";
+  const incidentsAnalysis = claudeAnalysis?.analisisIncidentes ??
+    "Análisis de incidentes no disponible. Ejecute un nuevo informe para obtener el análisis inteligente generado caso a caso."
   const incidentsLines = doc.splitTextToSize(incidentsAnalysis, 182);
   doc.text(incidentsLines, 14, incidentsTableY + 8);
 
@@ -164,8 +164,8 @@ export async function generateExecutiveReportPDF({
   doc.setTextColor(...COLORS.muted);
   const vulnsTableY = (doc as any).lastAutoTable.finalY;
 
-  const vulnsAnalysis = claudeAnalysis?.analisisVulnerabilidades ||
-    "Análisis técnico: Vulnerabilidades priorizadas por severidad. Impacto en el negocio: Vulnerabilidades críticas pueden ser puerta de entrada a ataques y sanciones regulatorias.";
+  const vulnsAnalysis = claudeAnalysis?.analisisVulnerabilidades ??
+    "Análisis de vulnerabilidades no disponible. Ejecute un nuevo informe para obtener el análisis inteligente generado caso a caso."
   const vulnsLines = doc.splitTextToSize(vulnsAnalysis, 182);
   doc.text(vulnsLines, 14, vulnsTableY + 8);
 
@@ -190,8 +190,8 @@ export async function generateExecutiveReportPDF({
   doc.setTextColor(...COLORS.muted);
   const complianceTableY = (doc as any).lastAutoTable.finalY;
 
-  const complianceAnalysis = claudeAnalysis?.analisisCumplimiento ||
-    "Análisis técnico: Avance en controles ISO 27001, Ley 21.663, PCI DSS, etc. Impacto en el negocio: El cumplimiento reduce riesgos legales, reputacionales y habilita nuevos negocios.";
+  const complianceAnalysis = claudeAnalysis?.analisisCumplimiento ??
+    "Análisis de cumplimiento no disponible. Ejecute un nuevo informe para obtener el análisis inteligente generado caso a caso."
   const complianceLines = doc.splitTextToSize(complianceAnalysis, 182);
   doc.text(complianceLines, 14, complianceTableY + 8);
 

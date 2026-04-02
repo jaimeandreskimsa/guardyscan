@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { askClaude } from "@/lib/claude";
+import { askClaude, saveDiagnostic, getLastDiagnostic } from "@/lib/claude";
 
 const SYSTEM_PROMPT = `Eres "Guardy", el asistente de inteligencia en ciberseguridad de GuardyScan, potenciado por un experto senior con más de 20 años de experiencia en seguridad ofensiva y defensiva, gobierno de TI, gestión de riesgos, cumplimiento normativo (ISO 27001, NIST CSF, CIS Controls, GDPR, Ley Marco de Ciberseguridad 21.663, SOC 2, PCI-DSS) y respuesta a incidentes en organizaciones Fortune 500 y entidades financieras.
 
@@ -160,9 +160,38 @@ ${message}`;
       temperature: 0.6,
     });
 
+    // Guardar respuesta en DB para uso como fallback futuro
+    await saveDiagnostic({
+      userId: user.id,
+      type: "agent_response",
+      content: reply,
+      context: message.substring(0, 800),
+    });
+
     return NextResponse.json({ reply, source: "claude" });
   } catch (error: any) {
     console.error("Agent error:", error);
+
+    // Intentar devolver el último diagnóstico guardado para este usuario
+    try {
+      const session2 = await getServerSession(authOptions);
+      if (session2?.user?.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: session2.user.email },
+          select: { id: true },
+        });
+        if (dbUser) {
+          const last = await getLastDiagnostic(dbUser.id, "agent_response");
+          if (last) {
+            return NextResponse.json({
+              reply: `⚠️ _El agente está temporalmente no disponible. Mostrando el último análisis generado:_\n\n${last}`,
+              source: "cache",
+            });
+          }
+        }
+      }
+    } catch (_) { /* ignorar */ }
+
     return NextResponse.json({ error: "Error del agente. Intenta de nuevo." }, { status: 500 });
   }
 }
