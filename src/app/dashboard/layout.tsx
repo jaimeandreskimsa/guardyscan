@@ -26,14 +26,17 @@ export default async function DashboardLayout({
 
   const plan = subscription?.plan ?? "FREE";
 
+  // Admins bypass all plan restrictions
+  const isAdmin = (session.user as any).role === "admin";
+
   // Server-side route guard: redirect to billing if plan can't access the path
   const pathname = headers().get("x-pathname") ?? "";
-  if (pathname.startsWith("/dashboard") && !planCanAccessPath(plan, pathname)) {
+  if (!isAdmin && pathname.startsWith("/dashboard") && !planCanAccessPath(plan, pathname)) {
     redirect("/dashboard/billing");
   }
 
   return (
-    <DashboardShell user={session.user} plan={plan}>
+    <DashboardShell user={session.user} plan={isAdmin ? "ENTERPRISE" : plan}>
       {children}
     </DashboardShell>
   );
