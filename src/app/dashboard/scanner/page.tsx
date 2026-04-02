@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -71,6 +71,8 @@ export default function ScannerPage() {
   const [showDetails, setShowDetails] = useState(false)
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null)
   const [generatingReport, setGeneratingReport] = useState(false)
+  // Cache: scanId → analysis result (survives modal close/reopen)
+  const analysisCache = useRef<Record<string, any>>({})
 
   // ── Technical scan state ──
   const [selectedTechnical, setSelectedTechnical] = useState<ScanType | null>(null)
@@ -671,7 +673,7 @@ export default function ScannerPage() {
 
       {/* ─── Detail Modal ─── */}
       {showDetails && selectedScan && (
-        <ScanDetailsModal scan={selectedScan} onClose={() => setShowDetails(false)} />
+        <ScanDetailsModal scan={selectedScan} analysisCache={analysisCache} onClose={() => setShowDetails(false)} />
       )}
     </div>
   )
@@ -888,29 +890,32 @@ function TechnicalResultsPanel({ result }: { result: ScanResult }) {
 // Scan Details Modal — Informe Ejecutivo
 // ═══════════════════════════════════════════════════════════════════
 
-function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void }) {
+function ScanDetailsModal({ scan, analysisCache, onClose }: { scan: any; analysisCache: React.MutableRefObject<Record<string, any>>; onClose: () => void }) {
   const vulnCount = (scan.vulnerabilities || []).length
   const sslValid = scan.sslInfo?.valid
   const activeHeaders = ['strict-transport-security', 'x-content-type-options', 'x-frame-options', 'content-security-policy', 'x-xss-protection', 'referrer-policy']
     .filter(h => scan.securityHeaders?.headers?.[h]).length
 
-  // ── Claude AI analysis state ──
+  // ── Guardy AI analysis state ──
+  const cached = scan?.id ? (analysisCache.current[scan.id] ?? null) : null
   const [claudeData, setClaudeData] = useState<{
     diagnosticoEjecutivo?: string
     analisisTecnico?: string
     impactoNegocio?: string
     planRemediacion?: string
-  } | null>(null)
+  } | null>(cached)
   const [claudeLoading, setClaudeLoading] = useState(false)
-  const [claudeStarted, setClaudeStarted] = useState(false)
+  const [claudeStarted, setClaudeStarted] = useState(!!cached)
 
-  // Auto-load cached analysis when modal opens
+  // Auto-load cached analysis when modal opens (if not already in memory)
   useEffect(() => {
     if (!scan?.id) return
+    if (analysisCache.current[scan.id]) return // already in memory
     fetch(`/api/scans/${scan.id}/analysis`)
       .then(r => r.json())
       .then(d => {
         if (d.analysis?.diagnosticoEjecutivo) {
+          analysisCache.current[scan.id] = d.analysis
           setClaudeStarted(true)
           setClaudeData(d.analysis)
         }
@@ -929,7 +934,12 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
       : `/api/scans/${scan.id}/analysis`
     fetch(url)
       .then(r => r.json())
-      .then(d => { setClaudeData(d.analysis || null); setClaudeLoading(false) })
+      .then(d => { 
+        const result = d.analysis || null
+        if (result && scan?.id) analysisCache.current[scan.id] = result
+        setClaudeData(result)
+        setClaudeLoading(false)
+      })
       .catch(() => { setClaudeData(null); setClaudeLoading(false) })
   }
 
