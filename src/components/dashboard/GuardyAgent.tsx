@@ -12,6 +12,7 @@ import {
   Loader2,
   Trash2,
   PanelRightClose,
+  Lock,
 } from "lucide-react";
 
 interface Message {
@@ -32,7 +33,7 @@ const QUICK_QUESTIONS = [
   { label: "Qué priorizar", text: "¿Qué debo priorizar para mejorar mi seguridad?" },
 ];
 
-export function GuardyAgent() {
+export function GuardyAgent({ plan = "FREE" }: { plan?: string }) {
   const { isAgentOpen: isOpen, toggleAgent, closeAgent } = useAgent();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -219,117 +220,142 @@ export function GuardyAgent() {
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5 bg-gray-50 dark:bg-gray-950">
-          {/* Welcome message if no messages */}
-          {messages.length === 0 && (
-            <div className="space-y-5">
-              {/* Welcome */}
-              <div className="flex gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                  <Bot className="h-4 w-4 text-white" />
-                </div>
-                <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-md p-4 shadow-sm flex-1">
-                  <p className="text-sm text-gray-700 dark:text-gray-200">
-                    ¡Hola! Soy <strong>Guardy</strong>, tu asistente de
-                    ciberseguridad con IA.
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
-                    Estoy conectado a todos los módulos de tu plataforma. Puedo
-                    explicarte en lenguaje simple tus vulnerabilidades, incidentes,
-                    escaneos y mucho más.
-                  </p>
-                  <p className="text-xs text-gray-400 mt-3">
-                    Pregúntame lo que necesites
-                  </p>
-                </div>
+          {/* Upgrade prompt for non-agent plans */}
+          {!['PROFESSIONAL', 'ENTERPRISE'].includes(plan) ? (
+            <div className="flex flex-col items-center justify-center h-full gap-6 py-12">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-lg">
+                <Lock className="h-8 w-8 text-white" />
               </div>
-
-              {/* Quick questions grid */}
-              <div className="space-y-2.5">
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">
-                  Preguntas sugeridas
+              <div className="text-center max-w-xs px-4">
+                <p className="font-bold text-gray-800 dark:text-white text-base mb-2">
+                  Guardy Agente IA
                 </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {QUICK_QUESTIONS.map((q) => (
-                    <button
-                      key={q.label}
-                      onClick={() => sendMessage(q.text)}
-                      disabled={isLoading}
-                      className="text-left text-xs px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 text-gray-700 dark:text-gray-300 transition-all disabled:opacity-50 hover:shadow-sm"
-                    >
-                      {q.label}
-                    </button>
-                  ))}
-                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+                  El agente de IA conversacional está disponible a partir del <strong>Plan Professional</strong>. Responde preguntas sobre tu seguridad, incidentes y vulnerabilidades en tiempo real.
+                </p>
               </div>
+              <a
+                href="/dashboard/billing"
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-xl shadow-md transition-all text-sm"
+              >
+                <Sparkles className="h-4 w-4" /> Ver planes y actualizar
+              </a>
+              <p className="text-xs text-gray-400">Desde CLP 59.000 + I.V.A / mes</p>
             </div>
-          )}
+          ) : (
+            <>
+              {messages.length === 0 && (
+                <div className="space-y-5">
+                  {/* Welcome */}
+                  <div className="flex gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                      <Bot className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-md p-4 shadow-sm flex-1">
+                      <p className="text-sm text-gray-700 dark:text-gray-200">
+                        ¡Hola! Soy <strong>Guardy</strong>, tu asistente de
+                        ciberseguridad con IA.
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">
+                        Estoy conectado a todos los módulos de tu plataforma. Puedo
+                        explicarte en lenguaje simple tus vulnerabilidades, incidentes,
+                        escaneos y mucho más.
+                      </p>
+                      <p className="text-xs text-gray-400 mt-3">
+                        Pregúntame lo que necesites
+                      </p>
+                    </div>
+                  </div>
 
-          {/* Conversation messages */}
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
-            >
-              {/* Avatar */}
-              <div
-                className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
-                  msg.role === "user"
-                    ? "bg-gradient-to-br from-purple-500 to-pink-500"
-                    : "bg-gradient-to-br from-cyan-500 to-blue-600"
-                }`}
-              >
-                {msg.role === "user" ? (
-                  <User className="h-4 w-4 text-white" />
-                ) : (
-                  <Bot className="h-4 w-4 text-white" />
-                )}
-              </div>
-              {/* Bubble */}
-              <div
-                className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
-                  msg.role === "user"
-                    ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-tr-md"
-                    : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-tl-md"
-                }`}
-              >
+                  {/* Quick questions grid */}
+                  <div className="space-y-2.5">
+                    <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-1">
+                      Preguntas sugeridas
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {QUICK_QUESTIONS.map((q) => (
+                        <button
+                          key={q.label}
+                          onClick={() => sendMessage(q.text)}
+                          disabled={isLoading}
+                          className="text-left text-xs px-3 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 text-gray-700 dark:text-gray-300 transition-all disabled:opacity-50 hover:shadow-sm"
+                        >
+                          {q.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Conversation messages */}
+              {messages.map((msg) => (
                 <div
-                  className="text-sm leading-relaxed whitespace-pre-wrap break-words"
-                  dangerouslySetInnerHTML={{
-                    __html: formatMessage(msg.content),
-                  }}
-                />
-                <p
-                  className={`text-[10px] mt-2 ${
-                    msg.role === "user" ? "text-blue-200" : "text-gray-400"
-                  }`}
+                  key={msg.id}
+                  className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
                 >
-                  {msg.timestamp.toLocaleTimeString("es", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
-              </div>
-            </div>
-          ))}
-
-          {/* Typing indicator */}
-          {isLoading && (
-            <div className="flex gap-3">
-              <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                <Bot className="h-4 w-4 text-white" />
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-md p-4 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                  <span className="text-sm text-gray-500">
-                    Guardy está analizando...
-                  </span>
+                  {/* Avatar */}
+                  <div
+                    className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${
+                      msg.role === "user"
+                        ? "bg-gradient-to-br from-purple-500 to-pink-500"
+                        : "bg-gradient-to-br from-cyan-500 to-blue-600"
+                    }`}
+                  >
+                    {msg.role === "user" ? (
+                      <User className="h-4 w-4 text-white" />
+                    ) : (
+                      <Bot className="h-4 w-4 text-white" />
+                    )}
+                  </div>
+                  {/* Bubble */}
+                  <div
+                    className={`max-w-[85%] rounded-2xl p-4 shadow-sm ${
+                      msg.role === "user"
+                        ? "bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-tr-md"
+                        : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 rounded-tl-md"
+                    }`}
+                  >
+                    <div
+                      className="text-sm leading-relaxed whitespace-pre-wrap break-words"
+                      dangerouslySetInnerHTML={{
+                        __html: formatMessage(msg.content),
+                      }}
+                    />
+                    <p
+                      className={`text-[10px] mt-2 ${
+                        msg.role === "user" ? "text-blue-200" : "text-gray-400"
+                      }`}
+                    >
+                      {msg.timestamp.toLocaleTimeString("es", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
+              ))}
 
-          <div ref={messagesEndRef} />
+              {/* Typing indicator */}
+              {isLoading && (
+                <div className="flex gap-3">
+                  <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-md p-4 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+                      <span className="text-sm text-gray-500">
+                        Guardy está analizando...
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </>
+          )}
         </div>
 
         {/* Quick actions after conversation */}

@@ -1,0 +1,60 @@
+// ─── Plan Restriction Utilities ──────────────────────────────────
+// NOTE: The DB enum uses BASIC, but it is displayed as "Essential" in the UI.
+// FREE = Free  |  BASIC = Essential  |  PROFESSIONAL = Professional  |  ENTERPRISE = Enterprise
+
+export type PlanKey = 'FREE' | 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE'
+
+export const PLAN_DISPLAY_NAME: Record<PlanKey, string> = {
+  FREE: 'Free',
+  BASIC: 'Essential',
+  PROFESSIONAL: 'Professional',
+  ENTERPRISE: 'Enterprise',
+}
+
+/** Plans that can use Claude AI diagnostics */
+export const AI_PLANS: PlanKey[] = ['PROFESSIONAL', 'ENTERPRISE']
+
+/** Plans that can use the Guardy Agent chat */
+export const AGENT_PLANS: PlanKey[] = ['PROFESSIONAL', 'ENTERPRISE']
+
+/** Nav paths allowed per plan. null = all paths allowed */
+export const PLAN_NAV_PATHS: Record<PlanKey, string[] | null> = {
+  FREE: [
+    '/dashboard',
+    '/dashboard/scanner',
+  ],
+  BASIC: [
+    '/dashboard',
+    '/dashboard/scanner',
+    '/dashboard/siem',
+    '/dashboard/vulnerabilities',
+  ],
+  PROFESSIONAL: [
+    '/dashboard',
+    '/dashboard/scanner',
+    '/dashboard/siem',
+    '/dashboard/vulnerabilities',
+    '/dashboard/incidents',
+    '/dashboard/risk-management',
+    '/dashboard/documents',
+  ],
+  ENTERPRISE: null, // all routes
+}
+
+export function planHasAI(plan: string): boolean {
+  return (AI_PLANS as string[]).includes(plan)
+}
+
+export function planHasAgent(plan: string): boolean {
+  return (AGENT_PLANS as string[]).includes(plan)
+}
+
+export function planCanAccessPath(plan: string, path: string): boolean {
+  const allowed = PLAN_NAV_PATHS[plan as PlanKey] ?? PLAN_NAV_PATHS.FREE
+  if (allowed === null) return true
+  return allowed.some(p => path === p || path.startsWith(p + '/'))
+}
+
+export function planDisplayName(plan: string): string {
+  return PLAN_DISPLAY_NAME[plan as PlanKey] ?? plan
+}

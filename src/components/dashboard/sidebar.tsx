@@ -12,9 +12,11 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAgent } from "@/components/dashboard/AgentContext";
+import { planCanAccessPath, planHasAgent, planDisplayName } from "@/lib/planRestrictions";
 
 interface SidebarProps {
   user: any;
+  plan?: string;
 }
 
 // Navegación agrupada por categorías
@@ -80,7 +82,7 @@ const getNavigationGroups = (userRole: string) => {
   return baseGroups;
 };
 
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar({ user, plan = "FREE" }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -166,47 +168,81 @@ export function Sidebar({ user }: SidebarProps) {
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+                const isLocked = !planCanAccessPath(plan, item.href);
                 return (
                   <>
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
-                        isActive
-                          ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-500/20 nav-active-glow"
-                          : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
-                      } ${collapsed ? "justify-center" : ""}`}
-                      title={collapsed ? item.name : undefined}
-                    >
-                      <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"}`} />
-                      {!collapsed && (
-                        <span className="font-medium text-sm">{item.name}</span>
-                      )}
-                    </Link>
+                    {isLocked ? (
+                      <a
+                        key={item.name}
+                        href="/dashboard/billing"
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group opacity-40 hover:opacity-60 ${collapsed ? "justify-center" : ""}`}
+                        title={collapsed ? `${item.name} (requiere upgrade)` : undefined}
+                      >
+                        <Icon className="h-5 w-5 flex-shrink-0 text-gray-400" />
+                        {!collapsed && (
+                          <span className="font-medium text-sm text-gray-400 flex items-center gap-1.5 flex-1">
+                            {item.name}
+                            <span className="ml-auto text-[9px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">PRO</span>
+                          </span>
+                        )}
+                      </a>
+                    ) : (
+                      <Link
+                        key={item.name}
+                        href={item.href}
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+                          isActive
+                            ? "bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md shadow-blue-500/20 nav-active-glow"
+                            : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                        } ${collapsed ? "justify-center" : ""}`}
+                        title={collapsed ? item.name : undefined}
+                      >
+                        <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-200"}`} />
+                        {!collapsed && (
+                          <span className="font-medium text-sm">{item.name}</span>
+                        )}
+                      </Link>
+                    )}
                     {/* Guardy Agente — debajo del Dashboard */}
                     {item.href === "/dashboard" && (
-                      <button
-                        onClick={() => toggleAgent()}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
-                          isAgentOpen
-                            ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-blue-500/20"
-                            : "text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 dark:hover:from-cyan-900/20 dark:hover:to-blue-900/20"
-                        } ${collapsed ? "justify-center" : ""}`}
-                        title={collapsed ? "Guardy AI" : undefined}
-                      >
-                        <div className={`relative flex-shrink-0 ${isAgentOpen ? "" : "text-cyan-600 dark:text-cyan-400"}`}>
-                          <Bot className={`h-5 w-5 ${isAgentOpen ? "text-white" : ""}`} />
-                          {!isAgentOpen && (
-                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full border border-white dark:border-gray-800" />
-                          )}
-                        </div>
-                        {!collapsed && (
-                          <div className="flex items-center gap-2 flex-1">
-                            <span className="font-semibold text-sm">Guardy AI</span>
-                            <Sparkles className={`h-3.5 w-3.5 ${isAgentOpen ? "text-yellow-300" : "text-yellow-500"}`} />
+                      planHasAgent(plan) ? (
+                        <button
+                          onClick={() => toggleAgent()}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
+                            isAgentOpen
+                              ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-blue-500/20"
+                              : "text-gray-600 dark:text-gray-300 hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 dark:hover:from-cyan-900/20 dark:hover:to-blue-900/20"
+                          } ${collapsed ? "justify-center" : ""}`}
+                          title={collapsed ? "Guardy AI" : undefined}
+                        >
+                          <div className={`relative flex-shrink-0 ${isAgentOpen ? "" : "text-cyan-600 dark:text-cyan-400"}`}>
+                            <Bot className={`h-5 w-5 ${isAgentOpen ? "text-white" : ""}`} />
+                            {!isAgentOpen && (
+                              <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full border border-white dark:border-gray-800" />
+                            )}
                           </div>
-                        )}
-                      </button>
+                          {!collapsed && (
+                            <div className="flex items-center gap-2 flex-1">
+                              <span className="font-semibold text-sm">Guardy AI</span>
+                              <Sparkles className={`h-3.5 w-3.5 ${isAgentOpen ? "text-yellow-300" : "text-yellow-500"}`} />
+                            </div>
+                          )}
+                        </button>
+                      ) : (
+                        <a
+                          href="/dashboard/billing"
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl opacity-40 hover:opacity-60 transition-all ${collapsed ? "justify-center" : ""}`}
+                          title={collapsed ? "Guardy AI (requiere Professional)" : undefined}
+                        >
+                          <Bot className="h-5 w-5 flex-shrink-0 text-gray-400" />
+                          {!collapsed && (
+                            <div className="flex items-center gap-2 flex-1">
+                              <span className="font-medium text-sm text-gray-400">Guardy AI</span>
+                              <span className="ml-auto text-[9px] bg-amber-100 text-amber-600 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">PRO</span>
+                            </div>
+                          )}
+                        </a>
+                      )
                     )}
                   </>
                 );
