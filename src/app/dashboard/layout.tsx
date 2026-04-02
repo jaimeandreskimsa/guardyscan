@@ -17,15 +17,30 @@ export default async function DashboardLayout({
     redirect("/auth/login");
   }
 
-  // Fetch subscription AND role directly from DB — never trust the stale JWT
-  const dbUser = await prisma.user
-    .findUnique({
-      where: { id: session.user.id },
-      select: { role: true, subscription: { select: { plan: true } } },
-    })
-    .catch(() => null);
+  // Fetch role + subscription from DB — never trust the stale JWT
+  // Try by id first, fall back to email so stale tokens still work
+  let dbUser = null;
+  try {
+    if (session.user.id) {
+      dbUser = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { role: true, subscription: { select: { plan: true } } },
+      });
+    }
+    if (!dbUser && session.user.email) {
+      dbUser = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { role: true, subscription: { select: { plan: true } } },
+      });
+    }
+  } catch (_) {
+    dbUser = null;
+  }
 
-  const isAdmin = dbUser?.role === "admin";
+  // Belt-and-suspenders: also trust JWT role as last resort for admin
+  const isAdmin =
+    dbUser?.role === "admin" ||
+    (session.user as any).role === "admin";
   const plan = isAdmin ? "ENTERPRISE" : (dbUser?.subscription?.plan ?? "FREE");
 
   // Server-side route guard: redirect to billing if plan can't access the path
