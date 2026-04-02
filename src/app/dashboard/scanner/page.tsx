@@ -902,15 +902,17 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
     planRemediacion?: string
   } | null>(null)
   const [claudeLoading, setClaudeLoading] = useState(true)
+  const [claudeRetry, setClaudeRetry] = useState(0)
 
   useEffect(() => {
     if (!scan?.id) { setClaudeLoading(false); return }
     setClaudeLoading(true)
+    setClaudeData(null)
     fetch(`/api/scans/${scan.id}/analysis`)
       .then(r => r.json())
       .then(d => { setClaudeData(d.analysis || null); setClaudeLoading(false) })
       .catch(() => { setClaudeData(null); setClaudeLoading(false) })
-  }, [scan.id])
+  }, [scan.id, claudeRetry])
 
   // Calcular score real basado en los datos del escaneo
   const computedScore = (() => {
@@ -1844,9 +1846,20 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                   })}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center py-10 gap-3 text-gray-400">
-                  <Bot className="h-8 w-8 opacity-40" />
-                  <p className="text-sm">No se pudo generar el análisis en este momento</p>
+                <div className="flex flex-col items-center justify-center py-10 gap-4">
+                  <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                    <Bot className="h-7 w-7 text-gray-400" />
+                  </div>
+                  <div className="text-center">
+                    <p className="font-semibold text-gray-700 dark:text-gray-300">No se pudo generar el análisis</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Puede deberse a un tiempo de espera. Intente de nuevo.</p>
+                  </div>
+                  <button
+                    onClick={() => setClaudeRetry(n => n + 1)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                  >
+                    <RefreshCw className="h-4 w-4" /> Reintentar análisis
+                  </button>
                 </div>
               )}
             </div>
