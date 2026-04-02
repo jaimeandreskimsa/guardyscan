@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { 
   CreditCard, Check, Crown, Zap, Building2, 
   Shield, Loader2, AlertCircle, ExternalLink,
-  Receipt, Calendar, TrendingUp
+  Receipt, Calendar, TrendingUp, Sparkles
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,69 +22,82 @@ interface Subscription {
 
 const PLANS = {
   FREE: {
-    name: "Gratuito",
+    name: "Free",
+    description: "Radiografía inicial",
+    tagline: "¿Sé dónde estás expuesto?",
     price: 0,
     priceLabel: "Gratis",
-    scansLimit: -1,
+    note: "Siempre gratis",
+    scansLimit: 1,
     icon: Shield,
     color: "gray",
+    hasAI: false,
     features: [
-      "Escaneos ilimitados",
-      "Análisis básico de seguridad",
-      "Dashboard básico",
-      "1 empresa",
+      "Centro de Análisis (1 escaneo)",
+      "Score de riesgo inicial",
+      "Screenshot de hallazgos",
+      "Vista general de exposición",
     ],
   },
   BASIC: {
-    name: "Básico",
-    price: 100,
-    priceLabel: "$100/mes",
-    scansLimit: 50,
+    name: "Essential",
+    description: "Detección continua",
+    tagline: "Sabes dónde estás vulnerable",
+    price: 12000,
+    priceLabel: "CLP 12.000",
+    note: "+ I.V.A / mes",
+    scansLimit: -1,
     icon: Zap,
-    color: "blue",
+    color: "emerald",
+    hasAI: false,
     features: [
-      "50 escaneos por mes",
-      "Análisis de seguridad completo",
-      "Gestión de incidentes",
-      "Dashboard avanzado",
-      "Soporte por email",
-      "1 empresa",
+      "Centro de Análisis continuo",
+      "Monitoreo de Seguridad",
+      "Vulnerabilidades",
+      "Alertas básicas automáticas",
+      "Informe mensual",
     ],
   },
   PROFESSIONAL: {
-    name: "Profesional",
-    price: 300,
-    priceLabel: "$300/mes",
-    scansLimit: 200,
+    name: "Professional",
+    description: "Control y gestión",
+    tagline: "Controlas y gestionas tu riesgo",
+    price: 59000,
+    priceLabel: "CLP 59.000",
+    note: "+ I.V.A / mes",
+    scansLimit: -1,
     icon: Crown,
-    color: "purple",
+    color: "blue",
     popular: true,
+    hasAI: true,
     features: [
-      "200 escaneos por mes",
-      "Análisis completo + vulnerabilidades",
-      "ISO 27001 compliance",
-      "SIEM integrado",
-      "API access",
-      "Soporte prioritario",
-      "1 empresa",
+      "Todo Essential incluido",
+      "Incidentes",
+      "Riesgos",
+      "Documentos",
+      "Guardy Agente IA",
+      "Diagnóstico IA",
+      "Informe cada 15 días",
     ],
   },
   ENTERPRISE: {
     name: "Enterprise",
-    price: 900,
-    priceLabel: "$900/mes",
+    description: "Gobernanza completa",
+    tagline: "Cumples, gestionas y delegas",
+    price: 299000,
+    priceLabel: "CLP 299.000",
+    note: "+ I.V.A / mes",
     scansLimit: -1,
     icon: Building2,
-    color: "orange",
+    color: "purple",
+    hasAI: true,
     features: [
-      "Escaneos ilimitados",
-      "Todas las funcionalidades",
-      "Hasta 30 empresas",
-      "Multi-usuario (hasta 10)",
-      "Integraciones personalizadas",
-      "Consultoría incluida",
-      "Soporte 24/7",
-      "SLA garantizado",
+      "Todo Professional incluido",
+      "Cumplimiento Normativo",
+      "Continuidad de Negocio",
+      "Comité",
+      "Terceros",
+      "Inventario de Activos y Trabajadores",
     ],
   },
 };
@@ -207,7 +220,7 @@ export default function BillingPage() {
               <div>
                 <CardTitle className="text-xl">Plan {currentPlanData.name}</CardTitle>
                 <CardDescription>
-                  {currentPlan === "FREE" ? "Plan gratuito activo" : "Suscripción activa"}
+                  {currentPlanData.tagline}
                 </CardDescription>
               </div>
             </div>
@@ -258,6 +271,9 @@ export default function BillingPage() {
               <div className="text-2xl font-bold">
                 {currentPlanData.priceLabel}
               </div>
+              {currentPlanData.price > 0 && (
+                <p className="text-xs text-gray-400 mt-0.5">{currentPlanData.note}</p>
+              )}
               {subscription?.cancelAtPeriodEnd && (
                 <p className="text-sm text-yellow-600 mt-1">
                   Se cancelará al final del período
@@ -326,23 +342,31 @@ export default function BillingPage() {
                 )}
 
                 <CardHeader className="pb-2">
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center mb-2 ${
-                    key === "ENTERPRISE" ? "bg-orange-100 dark:bg-orange-900" :
-                    key === "PROFESSIONAL" ? "bg-purple-100 dark:bg-purple-900" :
-                    key === "BASIC" ? "bg-blue-100 dark:bg-blue-900" :
-                    "bg-gray-100 dark:bg-gray-800"
-                  }`}>
-                    <PlanIcon className={`h-5 w-5 ${
-                      key === "ENTERPRISE" ? "text-orange-600 dark:text-orange-400" :
-                      key === "PROFESSIONAL" ? "text-purple-600 dark:text-purple-400" :
-                      key === "BASIC" ? "text-blue-600 dark:text-blue-400" :
-                      "text-gray-600 dark:text-gray-400"
-                    }`} />
+                  <div className="flex items-start justify-between mb-2">
+                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                      key === "ENTERPRISE" ? "bg-purple-100 dark:bg-purple-900" :
+                      key === "PROFESSIONAL" ? "bg-blue-100 dark:bg-blue-900" :
+                      key === "BASIC" ? "bg-emerald-100 dark:bg-emerald-900" :
+                      "bg-gray-100 dark:bg-gray-800"
+                    }`}>
+                      <PlanIcon className={`h-5 w-5 ${
+                        key === "ENTERPRISE" ? "text-purple-600 dark:text-purple-400" :
+                        key === "PROFESSIONAL" ? "text-blue-600 dark:text-blue-400" :
+                        key === "BASIC" ? "text-emerald-600 dark:text-emerald-400" :
+                        "text-gray-600 dark:text-gray-400"
+                      }`} />
+                    </div>
+                    {'hasAI' in plan && plan.hasAI && (
+                      <span className="flex items-center gap-1 text-[10px] font-semibold bg-gradient-to-r from-blue-500 to-purple-500 text-white px-2 py-0.5 rounded-full">
+                        <Sparkles className="h-3 w-3" /> IA
+                      </span>
+                    )}
                   </div>
                   <CardTitle className="text-lg">{plan.name}</CardTitle>
-                  <div className="text-2xl font-bold">
-                    {plan.price === 0 ? "Gratis" : `$${plan.price}`}
-                    {plan.price > 0 && <span className="text-sm font-normal text-gray-500">/mes</span>}
+                  <p className="text-xs text-gray-500 dark:text-gray-400 italic leading-snug">{plan.tagline}</p>
+                  <div className="mt-2">
+                    <span className="text-2xl font-bold">{plan.priceLabel}</span>
+                    {plan.price > 0 && <p className="text-xs text-gray-400">{plan.note}</p>}
                   </div>
                 </CardHeader>
 
@@ -351,9 +375,9 @@ export default function BillingPage() {
                     {plan.features.map((feature, i) => (
                       <li key={i} className="flex items-start gap-2">
                         <Check className={`h-4 w-4 mt-0.5 flex-shrink-0 ${
-                          key === "ENTERPRISE" ? "text-orange-500" :
-                          key === "PROFESSIONAL" ? "text-purple-500" :
-                          key === "BASIC" ? "text-blue-500" :
+                          key === "ENTERPRISE" ? "text-purple-500" :
+                          key === "PROFESSIONAL" ? "text-blue-500" :
+                          key === "BASIC" ? "text-emerald-500" :
                           "text-gray-400"
                         }`} />
                         <span className="text-gray-600 dark:text-gray-400">{feature}</span>
@@ -372,7 +396,7 @@ export default function BillingPage() {
                     ) : isCurrentPlan ? (
                       "Plan actual"
                     ) : key === "FREE" ? (
-                      "Cambiar a Free"
+                      "Usar Free"
                     ) : (
                       `Elegir ${plan.name}`
                     )}

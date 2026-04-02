@@ -22,12 +22,16 @@ export const PLAN_NAV_PATHS: Record<PlanKey, string[] | null> = {
   FREE: [
     '/dashboard',
     '/dashboard/scanner',
+    '/dashboard/settings',
+    '/dashboard/billing',
   ],
   BASIC: [
     '/dashboard',
     '/dashboard/scanner',
     '/dashboard/siem',
     '/dashboard/vulnerabilities',
+    '/dashboard/settings',
+    '/dashboard/billing',
   ],
   PROFESSIONAL: [
     '/dashboard',
@@ -37,6 +41,8 @@ export const PLAN_NAV_PATHS: Record<PlanKey, string[] | null> = {
     '/dashboard/incidents',
     '/dashboard/risk-management',
     '/dashboard/documents',
+    '/dashboard/settings',
+    '/dashboard/billing',
   ],
   ENTERPRISE: null, // all routes
 }
