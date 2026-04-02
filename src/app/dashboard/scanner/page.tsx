@@ -11,7 +11,7 @@ import {
   AlertTriangle, CheckCircle, Clock, RefreshCw, FileCode, Globe,
   Server, Lock, Zap, FileText, BarChart3, Eye, Download,
   Loader2, Map, Container, ExternalLink, Radar, Activity,
-  TrendingUp, ShieldCheck, HelpCircle
+  TrendingUp, ShieldCheck, HelpCircle, Bot, Sparkles
 } from 'lucide-react'
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -70,6 +70,7 @@ export default function ScannerPage() {
   const [selectedScan, setSelectedScan] = useState<any>(null)
   const [showDetails, setShowDetails] = useState(false)
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null)
+  const [generatingReport, setGeneratingReport] = useState(false)
 
   // ── Technical scan state ──
   const [selectedTechnical, setSelectedTechnical] = useState<ScanType | null>(null)
@@ -203,6 +204,7 @@ export default function ScannerPage() {
   // ── PDF Download ──
   const handleDownloadPdf = async (scanId: string) => {
     setDownloadingPdf(scanId)
+    setGeneratingReport(true)
     try {
       const res = await fetch(`/api/pdf/download/${scanId}`)
       if (!res.ok) {
@@ -217,7 +219,10 @@ export default function ScannerPage() {
       window.URL.revokeObjectURL(url); document.body.removeChild(a)
     } catch (err: any) {
       alert(err.message || 'Error al descargar el informe')
-    } finally { setDownloadingPdf(null) }
+    } finally {
+      setDownloadingPdf(null)
+      setGeneratingReport(false)
+    }
   }
 
   const getStatusBadge = (status: string) => {
@@ -591,8 +596,9 @@ export default function ScannerPage() {
                                   disabled={downloadingPdf === scan.id}
                                   className="border-gray-300 dark:border-gray-600"
                                 >
-                                  {downloadingPdf === scan.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4 mr-1.5" />}
-                                  Descargar PDF
+                                  {downloadingPdf === scan.id
+                                    ? <><Loader2 className="h-4 w-4 animate-spin" /><span className="ml-1.5">Generando...</span></>
+                                    : <><Download className="h-4 w-4 mr-1.5" /><span>Descargar PDF</span></>}
                                 </Button>
                               </div>
                             )}
@@ -643,6 +649,24 @@ export default function ScannerPage() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* ─── PDF Generation Overlay ─── */}
+      {generatingReport && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 shadow-2xl flex flex-col items-center gap-5 max-w-sm mx-4 border border-gray-200 dark:border-gray-700">
+            <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+            <div className="text-center">
+              <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">Generando Informe</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                Claude está analizando los resultados del escaneo y redactando el diagnóstico en lenguaje no técnico.
+              </p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">Esto puede tomar unos segundos...</p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ─── Detail Modal ─── */}
@@ -869,6 +893,24 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
   const sslValid = scan.sslInfo?.valid
   const activeHeaders = ['strict-transport-security', 'x-content-type-options', 'x-frame-options', 'content-security-policy', 'x-xss-protection', 'referrer-policy']
     .filter(h => scan.securityHeaders?.headers?.[h]).length
+
+  // ── Claude AI analysis state ──
+  const [claudeData, setClaudeData] = useState<{
+    diagnosticoEjecutivo?: string
+    analisisTecnico?: string
+    impactoNegocio?: string
+    planRemediacion?: string
+  } | null>(null)
+  const [claudeLoading, setClaudeLoading] = useState(true)
+
+  useEffect(() => {
+    if (!scan?.id) { setClaudeLoading(false); return }
+    setClaudeLoading(true)
+    fetch(`/api/scans/${scan.id}/analysis`)
+      .then(r => r.json())
+      .then(d => { setClaudeData(d.analysis || null); setClaudeLoading(false) })
+      .catch(() => { setClaudeData(null); setClaudeLoading(false) })
+  }, [scan.id])
 
   // Calcular score real basado en los datos del escaneo
   const computedScore = (() => {
@@ -1752,6 +1794,63 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
               );
             })()}
           </SectionCard>
+
+          {/* ── Análisis Guardy AI ── */}
+          <div className="rounded-xl border border-blue-200 dark:border-blue-800/40 overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-700 to-blue-600 px-5 py-4 flex items-center gap-3">
+              <div className="p-2 bg-white/10 rounded-lg">
+                <Bot className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-sm">Análisis Guardy AI</h3>
+                <p className="text-[11px] text-blue-200">Diagnóstico generado por Claude · Lenguaje no técnico para la dirección</p>
+              </div>
+              {!claudeLoading && claudeData && (
+                <div className="ml-auto flex items-center gap-1.5 bg-white/10 px-2.5 py-1 rounded-full">
+                  <Sparkles className="h-3.5 w-3.5 text-white" />
+                  <span className="text-[11px] text-white font-medium">Claude Sonnet</span>
+                </div>
+              )}
+            </div>
+
+            <div className="p-5 bg-blue-50/40 dark:bg-blue-900/10">
+              {claudeLoading ? (
+                <div className="flex flex-col items-center justify-center py-12 gap-4">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                  <div className="text-center">
+                    <p className="font-semibold text-gray-800 dark:text-gray-200">Claude está analizando los resultados...</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Redactando diagnóstico en lenguaje no técnico</p>
+                  </div>
+                </div>
+              ) : claudeData ? (
+                <div className="space-y-4">
+                  {[
+                    { key: 'diagnosticoEjecutivo', label: 'Diagnóstico Ejecutivo', icon: '🏢' },
+                    { key: 'impactoNegocio',       label: 'Impacto en el Negocio',  icon: '📊' },
+                    { key: 'analisisTecnico',      label: 'Análisis Técnico',        icon: '🔍' },
+                    { key: 'planRemediacion',      label: 'Plan de Remediación',     icon: '✅' },
+                  ].map(({ key, label, icon }) => {
+                    const text = (claudeData as any)[key]
+                    if (!text) return null
+                    return (
+                      <div key={key} className="bg-white dark:bg-gray-800/60 rounded-xl border border-blue-100 dark:border-blue-800/30 overflow-hidden">
+                        <div className="px-4 py-2.5 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800/30 flex items-center gap-2">
+                          <span className="text-sm">{icon}</span>
+                          <h4 className="text-sm font-bold text-blue-800 dark:text-blue-300">{label}</h4>
+                        </div>
+                        <p className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{text}</p>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-10 gap-3 text-gray-400">
+                  <Bot className="h-8 w-8 opacity-40" />
+                  <p className="text-sm">No se pudo generar el análisis en este momento</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

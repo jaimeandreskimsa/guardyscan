@@ -475,49 +475,113 @@ export async function generatePDF(
       ? "Se han detectado vulnerabilidades que requieren atención. Existen riesgos que podrían ser explotados si no se corrigen."
       : "La organización presenta vulnerabilidades críticas que requieren acción inmediata para proteger los activos digitales y la continuidad del negocio.";
 
-  // ─── Portada ───────────────────────────────────────────────────
+  // ─── Portada (Diseño Elegante) ──────────────────────────────────
+  // Fondo blanco limpio
+  doc.setFillColor(255, 255, 255);
+  doc.rect(0, 0, 210, 297, "F");
+
+  // Banda superior oscura
+  doc.setFillColor(8, 15, 38);
+  doc.rect(0, 0, 210, 54, "F");
+
+  // Barra de acento azul (izquierda, altura completa)
   doc.setFillColor(...COLORS.primary);
-  doc.rect(0, 0, 210, 297, "F");
-  doc.setFillColor(0, 0, 0);
-  doc.setGState(new (doc as any).GState({ opacity: 0.18 }));
-  doc.rect(0, 0, 210, 297, "F");
-  doc.setGState(new (doc as any).GState({ opacity: 1 }));
+  doc.rect(0, 0, 5, 297, "F");
 
+  // Insignia "GS" en banda superior
+  doc.setFillColor(...COLORS.primary);
+  doc.roundedRect(170, 11, 32, 32, 4, 4, "F");
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(11);
+  doc.setFontSize(15);
   doc.setFont("helvetica", "bold");
-  doc.text("INFORME EJECUTIVO DE CIBERSEGURIDAD", 105, 70, { align: "center" });
+  doc.text("GS", 186, 31, { align: "center" });
 
-  doc.setFontSize(26);
-  doc.text(domain, 105, 90, { align: "center" });
-
-  doc.setFontSize(11);
+  // Nombre de marca en banda superior
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.text("GUARDY", 18, 27);
   doc.setFont("helvetica", "normal");
-  doc.text(`Fecha del análisis: ${dayjs(scanData.createdAt).format("DD [de] MMMM [de] YYYY")}`, 105, 104, { align: "center" });
+  doc.setTextColor(147, 179, 255);
+  doc.text("SCAN", 47, 27);
+  doc.setFontSize(8);
+  doc.setTextColor(130, 155, 210);
+  doc.text("Plataforma de Ciberseguridad Empresarial", 18, 39);
 
-  // Score badge
-  doc.setFillColor(...scoreColor);
-  doc.roundedRect(72, 118, 66, 34, 6, 6, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(30);
+  // Etiqueta de tipo de informe
+  doc.setFontSize(8.5);
   doc.setFont("helvetica", "bold");
-  doc.text(`${score}`, 105, 138, { align: "center" });
+  doc.setTextColor(...COLORS.primary);
+  doc.text("INFORME EJECUTIVO DE CIBERSEGURIDAD", 18, 72);
+
+  // Línea divisora delgada
+  doc.setDrawColor(214, 228, 255);
+  doc.setLineWidth(0.4);
+  doc.line(18, 77, 195, 77);
+
+  // Dominio (grande, oscuro)
+  const domainDisplay = domain.length > 34 ? domain.substring(0, 31) + "..." : domain;
+  doc.setTextColor(...COLORS.dark);
+  doc.setFontSize(22);
+  doc.setFont("helvetica", "bold");
+  doc.text(domainDisplay, 18, 97);
+
+  // Fecha
+  doc.setFontSize(9.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(...COLORS.muted);
+  doc.text(`Fecha del análisis: ${dayjs(scanData.createdAt).format("DD [de] MMMM [de] YYYY")}`, 18, 111);
+
+  // Segunda línea divisora
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
+  doc.line(18, 119, 195, 119);
+
+  // Caja de puntaje (izquierda)
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(18, 131, 62, 72, 6, 6, "F");
+  doc.setDrawColor(...scoreColor);
+  doc.setLineWidth(2);
+  doc.roundedRect(18, 131, 62, 72, 6, 6, "S");
+  doc.setTextColor(...scoreColor);
+  doc.setFontSize(38);
+  doc.setFont("helvetica", "bold");
+  doc.text(`${score}`, 49, 165, { align: "center" });
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...COLORS.muted);
+  doc.text("PUNTAJE DE", 49, 175, { align: "center" });
+  doc.text("SEGURIDAD", 49, 182, { align: "center" });
+  doc.text("/ 100", 49, 189, { align: "center" });
+
+  // Detalles del puntaje (derecha)
   doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.text("PUNTAJE DE SEGURIDAD / 100", 105, 148, { align: "center" });
-
-  doc.setFillColor(...scoreColor);
-  doc.roundedRect(55, 158, 100, 16, 4, 4, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text(scoreLabel, 105, 169, { align: "center" });
-
-  doc.setTextColor(200, 220, 255);
+  doc.setTextColor(...COLORS.dark);
+  doc.text("Evaluación de Seguridad", 92, 143);
+  doc.setFillColor(...scoreColor);
+  doc.roundedRect(92, 149, 90, 14, 3, 3, "F");
+  doc.setTextColor(255, 255, 255);
   doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text(scoreLabel, 137, 158, { align: "center" });
+  const descLines = doc.splitTextToSize(scoreDesc, 100);
+  doc.setFontSize(8.5);
   doc.setFont("helvetica", "normal");
-  doc.text("Confidencial — Solo para uso de la Dirección", 105, 260, { align: "center" });
-  doc.text("GuardyScan · Análisis de Ciberseguridad", 105, 268, { align: "center" });
+  doc.setTextColor(71, 85, 105);
+  doc.text(descLines, 92, 172);
+
+  // Franja inferior
+  doc.setFillColor(248, 250, 252);
+  doc.rect(0, 265, 210, 32, "F");
+  doc.setDrawColor(226, 232, 240);
+  doc.setLineWidth(0.3);
+  doc.line(18, 265, 195, 265);
+  doc.setTextColor(...COLORS.muted);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.text("Documento Confidencial — Solo para uso de la Dirección", 105, 276, { align: "center" });
+  doc.text("GuardyScan  ·  Análisis de Ciberseguridad  ·  guardyscan.com", 105, 284, { align: "center" });
 
   // ─── Pág 2: Resumen Ejecutivo ──────────────────────────────────
   doc.addPage();
@@ -843,14 +907,28 @@ export async function generatePDF(
     const addAISection = (label: string, raw: string) => {
       if (!raw) return;
       const text = cleanAI(raw);
+      const lines = doc.splitTextToSize(text, 172);
+      const bh = Math.max(lines.length * 5.8 + 18, 24);
+
+      // Salto de página si el contenido no cabe
+      if (yAI + bh + 14 > 282) {
+        doc.addPage();
+        doc.setFillColor(37, 99, 235);
+        doc.rect(0, 0, 210, 40, "F");
+        doc.setTextColor(210, 228, 255);
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "normal");
+        doc.text(`Análisis Inteligente — ${domain}  (continuación)`, 14, 26);
+        doc.setFillColor(255, 255, 255);
+        doc.rect(0, 38, 210, 4, "F");
+        yAI = 52;
+      }
+
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(37, 99, 235);
       doc.text(label, 14, yAI);
       yAI += 5;
-      doc.setFontSize(9);
-      const lines = doc.splitTextToSize(text, 176);
-      const bh = Math.max(lines.length * 5.8 + 18, 24);
       doc.setFillColor(237, 244, 255);
       doc.roundedRect(14, yAI, 182, bh, 3, 3, "F");
       doc.setFillColor(37, 99, 235);
