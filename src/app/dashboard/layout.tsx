@@ -17,17 +17,16 @@ export default async function DashboardLayout({
     redirect("/auth/login");
   }
 
-  const subscription = await prisma.subscription
+  // Fetch subscription AND role directly from DB — never trust the stale JWT
+  const dbUser = await prisma.user
     .findUnique({
-      where: { userId: session.user.id },
-      select: { plan: true },
+      where: { id: session.user.id },
+      select: { role: true, subscription: { select: { plan: true } } },
     })
     .catch(() => null);
 
-  const plan = subscription?.plan ?? "FREE";
-
-  // Admins bypass all plan restrictions
-  const isAdmin = (session.user as any).role === "admin";
+  const isAdmin = dbUser?.role === "admin";
+  const plan = isAdmin ? "ENTERPRISE" : (dbUser?.subscription?.plan ?? "FREE");
 
   // Server-side route guard: redirect to billing if plan can't access the path
   const pathname = headers().get("x-pathname") ?? "";
@@ -36,7 +35,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <DashboardShell user={session.user} plan={isAdmin ? "ENTERPRISE" : plan}>
+    <DashboardShell user={session.user} plan={plan}>
       {children}
     </DashboardShell>
   );
