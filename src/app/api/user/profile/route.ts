@@ -3,6 +3,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+/** Ensures a URL has the https:// scheme. Returns empty string if input is empty. */
+function normalizeUrl(raw: string | undefined | null): string {
+  if (!raw) return "";
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  return "https://" + trimmed;
+}
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
@@ -38,7 +47,7 @@ export async function PATCH(req: Request) {
       data: {
         ...(name !== undefined && { name: name.trim() }),
         ...(company !== undefined && { company: company.trim() }),
-        ...(website !== undefined && { website: website.trim() }),
+        ...(website !== undefined && { website: normalizeUrl(website) }),
         ...(industry !== undefined && { industry: industry.trim() }),
         ...(companySize !== undefined && { companySize: companySize.trim() }),
       },
