@@ -12,6 +12,7 @@ import { useState, useRef, useEffect } from "react";
 interface DashboardShellProps {
   user: any;
   plan?: string;
+  isAdmin?: boolean;
   children: React.ReactNode;
 }
 
@@ -144,11 +145,11 @@ function TopBar({ user }: { user: any }) {
   );
 }
 
-export function DashboardShell({ user, plan = "FREE", children }: DashboardShellProps) {
+export function DashboardShell({ user, plan = "FREE", isAdmin = false, children }: DashboardShellProps) {
   return (
     <AgentProvider>
       <div className="min-h-screen bg-[#f7f8fc] flex">
-        <Sidebar user={user} plan={plan} />
+        <Sidebar user={user} plan={plan} isAdmin={isAdmin} />
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <TopBar user={user} />
           <main className="flex-1 overflow-auto">
@@ -157,7 +158,7 @@ export function DashboardShell({ user, plan = "FREE", children }: DashboardShell
             </div>
           </main>
         </div>
-        <GuardyAgent plan={plan} />
+        <GuardyAgent plan={isAdmin ? "ENTERPRISE" : plan} />
       </div>
     </AgentProvider>
   );

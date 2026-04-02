@@ -50,7 +50,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <DashboardShell user={session.user} plan={plan}>
+    <DashboardShell user={session.user} plan={plan} isAdmin={isAdmin}>
       {children}
     </DashboardShell>
   );

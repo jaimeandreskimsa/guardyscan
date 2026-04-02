@@ -17,6 +17,7 @@ import { planCanAccessPath, planHasAgent, planDisplayName } from "@/lib/planRest
 interface SidebarProps {
   user: any;
   plan?: string;
+  isAdmin?: boolean;
 }
 
 // Navegación agrupada por categorías
@@ -82,7 +83,7 @@ const getNavigationGroups = (userRole: string) => {
   return baseGroups;
 };
 
-export function Sidebar({ user, plan = "FREE" }: SidebarProps) {
+export function Sidebar({ user, plan = "FREE", isAdmin = false }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -157,7 +158,7 @@ export function Sidebar({ user, plan = "FREE" }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3 px-3">
-        {getNavigationGroups(user.role).map((group, groupIndex) => (
+        {getNavigationGroups(isAdmin ? 'admin' : (user.role ?? '')).map((group, groupIndex) => (
           <div key={group.name} className={groupIndex > 0 ? "mt-6" : ""}>
             {!collapsed && (
               <h3 className="px-3 mb-1.5 text-[10px] font-bold text-gray-400/80 uppercase tracking-widest">
@@ -168,7 +169,7 @@ export function Sidebar({ user, plan = "FREE" }: SidebarProps) {
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-                const isLocked = !planCanAccessPath(plan, item.href);
+                const isLocked = isAdmin ? false : !planCanAccessPath(plan, item.href);
                 return (
                   <>
                     {isLocked ? (
@@ -205,7 +206,7 @@ export function Sidebar({ user, plan = "FREE" }: SidebarProps) {
                     )}
                     {/* Guardy Agente — debajo del Dashboard */}
                     {item.href === "/dashboard" && (
-                      planHasAgent(plan) ? (
+                      (isAdmin || planHasAgent(plan)) ? (
                         <button
                           onClick={() => toggleAgent()}
                           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
