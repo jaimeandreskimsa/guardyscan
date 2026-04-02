@@ -975,7 +975,7 @@ export default function HomePage() {
               {[
                 { Icon: Mail,  grad: "from-blue-400/55 via-blue-300/20 to-indigo-500/35",      ic: "text-blue-600",    bg: "bg-gradient-to-br from-blue-100 to-blue-50",     title: "Email",    lines: ["contacto@guardyscan.com", "soporte@guardyscan.com"], delay: "reveal-d1" },
                 { Icon: Phone, grad: "from-green-400/55 via-green-300/20 to-teal-500/35",    ic: "text-green-600",   bg: "bg-gradient-to-br from-green-100 to-emerald-50",  title: "Teléfono", lines: ["+56 9 9337 2630", "Lunes a Viernes, 9:00 – 18:00"], delay: "reveal-d2" },
-                { Icon: MapPin,grad: "from-purple-400/55 via-purple-300/20 to-violet-500/35", ic: "text-purple-600", bg: "bg-gradient-to-br from-purple-100 to-violet-50",  title: "Oficinas", lines: ["🇨🇱 San Sebastián 2750, Of. 902 · Las Condes", "🇲🇽 Av. Solidaridad 1024 Of. H3 · Playa del Carmen"], delay: "reveal-d3" },
+                { Icon: MapPin,grad: "from-purple-400/55 via-purple-300/20 to-violet-500/35", ic: "text-purple-600", bg: "bg-gradient-to-br from-purple-100 to-violet-50",  title: "Oficinas", lines: ["🇨🇱 San Sebastián 2750, Of. 902 · Las Condes"], delay: "reveal-d3" },
               ].map((c) => (
                 <div key={c.title} className={`reveal ${c.delay} p-[1.5px] rounded-[22px] bg-gradient-to-br ${c.grad} card-glow-light`}>
                   <div className="bg-white p-5 rounded-[20px] flex items-start gap-4">
