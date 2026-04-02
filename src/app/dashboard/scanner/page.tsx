@@ -901,21 +901,22 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
     impactoNegocio?: string
     planRemediacion?: string
   } | null>(null)
-  const [claudeLoading, setClaudeLoading] = useState(true)
-  const [claudeRetry, setClaudeRetry] = useState(0)
+  const [claudeLoading, setClaudeLoading] = useState(false)
+  const [claudeStarted, setClaudeStarted] = useState(false)
 
-  useEffect(() => {
-    if (!scan?.id) { setClaudeLoading(false); return }
+  const runClaudeAnalysis = (force = false) => {
+    if (!scan?.id) return
+    setClaudeStarted(true)
     setClaudeLoading(true)
     setClaudeData(null)
-    const url = claudeRetry > 0
+    const url = force
       ? `/api/scans/${scan.id}/analysis?force=true`
       : `/api/scans/${scan.id}/analysis`
     fetch(url)
       .then(r => r.json())
       .then(d => { setClaudeData(d.analysis || null); setClaudeLoading(false) })
       .catch(() => { setClaudeData(null); setClaudeLoading(false) })
-  }, [scan.id, claudeRetry])
+  }
 
   // Calcular score real basado en los datos del escaneo
   const computedScore = (() => {
@@ -1819,7 +1820,28 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
             </div>
 
             <div className="p-5 bg-blue-50/40 dark:bg-blue-900/10">
-              {claudeLoading ? (
+              {!claudeStarted ? (
+                /* ── Estado inicial: botón para comenzar ── */
+                <div className="flex flex-col items-center justify-center py-10 gap-5">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg">
+                    <Bot className="h-8 w-8 text-white" />
+                  </div>
+                  <div className="text-center max-w-sm">
+                    <p className="font-bold text-gray-800 dark:text-white text-base">Diagnóstico inteligente con IA</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+                      Claude analizará todos los hallazgos del escaneo y generará un informe en lenguaje ejecutivo y técnico, con plan de acción priorizado.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => runClaudeAnalysis(false)}
+                    className="flex items-center gap-2.5 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-md hover:shadow-lg transition-all text-sm"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Comenzar diagnóstico IA
+                  </button>
+                </div>
+              ) : claudeLoading ? (
+                /* ── Cargando ── */
                 <div className="flex flex-col items-center justify-center py-12 gap-4">
                   <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                   <div className="text-center">
@@ -1828,6 +1850,7 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                   </div>
                 </div>
               ) : claudeData ? (
+                /* ── Resultados ── */
                 <div className="space-y-4">
                   {[
                     { key: 'diagnosticoEjecutivo', label: 'Diagnóstico Ejecutivo', icon: '🏢' },
@@ -1847,8 +1870,17 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                       </div>
                     )
                   })}
+                  <div className="flex justify-end pt-1">
+                    <button
+                      onClick={() => runClaudeAnalysis(true)}
+                      className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      <RefreshCw className="h-3 w-3" /> Regenerar análisis
+                    </button>
+                  </div>
                 </div>
               ) : (
+                /* ── Error ── */
                 <div className="flex flex-col items-center justify-center py-10 gap-4">
                   <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                     <Bot className="h-7 w-7 text-gray-400" />
@@ -1858,7 +1890,7 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Puede deberse a un tiempo de espera. Intente de nuevo.</p>
                   </div>
                   <button
-                    onClick={() => setClaudeRetry(n => n + 1)}
+                    onClick={() => runClaudeAnalysis(true)}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors"
                   >
                     <RefreshCw className="h-4 w-4" /> Reintentar análisis
