@@ -150,7 +150,6 @@ export default function ScannerPage() {
       if (!res.ok) throw new Error(data.error || 'Error al crear el escaneo')
 
       setWebMessage('¡Evaluación iniciada! Puede consultar el progreso en la pestaña Historial.')
-      setTargetUrl('')
       loadScans()
       setTimeout(() => setActiveTab('history'), 1500)
     } catch (err: any) {
@@ -306,7 +305,7 @@ export default function ScannerPage() {
                 Evaluación Integral de Sitio Web
               </CardTitle>
               <CardDescription>
-                Ingrese una URL para obtener un diagnóstico completo: certificados, DNS, cabeceras, tecnologías, rendimiento, vulnerabilidades, firewall y cumplimiento normativo
+                Evaluación completa del sitio web registrado de su empresa: certificados, DNS, cabeceras, tecnologías, rendimiento, vulnerabilidades, firewall y cumplimiento normativo
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -324,12 +323,12 @@ export default function ScannerPage() {
                     <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       type="text"
-                      placeholder="ejemplo.com"
                       value={targetUrl}
-                      onChange={(e) => setTargetUrl(e.target.value)}
+                      readOnly
                       required
-                      className="pl-10"
+                      className="pl-10 pr-10 bg-gray-50 dark:bg-gray-800 cursor-not-allowed select-none text-gray-700 dark:text-gray-300"
                     />
+                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   </div>
                   <Button type="submit" disabled={webLoading} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
                     {webLoading ? (
@@ -339,6 +338,12 @@ export default function ScannerPage() {
                     )}
                   </Button>
                 </div>
+
+                <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                  <Lock className="h-3 w-3" />
+                  URL fija según el sitio web registrado de su empresa. Para cambiarla, actualice su perfil en{' '}
+                  <a href="/dashboard/settings" className="text-blue-500 hover:underline">Configuración</a>.
+                </p>
 
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
                   <p className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-3">
