@@ -661,7 +661,7 @@ export default function ScannerPage() {
             <div className="text-center">
               <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-1">Generando Informe</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                Claude está analizando los resultados del escaneo y redactando el diagnóstico en lenguaje no técnico.
+                Guardy está analizando los resultados del escaneo y redactando el diagnóstico en lenguaje no técnico.
               </p>
               <p className="text-xs text-gray-400 dark:text-gray-500 mt-3">Esto puede tomar unos segundos...</p>
             </div>
@@ -903,6 +903,21 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
   } | null>(null)
   const [claudeLoading, setClaudeLoading] = useState(false)
   const [claudeStarted, setClaudeStarted] = useState(false)
+
+  // Auto-load cached analysis when modal opens
+  useEffect(() => {
+    if (!scan?.id) return
+    fetch(`/api/scans/${scan.id}/analysis`)
+      .then(r => r.json())
+      .then(d => {
+        if (d.analysis?.diagnosticoEjecutivo) {
+          setClaudeStarted(true)
+          setClaudeData(d.analysis)
+        }
+      })
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scan?.id])
 
   const runClaudeAnalysis = (force = false) => {
     if (!scan?.id) return
@@ -1809,12 +1824,12 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
               </div>
               <div>
                 <h3 className="font-bold text-white text-sm">Análisis Guardy AI</h3>
-                <p className="text-[11px] text-blue-200">Diagnóstico generado por Claude · Lenguaje no técnico para la dirección</p>
+                <p className="text-[11px] text-blue-200">Diagnóstico generado por Guardy · Lenguaje no técnico para la dirección</p>
               </div>
               {!claudeLoading && claudeData && (
                 <div className="ml-auto flex items-center gap-1.5 bg-white/10 px-2.5 py-1 rounded-full">
                   <Sparkles className="h-3.5 w-3.5 text-white" />
-                  <span className="text-[11px] text-white font-medium">Claude Sonnet</span>
+                  <span className="text-[11px] text-white font-medium">Guardy AI</span>
                 </div>
               )}
             </div>
@@ -1829,7 +1844,7 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                   <div className="text-center max-w-sm">
                     <p className="font-bold text-gray-800 dark:text-white text-base">Diagnóstico inteligente con IA</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
-                      Claude analizará todos los hallazgos del escaneo y generará un informe en lenguaje ejecutivo y técnico, con plan de acción priorizado.
+                      Guardy analizará todos los hallazgos del escaneo y generará un informe en lenguaje ejecutivo y técnico, con plan de acción priorizado.
                     </p>
                   </div>
                   <button
@@ -1845,7 +1860,7 @@ function ScanDetailsModal({ scan, onClose }: { scan: any; onClose: () => void })
                 <div className="flex flex-col items-center justify-center py-12 gap-4">
                   <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                   <div className="text-center">
-                    <p className="font-semibold text-gray-800 dark:text-gray-200">Claude está analizando los resultados...</p>
+                    <p className="font-semibold text-gray-800 dark:text-gray-200">Guardy está analizando los resultados...</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Redactando diagnóstico en lenguaje no técnico</p>
                   </div>
                 </div>
