@@ -44,182 +44,396 @@ export async function generateExecutiveReportPDF({
   } | null;
 }) {
   const doc = new jsPDF();
+  const W = 210, H = 297, M = 14, CW = 182;
 
-  // Portada
+  // Strip markdown/emoji from Claude text before inserting in PDF
+  const cleanAI = (t: string) =>
+    t.replace(/^#{1,6}\s*/gm, "")
+     .replace(/\*\*(.*?)\*\*/g, "$1")
+     .replace(/\*(.*?)\*/g, "$1")
+     .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
+     .replace(/[\u{2600}-\u{27BF}]/gu, "")
+     .replace(/[\u{1FA00}-\u{1FA9F}]/gu, "")
+     .trim();
+
+  const scoreVal = typeof summary.score === "number" ? summary.score : null;
+  const scoreColor: [number, number, number] =
+    scoreVal === null ? [37, 99, 235] :
+    scoreVal >= 80 ? [16, 185, 129] :
+    scoreVal >= 60 ? [245, 158, 11] : [239, 68, 68];
+  const scoreLabel =
+    scoreVal === null ? "SIN DATOS" :
+    scoreVal >= 80 ? "RIESGO BAJO" :
+    scoreVal >= 60 ? "RIESGO MEDIO" : "RIESGO ALTO";
+
+  // ── HELPER: colored section header band ────────────────────────
+  const addSectionHeader = (title: string, subtitle: string, color: [number, number, number]) => {
+    doc.setFillColor(...color);
+    doc.rect(0, 0, W, 44, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text(title, M, 24);
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(210, 228, 255);
+    doc.text(subtitle, M, 35);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 40, W, 4, "F");
+  };
+
+  // ── HELPER: Guardy AI callout box ───────────────────────────────
+  const addCallout = (raw: string, y: number): number => {
+    const text = cleanAI(raw);
+    doc.setFontSize(9);
+    const lines = doc.splitTextToSize(text, CW - 16);
+    const bh = Math.max(lines.length * 5.8 + 20, 28);
+    // Box background
+    doc.setFillColor(237, 244, 255);
+    doc.roundedRect(M, y, CW, bh, 3, 3, "F");
+    // Left accent bar
+    doc.setFillColor(...COLORS.primary);
+    doc.rect(M, y, 3, bh, "F");
+    // Label
+    doc.setTextColor(37, 99, 235);
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "bold");
+    doc.text("ANALISIS GUARDY AI  \u2014  CLAUDE SONNET", M + 8, y + 7.5);
+    // Separator line
+    doc.setDrawColor(196, 213, 245);
+    doc.setLineWidth(0.3);
+    doc.line(M + 8, y + 9.5, M + CW - 6, y + 9.5);
+    // Content
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(30, 64, 175);
+    doc.setFontSize(9);
+    doc.text(lines, M + 8, y + 16);
+    return y + bh + 8;
+  };
+
+  // ── HELPER: KPI row of cards ────────────────────────────────────
+  const addKPIs = (kpis: { label: string; value: string; color: [number, number, number] }[], y: number): number => {
+    const n = kpis.length;
+    const cw = (CW - (n - 1) * 5) / n;
+    kpis.forEach((k, i) => {
+      const x = M + i * (cw + 5);
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(x, y, cw, 24, 3, 3, "F");
+      // Top color bar
+      doc.setFillColor(...k.color);
+      doc.roundedRect(x, y, cw, 4, 2, 2, "F");
+      // Value
+      doc.setTextColor(...COLORS.dark);
+      doc.setFontSize(17);
+      doc.setFont("helvetica", "bold");
+      doc.text(k.value, x + cw / 2, y + 16, { align: "center" });
+      // Label
+      doc.setFontSize(6.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(...COLORS.muted);
+      const lbl = doc.splitTextToSize(k.label, cw - 4);
+      doc.text(lbl[0], x + cw / 2, y + 22, { align: "center" });
+    });
+    return y + 30;
+  };
+
+  // ══════════════════════════════════════════════════════════════
+  // PORTADA
+  // ══════════════════════════════════════════════════════════════
+  // Background dark layers
+  doc.setFillColor(8, 15, 38);
+  doc.rect(0, 0, W, H, "F");
+  doc.setFillColor(12, 22, 52);
+  doc.rect(0, H * 0.55, W, H * 0.45, "F");
+
+  // Left accent bar
   doc.setFillColor(...COLORS.primary);
-  doc.rect(0, 0, 210, 297, "F");
+  doc.rect(0, 0, 5, H, "F");
+
+  // GuardyScan brand mark (logo box)
+  doc.setFillColor(37, 99, 235);
+  doc.roundedRect(M + 5, 52, 38, 38, 9, 9, "F");
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(28);
-  doc.text("Informe Ejecutivo Mensual", 105, 50, { align: "center" });
-  doc.setFontSize(16);
-  doc.text(company, 105, 65, { align: "center" });
-  doc.setFontSize(12);
-  doc.text(`Período: ${period}`, 105, 75, { align: "center" });
-  doc.text(`Generado por: ${user} (${email})`, 105, 85, { align: "center" });
-  doc.setFontSize(10);
-  doc.text("Confidencial - GuardyScan", 105, 270, { align: "center" });
+  doc.setFontSize(22);
+  doc.setFont("helvetica", "bold");
+  doc.text("GS", M + 5 + 19, 76, { align: "center" });
+
+  // Brand name (next to logo)
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(148, 163, 184);
+  doc.text("GUARDYSCAN", M + 5 + 43, 64);
+  doc.setFontSize(6.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(71, 85, 105);
+  doc.text("CYBERSECURITY INTELLIGENCE PLATFORM", M + 5 + 43, 72);
+
+  // Report type label
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(71, 85, 105);
+  doc.text("INFORME EJECUTIVO MENSUAL DE CIBERSEGURIDAD", M + 5, 108);
+
+  // Accent underline
+  doc.setFillColor(...COLORS.primary);
+  doc.rect(M + 5, 113, 60, 1.5, "F");
+
+  // Main title
+  doc.setFontSize(32);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255);
+  doc.text("Ciberseguridad", M + 5, 134);
+  doc.text("Corporativa", M + 5, 151);
+
+  // Company name
+  doc.setFontSize(13);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(148, 163, 184);
+  doc.text(company, M + 5, 167);
+
+  // Period and author
+  doc.setFontSize(8.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Periodo analizado: ${period}`, M + 5, 178);
+  doc.text(`Elaborado por: ${user}`, M + 5, 186);
+  doc.text(email, M + 5, 193);
+
+  // Security score badge (right side)
+  doc.setFillColor(...scoreColor);
+  doc.roundedRect(W - 62, 52, 48, 48, 11, 11, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(30);
+  doc.setFont("helvetica", "bold");
+  doc.text(scoreVal !== null ? `${scoreVal}` : "—", W - 38, 78, { align: "center" });
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.text("/100", W - 38, 86, { align: "center" });
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "bold");
+  doc.text(scoreLabel, W - 38, 94, { align: "center" });
+
+  // Bottom confidential footer on cover
+  doc.setFillColor(17, 24, 50);
+  doc.rect(0, H - 28, W, 28, "F");
+  doc.setFontSize(7.5);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(71, 85, 105);
+  doc.text("Clasificacion: CONFIDENCIAL — Uso exclusivo de la Direccion y Comite de Seguridad", W / 2, H - 15, { align: "center" });
+  doc.text(`GuardyScan  ·  guardyscan.com  ·  ${dayjs().format("DD/MM/YYYY")}`, W / 2, H - 7, { align: "center" });
+
+  // ══════════════════════════════════════════════════════════════
+  // PÁG 2 — DASHBOARD EJECUTIVO
+  // ══════════════════════════════════════════════════════════════
   doc.addPage();
+  addSectionHeader(
+    "Dashboard Ejecutivo",
+    `Indicadores clave de seguridad  |  Periodo: ${period}`,
+    [...COLORS.primary] as [number, number, number]
+  );
+  let y = 52;
 
-  // Resumen Ejecutivo
+  y = addKPIs([
+    { label: "Score de Seguridad", value: scoreVal !== null ? `${scoreVal}` : "N/A", color: scoreColor },
+    { label: "Escaneos realizados", value: String(summary.scans ?? "0"), color: [...COLORS.secondary] as [number, number, number] },
+    { label: "Incidentes reportados", value: String(summary.incidents ?? "0"), color: [...COLORS.danger] as [number, number, number] },
+  ], y);
+  y += 5;
+  y = addKPIs([
+    { label: "Vulnerabilidades criticas", value: String(summary.criticalVulns ?? "0"), color: [...COLORS.danger] as [number, number, number] },
+    { label: "Cumplimiento ISO 27001", value: String(summary.iso ?? "N/A"), color: [...COLORS.success] as [number, number, number] },
+    { label: "Cumplimiento Ley 21.663", value: String(summary.ley ?? "N/A"), color: [...COLORS.success] as [number, number, number] },
+  ], y);
+  y += 10;
+
   doc.setTextColor(...COLORS.dark);
-  doc.setFontSize(18);
-  doc.text("Resumen Ejecutivo", 14, 20);
   doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.text("Diagnostico del Periodo", M, y);
+  y += 7;
+  addCallout(
+    claudeAnalysis?.resumenEjecutivo ?? "Analisis ejecutivo no disponible para este periodo. Ejecute el informe nuevamente para obtener el diagnostico inteligente.",
+    y
+  );
 
-  // Texto generado por Claude; si no disponible, indicar al lector
-  const resumenText = claudeAnalysis?.resumenEjecutivo ??
-    "Análisis ejecutivo no disponible para este período. Verifique la conectividad con el servicio de análisis inteligente o contacte a soporte.";
-  const resumenLines = doc.splitTextToSize(resumenText, 182);
-  doc.text(resumenLines, 14, 28);
-  const resumenY = 28 + resumenLines.length * 6 + 4;
-
+  // ══════════════════════════════════════════════════════════════
+  // PÁG 3 — ESCANEOS DE SEGURIDAD
+  // ══════════════════════════════════════════════════════════════
+  doc.addPage();
+  addSectionHeader(
+    "Escaneos de Seguridad",
+    "Analisis de dominios y superficies de ataque expuestas durante el periodo",
+    [...COLORS.secondary] as [number, number, number]
+  );
   autoTable(doc, {
-    startY: resumenY,
-    head: [["KPI", "Valor"]],
-    body: [
-      ["Score Seguridad", summary.score ?? "N/A"],
-      ["Escaneos realizados", summary.scans ?? "N/A"],
-      ["Incidentes reportados", summary.incidents ?? "N/A"],
-      ["Vulnerabilidades críticas", summary.criticalVulns ?? "N/A"],
-      ["Cumplimiento ISO 27001", summary.iso ?? "N/A"],
-      ["Cumplimiento Ley 21.663", summary.ley ?? "N/A"],
-    ],
+    startY: 50,
+    head: [["Dominio / URL", "Score", "Vulnerabilidades", "Fecha"]],
+    body: scans.length > 0
+      ? scans.map((s) => [s.domain ?? "—", s.score ?? "—", s.vulns ?? "—", dayjs(s.date).format("DD/MM/YYYY")])
+      : [["Sin escaneos registrados en el periodo", "—", "—", "—"]],
     theme: "grid",
-    headStyles: { fillColor: [...COLORS.primary] as [number, number, number] },
-    styles: { fontSize: 11 },
+    headStyles: { fillColor: [...COLORS.secondary] as [number, number, number], textColor: [255, 255, 255], fontSize: 9, fontStyle: "bold" },
+    styles: { fontSize: 9, cellPadding: 4, lineColor: [220, 228, 240], lineWidth: 0.2 },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    columnStyles: { 0: { cellWidth: 72 }, 1: { cellWidth: 22, halign: "center" }, 2: { cellWidth: 36, halign: "center" }, 3: { cellWidth: 30 } },
   });
+  addCallout(
+    claudeAnalysis?.analisisEscaneos ?? "Analisis de escaneos no disponible para este periodo.",
+    (doc as any).lastAutoTable.finalY + 8
+  );
 
-  // Escaneos
+  // ══════════════════════════════════════════════════════════════
+  // PÁG 4 — INCIDENTES DE SEGURIDAD
+  // ══════════════════════════════════════════════════════════════
   doc.addPage();
-  doc.setFontSize(16);
-  doc.text("Escaneos de Seguridad", 14, 20);
+  addSectionHeader(
+    "Incidentes de Seguridad",
+    "Estado y evolucion de los incidentes detectados y gestionados en el periodo",
+    [...COLORS.danger] as [number, number, number]
+  );
   autoTable(doc, {
-    startY: 28,
-    head: [["Dominio", "Score", "Vulnerabilidades", "Fecha"]],
-    body: scans.map((s) => [
-      s.domain,
-      s.score,
-      s.vulns,
-      dayjs(s.date).format("DD/MM/YYYY"),
-    ]),
-    theme: "striped",
-    headStyles: { fillColor: [...COLORS.secondary] as [number, number, number] },
-    styles: { fontSize: 10 },
+    startY: 50,
+    head: [["Titulo del Incidente", "Severidad", "Estado", "Fecha"]],
+    body: incidents.length > 0
+      ? incidents.map((i) => [i.title ?? "—", i.severity ?? "—", i.status ?? "—", dayjs(i.date).format("DD/MM/YYYY")])
+      : [["Sin incidentes registrados en el periodo", "—", "—", "—"]],
+    theme: "grid",
+    headStyles: { fillColor: [...COLORS.danger] as [number, number, number], textColor: [255, 255, 255], fontSize: 9, fontStyle: "bold" },
+    styles: { fontSize: 9, cellPadding: 4, lineColor: [240, 220, 220], lineWidth: 0.2 },
+    alternateRowStyles: { fillColor: [254, 250, 250] },
+    columnStyles: { 0: { cellWidth: 82 }, 1: { cellWidth: 28 }, 2: { cellWidth: 26 }, 3: { cellWidth: 30 } },
+    didParseCell: (d) => {
+      if (d.column.index === 1 && d.section === "body") {
+        const s = String(d.cell.raw).toLowerCase();
+        if (["critical", "high", "alto", "critico"].some((x) => s.includes(x))) d.cell.styles.textColor = [220, 38, 38];
+        else if (["medium", "medio"].some((x) => s.includes(x))) d.cell.styles.textColor = [180, 90, 0];
+        else d.cell.styles.textColor = [22, 163, 74];
+      }
+    },
   });
-  doc.setFontSize(11);
-  doc.setTextColor(...COLORS.muted);
-  const scansTableY = (doc as any).lastAutoTable.finalY;
+  addCallout(
+    claudeAnalysis?.analisisIncidentes ?? "Analisis de incidentes no disponible para este periodo.",
+    (doc as any).lastAutoTable.finalY + 8
+  );
 
-  const scansAnalysis = claudeAnalysis?.analisisEscaneos ??
-    "Análisis de escaneos no disponible. Ejecute un nuevo informe para obtener el análisis inteligente generado caso a caso."
-  const scansLines = doc.splitTextToSize(scansAnalysis, 182);
-  doc.text(scansLines, 14, scansTableY + 8);
-
-  // Incidentes
+  // ══════════════════════════════════════════════════════════════
+  // PÁG 5 — VULNERABILIDADES
+  // ══════════════════════════════════════════════════════════════
   doc.addPage();
-  doc.setFontSize(16);
-  doc.setTextColor(...COLORS.dark);
-  doc.text("Incidentes de Seguridad", 14, 20);
+  addSectionHeader(
+    "Vulnerabilidades Detectadas",
+    "Inventario priorizado por severidad y riesgo potencial para la organizacion",
+    [...COLORS.warning] as [number, number, number]
+  );
   autoTable(doc, {
-    startY: 28,
-    head: [["Título", "Severidad", "Estado", "Fecha"]],
-    body: incidents.map((i) => [
-      i.title,
-      i.severity,
-      i.status,
-      dayjs(i.date).format("DD/MM/YYYY"),
-    ]),
-    theme: "striped",
-    headStyles: { fillColor: [...COLORS.danger] as [number, number, number] },
-    styles: { fontSize: 10 },
+    startY: 50,
+    head: [["CVE / Codigo", "Severidad", "Componente Afectado", "Fecha"]],
+    body: vulnerabilities.length > 0
+      ? vulnerabilities.map((v) => [v.cve ?? "—", v.severity ?? "—", v.component ?? "—", dayjs(v.date).format("DD/MM/YYYY")])
+      : [["Sin vulnerabilidades registradas en el periodo", "—", "—", "—"]],
+    theme: "grid",
+    headStyles: { fillColor: [...COLORS.warning] as [number, number, number], textColor: [20, 20, 20], fontSize: 9, fontStyle: "bold" },
+    styles: { fontSize: 9, cellPadding: 4, lineColor: [240, 235, 210], lineWidth: 0.2 },
+    alternateRowStyles: { fillColor: [255, 253, 245] },
+    columnStyles: { 0: { cellWidth: 44 }, 1: { cellWidth: 28 }, 2: { cellWidth: 78 }, 3: { cellWidth: 30 } },
+    didParseCell: (d) => {
+      if (d.column.index === 1 && d.section === "body") {
+        const s = String(d.cell.raw).toLowerCase();
+        if (["critical", "high", "alto", "critico"].some((x) => s.includes(x))) d.cell.styles.textColor = [220, 38, 38];
+        else if (["medium", "medio"].some((x) => s.includes(x))) d.cell.styles.textColor = [180, 90, 0];
+        else d.cell.styles.textColor = [22, 163, 74];
+      }
+    },
   });
-  doc.setFontSize(11);
-  doc.setTextColor(...COLORS.muted);
-  const incidentsTableY = (doc as any).lastAutoTable.finalY;
+  addCallout(
+    claudeAnalysis?.analisisVulnerabilidades ?? "Analisis de vulnerabilidades no disponible para este periodo.",
+    (doc as any).lastAutoTable.finalY + 8
+  );
 
-  const incidentsAnalysis = claudeAnalysis?.analisisIncidentes ??
-    "Análisis de incidentes no disponible. Ejecute un nuevo informe para obtener el análisis inteligente generado caso a caso."
-  const incidentsLines = doc.splitTextToSize(incidentsAnalysis, 182);
-  doc.text(incidentsLines, 14, incidentsTableY + 8);
-
-  // Vulnerabilidades
+  // ══════════════════════════════════════════════════════════════
+  // PÁG 6 — CUMPLIMIENTO NORMATIVO
+  // ══════════════════════════════════════════════════════════════
   doc.addPage();
-  doc.setFontSize(16);
-  doc.setTextColor(...COLORS.dark);
-  doc.text("Vulnerabilidades Detectadas", 14, 20);
+  addSectionHeader(
+    "Cumplimiento Normativo",
+    "Estado de controles y marcos regulatorios vigentes aplicables a la organizacion",
+    [...COLORS.success] as [number, number, number]
+  );
   autoTable(doc, {
-    startY: 28,
-    head: [["CVE", "Severidad", "Componente", "Fecha"]],
-    body: vulnerabilities.map((v) => [
-      v.cve,
-      v.severity,
-      v.component,
-      dayjs(v.date).format("DD/MM/YYYY"),
-    ]),
-    theme: "striped",
-    headStyles: { fillColor: [...COLORS.warning] as [number, number, number] },
-    styles: { fontSize: 10 },
+    startY: 50,
+    head: [["Framework / Normativa", "Avance (%)", "Gaps Criticos"]],
+    body: compliance.length > 0
+      ? compliance.map((c) => [c.framework ?? "—", c.progress ?? "—", c.gaps ?? "—"])
+      : [["Sin evaluaciones de cumplimiento registradas", "—", "—"]],
+    theme: "grid",
+    headStyles: { fillColor: [...COLORS.success] as [number, number, number], textColor: [255, 255, 255], fontSize: 9, fontStyle: "bold" },
+    styles: { fontSize: 9, cellPadding: 4, lineColor: [210, 240, 215], lineWidth: 0.2 },
+    alternateRowStyles: { fillColor: [245, 253, 247] },
+    columnStyles: { 0: { cellWidth: 90 }, 1: { cellWidth: 36, halign: "center" }, 2: { cellWidth: 56 } },
   });
-  doc.setFontSize(11);
-  doc.setTextColor(...COLORS.muted);
-  const vulnsTableY = (doc as any).lastAutoTable.finalY;
+  addCallout(
+    claudeAnalysis?.analisisCumplimiento ?? "Analisis de cumplimiento no disponible para este periodo.",
+    (doc as any).lastAutoTable.finalY + 8
+  );
 
-  const vulnsAnalysis = claudeAnalysis?.analisisVulnerabilidades ??
-    "Análisis de vulnerabilidades no disponible. Ejecute un nuevo informe para obtener el análisis inteligente generado caso a caso."
-  const vulnsLines = doc.splitTextToSize(vulnsAnalysis, 182);
-  doc.text(vulnsLines, 14, vulnsTableY + 8);
-
-  // Cumplimiento
-  doc.addPage();
-  doc.setFontSize(16);
-  doc.setTextColor(...COLORS.dark);
-  doc.text("Cumplimiento Normativo", 14, 20);
-  autoTable(doc, {
-    startY: 28,
-    head: [["Framework", "Avance", "Gaps críticos"]],
-    body: compliance.map((c) => [
-      c.framework,
-      c.progress,
-      c.gaps,
-    ]),
-    theme: "striped",
-    headStyles: { fillColor: [...COLORS.success] as [number, number, number] },
-    styles: { fontSize: 10 },
-  });
-  doc.setFontSize(11);
-  doc.setTextColor(...COLORS.muted);
-  const complianceTableY = (doc as any).lastAutoTable.finalY;
-
-  const complianceAnalysis = claudeAnalysis?.analisisCumplimiento ??
-    "Análisis de cumplimiento no disponible. Ejecute un nuevo informe para obtener el análisis inteligente generado caso a caso."
-  const complianceLines = doc.splitTextToSize(complianceAnalysis, 182);
-  doc.text(complianceLines, 14, complianceTableY + 8);
-
-  // Conclusiones y plan de acción generadas por Claude
+  // ══════════════════════════════════════════════════════════════
+  // PÁG 7 — CONCLUSIONES Y PLAN DE ACCION (solo si hay análisis)
+  // ══════════════════════════════════════════════════════════════
   if (claudeAnalysis?.conclusionesYPlan) {
     doc.addPage();
-    doc.setFontSize(18);
+    addSectionHeader(
+      "Conclusiones y Plan de Accion",
+      "Recomendaciones estrategicas y plan de mejora generados por Guardy AI",
+      [79, 70, 229] as [number, number, number]
+    );
+    let yC = 52;
+    doc.setFontSize(9.5);
+    doc.setFont("helvetica", "normal");
     doc.setTextColor(...COLORS.dark);
-    doc.text("Conclusiones y Plan de Acción", 14, 20);
-    doc.setFontSize(11);
-    doc.setTextColor(...COLORS.muted);
-    const conclusionesLines = doc.splitTextToSize(claudeAnalysis.conclusionesYPlan, 182);
-    doc.text(conclusionesLines, 14, 32);
+    const conclusLines = doc.splitTextToSize(cleanAI(claudeAnalysis.conclusionesYPlan), CW);
+    doc.text(conclusLines, M, yC);
+    yC += conclusLines.length * 5.8 + 10;
+
+    // AI attribution
+    doc.setFillColor(237, 244, 255);
+    doc.roundedRect(M, yC, CW, 14, 3, 3, "F");
+    doc.setFillColor(...COLORS.primary);
+    doc.rect(M, yC, 3, 14, "F");
+    doc.setTextColor(37, 99, 235);
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "bold");
+    doc.text("Informe generado con Guardy AI (Claude Sonnet)  \u2014  Analisis basado en datos reales de GuardyScan.", M + 8, yC + 9);
   }
 
-  // Footer
-  doc.setFontSize(9);
-  doc.setTextColor(...COLORS.muted);
-  doc.text(
-    "Este informe es confidencial y solo para uso interno de la organización.",
-    14,
-    290
-  );
+  // ══════════════════════════════════════════════════════════════
+  // FOOTERS — todas las páginas excepto portada
+  // ══════════════════════════════════════════════════════════════
+  const totalPages = (doc as any).internal.getNumberOfPages();
+  for (let pg = 2; pg <= totalPages; pg++) {
+    doc.setPage(pg);
+    doc.setDrawColor(220, 226, 236);
+    doc.setLineWidth(0.25);
+    doc.line(M, H - 11, W - M, H - 11);
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(...COLORS.muted);
+    doc.text(`GuardyScan  \u00b7  ${company}`, M, H - 5.5);
+    doc.text("DOCUMENTO CONFIDENCIAL", W / 2, H - 5.5, { align: "center" });
+    doc.text(`Pag. ${pg - 1} / ${totalPages - 1}`, W - M, H - 5.5, { align: "right" });
+  }
 
   return doc.output("arraybuffer");
 }
 
-export async function generatePDF(scanData: any) {
+export async function generatePDF(
+  scanData: any,
+  claudeAnalysis?: {
+    diagnosticoEjecutivo?: string;
+    analisisTecnico?: string;
+    impactoNegocio?: string;
+    planRemediacion?: string;
+  } | null
+) {
   const doc = new jsPDF();
   const score = scanData.score || 0;
   const domain = scanData.domain || "Dominio Escaneado";
@@ -600,15 +814,72 @@ export async function generatePDF(scanData: any) {
     yAction += 4;
   });
 
+// ─── Análisis Inteligente (Claude) ─────────────────────────────
+  if (claudeAnalysis) {
+    const cleanAI = (t: string) =>
+      t.replace(/^#{1,6}\s*/gm, "")
+       .replace(/\*\*(.*?)\*\*/g, "$1")
+       .replace(/\*(.*?)\*/g, "$1")
+       .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
+       .replace(/[\u{2600}-\u{27BF}]/gu, "")
+       .trim();
+
+    doc.addPage();
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, 210, 44, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
+    doc.text("Análisis Inteligente — Guardy AI", 14, 24);
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(210, 228, 255);
+    doc.text(`Diagnóstico personalizado para ${domain}  ·  Claude Sonnet`, 14, 35);
+    doc.setFillColor(255, 255, 255);
+    doc.rect(0, 40, 210, 4, "F");
+
+    let yAI = 52;
+
+    const addAISection = (label: string, raw: string) => {
+      if (!raw) return;
+      const text = cleanAI(raw);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(37, 99, 235);
+      doc.text(label, 14, yAI);
+      yAI += 5;
+      doc.setFontSize(9);
+      const lines = doc.splitTextToSize(text, 176);
+      const bh = Math.max(lines.length * 5.8 + 18, 24);
+      doc.setFillColor(237, 244, 255);
+      doc.roundedRect(14, yAI, 182, bh, 3, 3, "F");
+      doc.setFillColor(37, 99, 235);
+      doc.rect(14, yAI, 3, bh, "F");
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 64, 175);
+      doc.text(lines, 21, yAI + 10);
+      yAI += bh + 9;
+    };
+
+    addAISection("Diagnóstico Ejecutivo", claudeAnalysis.diagnosticoEjecutivo ?? "");
+    addAISection("Impacto en el Negocio", claudeAnalysis.impactoNegocio ?? "");
+    addAISection("Análisis Técnico Detallado", claudeAnalysis.analisisTecnico ?? "");
+    addAISection("Plan de Remediación Priorizado", claudeAnalysis.planRemediacion ?? "");
+  }
+
   // Footer
   const totalPages = (doc as any).internal.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFontSize(8);
+    doc.setDrawColor(220, 226, 236);
+    doc.setLineWidth(0.25);
+    doc.line(14, 288, 196, 288);
+    doc.setFontSize(7.5);
     doc.setTextColor(...COLORS.muted);
-    doc.text(`GuardyScan — Informe Ejecutivo de Ciberseguridad · ${domain}`, 14, 290);
-    doc.text(`Página ${i} de ${totalPages}`, 196, 290, { align: "right" });
-    doc.text("Documento Confidencial", 105, 290, { align: "center" });
+    doc.text(`GuardyScan  ·  Informe de Ciberseguridad  ·  ${domain}`, 14, 293);
+    doc.text(`Página ${i} de ${totalPages}`, 196, 293, { align: "right" });
+    doc.text("Documento Confidencial", 105, 293, { align: "center" });
   }
 
   return doc.output("arraybuffer");

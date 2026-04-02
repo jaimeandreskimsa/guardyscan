@@ -142,12 +142,24 @@ export function GuardyAgent() {
     e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px";
   };
 
-  // Format markdown-like text to simple HTML
-  const formatMessage = (text: string) => {
-    return text
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\n/g, "<br/>")
-      .replace(/• /g, "&bull; ");
+  // Format text to clean HTML — strip markdown headers, emojis, render bold
+  const formatMessage = (text: string): string => {
+    let out = text;
+    // Remove markdown heading prefixes (###, ##, #)
+    out = out.replace(/^#{1,6}\s*/gm, "");
+    // Bold **text**
+    out = out.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    // Italic *text*
+    out = out.replace(/\*([^*\n]+)\*/g, "<em>$1</em>");
+    // Strip emoji unicode ranges
+    out = out.replace(/[\u{1F300}-\u{1F9FF}]/gu, "");
+    out = out.replace(/[\u{2600}-\u{27BF}]/gu, "");
+    out = out.replace(/[\u{1FA00}-\u{1FA9F}]/gu, "");
+    // Trim lines that became empty after stripping
+    out = out.replace(/^\s*[-–—]\s*/gm, "- ");
+    // Newlines to HTML
+    out = out.replace(/\n/g, "<br/>");
+    return out;
   };
 
   return (
@@ -226,7 +238,7 @@ export function GuardyAgent() {
                     escaneos y mucho más.
                   </p>
                   <p className="text-xs text-gray-400 mt-3">
-                    Pregúntame lo que necesites 👇
+                    Pregúntame lo que necesites
                   </p>
                 </div>
               </div>

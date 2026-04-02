@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generatePDF } from "@/lib/pdf-generator";
+import { generateScanAnalysis } from "@/lib/claude-report";
 
 export async function GET(
   req: Request,
@@ -46,8 +47,28 @@ export async function GET(
       openPorts: (scan.openPorts as any[]) || [],
     };
 
+    // Generate Claude analysis for this scan (works for old and new scans)
+    let claudeAnalysis = null;
+    if (process.env.ANTHROPIC_API_KEY) {
+      try {
+        claudeAnalysis = await generateScanAnalysis(
+          {
+            domain: scan.targetUrl,
+            score: (scan.score as number) || 0,
+            vulnerabilities: scanData.vulnerabilities,
+            openPorts: scanData.openPorts,
+            technologies: scanData.technologies,
+            sslInfo: (scan.sslInfo as any) || {},
+          },
+          user.id
+        );
+      } catch (e) {
+        console.error("Claude scan analysis failed, generating PDF without AI analysis:", e);
+      }
+    }
+
     // Generate PDF
-    const pdfBuffer = await generatePDF(scanData as any);
+    const pdfBuffer = await generatePDF(scanData as any, claudeAnalysis);
 
     return new NextResponse(pdfBuffer as unknown as BodyInit, {
       headers: {
