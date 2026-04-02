@@ -5,6 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { generatePDF } from "@/lib/pdf-generator";
 import { generateScanAnalysis } from "@/lib/claude-report";
 
+// Claude can take 15-30 s — give Vercel enough time
+export const maxDuration = 60;
+
 export async function GET(
   req: Request,
   { params }: { params: { scanId: string } }
@@ -42,12 +45,20 @@ export async function GET(
     // Prepare scan data for PDF generation
     const scanData = {
       ...scan,
+      domain: scan.targetUrl,          // generatePDF reads .domain
       vulnerabilities: (scan.vulnerabilities as any[]) || [],
       technologies: (scan.technologies as string[]) || [],
       openPorts: (scan.openPorts as any[]) || [],
+      sslInfo: (scan.sslInfo as any) || {},
+      securityHeaders: (scan.securityHeaders as any) || {},
+      compliance: (scan.compliance as any) || {},
+      performance: (scan.performance as any) || {},
+      firewall: (scan.firewall as any) || {},
+      dnsRecords: (scan.dnsRecords as any) || {},
+      cookies: (scan.cookies as any) || {},
     };
 
-    // Generate Claude analysis for this scan (works for old and new scans)
+    // Generate Claude analysis — this becomes the AI narrative page in the PDF
     let claudeAnalysis = null;
     if (process.env.ANTHROPIC_API_KEY) {
       try {
@@ -58,12 +69,13 @@ export async function GET(
             vulnerabilities: scanData.vulnerabilities,
             openPorts: scanData.openPorts,
             technologies: scanData.technologies,
-            sslInfo: (scan.sslInfo as any) || {},
+            sslInfo: scanData.sslInfo,
+            headers: scanData.securityHeaders,
           },
           user.id
         );
       } catch (e) {
-        console.error("Claude scan analysis failed, generating PDF without AI analysis:", e);
+        console.error("[PDF] Claude analysis failed, generating PDF without AI page:", e);
       }
     }
 

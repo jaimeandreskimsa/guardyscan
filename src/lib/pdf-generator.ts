@@ -436,7 +436,7 @@ export async function generatePDF(
 ) {
   const doc = new jsPDF();
   const score = scanData.score || 0;
-  const domain = scanData.domain || "Dominio Escaneado";
+  const domain = scanData.domain || scanData.targetUrl || "Dominio Escaneado";
   const vulnerabilities: any[] = scanData.vulnerabilities || [];
   const technologies: any[] = (scanData.technologies || []).map((t: any) =>
     typeof t === "string" ? { name: t, version: "-" } : t
@@ -583,7 +583,135 @@ export async function generatePDF(
   doc.text("Documento Confidencial — Solo para uso de la Dirección", 105, 276, { align: "center" });
   doc.text("GuardyScan  ·  Análisis de Ciberseguridad  ·  guardyscan.com", 105, 284, { align: "center" });
 
-  // ─── Pág 2: Resumen Ejecutivo ──────────────────────────────────
+  // ─── Pág 2: Análisis Guardy AI (Claude) ─────────────────────────────
+  // Always added — shows placeholder message if Claude wasn’t available
+  {
+    const cleanAI = (t: string) =>
+      t.replace(/^#{1,6}\s*/gm, "")
+       .replace(/\*\*(.*?)\*\*/g, "$1")
+       .replace(/\*(.*?)\*/g, "$1")
+       .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
+       .replace(/[\u{2600}-\u{27BF}]/gu, "")
+       .trim();
+
+    doc.addPage();
+
+    // Header strip — deep navy
+    doc.setFillColor(8, 15, 38);
+    doc.rect(0, 0, 210, 48, "F");
+    // Blue left accent
+    doc.setFillColor(...COLORS.primary);
+    doc.rect(0, 0, 5, 48, "F");
+    // "AI" badge
+    doc.setFillColor(...COLORS.primary);
+    doc.roundedRect(168, 10, 30, 28, 4, 4, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("AI", 183, 27, { align: "center" });
+    // Title
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(17);
+    doc.setFont("helvetica", "bold");
+    doc.text("Análisis Guardy AI", 14, 24);
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(147, 179, 255);
+    doc.text(`Diagnóstico personalizado para ${domain}  ·  Claude Sonnet  ·  Lenguaje ejecutivo y técnico`, 14, 36);
+
+    let yAI = 58;
+
+    if (!claudeAnalysis) {
+      // Placeholder box when Claude wasn’t available
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(14, yAI, 182, 40, 5, 5, "F");
+      doc.setDrawColor(200, 210, 230);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(14, yAI, 182, 40, 5, 5, "S");
+      doc.setTextColor(...COLORS.muted);
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("Análisis de IA no disponible en este informe", 105, yAI + 16, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text("Para incluir el diagnóstico generado por Claude, verifique que ANTHROPIC_API_KEY esté configurado.", 105, yAI + 26, { align: "center" });
+    } else {
+      const addAISection = (
+        label: string,
+        sublabel: string,
+        raw: string,
+        accentColor: [number, number, number]
+      ) => {
+        if (!raw) return;
+        const text = cleanAI(raw);
+        const lines = doc.splitTextToSize(text, 169);
+        const bh = Math.max(lines.length * 5.8 + 22, 30);
+
+        // New page if content doesn’t fit
+        if (yAI + bh + 18 > 284) {
+          doc.addPage();
+          doc.setFillColor(8, 15, 38);
+          doc.rect(0, 0, 210, 40, "F");
+          doc.setFillColor(...COLORS.primary);
+          doc.rect(0, 0, 5, 40, "F");
+          doc.setTextColor(147, 179, 255);
+          doc.setFontSize(8.5);
+          doc.setFont("helvetica", "normal");
+          doc.text(`Análisis Guardy AI — ${domain}  (continuación)`, 14, 26);
+          yAI = 50;
+        }
+
+        // Section label
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(...accentColor);
+        doc.text(label, 14, yAI);
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...COLORS.muted);
+        doc.text(sublabel, 14, yAI + 6);
+        yAI += 10;
+
+        // Content box with left border
+        doc.setFillColor(245, 248, 255);
+        doc.roundedRect(14, yAI, 182, bh, 3, 3, "F");
+        doc.setFillColor(...accentColor);
+        doc.rect(14, yAI, 4, bh, "F");
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(30, 41, 59);
+        doc.text(lines, 22, yAI + 12);
+        yAI += bh + 10;
+      };
+
+      addAISection(
+        "Diagnóstico Ejecutivo",
+        "Resumen para la dirección — sin tecnicismos",
+        claudeAnalysis.diagnosticoEjecutivo ?? "",
+        [37, 99, 235]
+      );
+      addAISection(
+        "Impacto en el Negocio",
+        "Riesgo financiero, regulatorio y operacional",
+        claudeAnalysis.impactoNegocio ?? "",
+        [124, 58, 237]
+      );
+      addAISection(
+        "Análisis Técnico Detallado",
+        "CVEs, vectores de ataque, SSL/TLS, cabeceras, tecnologías",
+        claudeAnalysis.analisisTecnico ?? "",
+        [5, 150, 105]
+      );
+      addAISection(
+        "Plan de Remediación Priorizado",
+        "Acciones inmediatas, a 30 días y a 90 días",
+        claudeAnalysis.planRemediacion ?? "",
+        [217, 119, 6]
+      );
+    }
+  }
+
+  // ─── Pág 3: Resumen Ejecutivo ────────────────────────────────────
   doc.addPage();
   doc.setFillColor(248, 250, 252);
   doc.rect(0, 0, 210, 40, "F");
@@ -877,74 +1005,6 @@ export async function generatePDF(
     });
     yAction += 4;
   });
-
-// ─── Análisis Inteligente (Claude) ─────────────────────────────
-  if (claudeAnalysis) {
-    const cleanAI = (t: string) =>
-      t.replace(/^#{1,6}\s*/gm, "")
-       .replace(/\*\*(.*?)\*\*/g, "$1")
-       .replace(/\*(.*?)\*/g, "$1")
-       .replace(/[\u{1F300}-\u{1F9FF}]/gu, "")
-       .replace(/[\u{2600}-\u{27BF}]/gu, "")
-       .trim();
-
-    doc.addPage();
-    doc.setFillColor(37, 99, 235);
-    doc.rect(0, 0, 210, 44, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text("Análisis Inteligente — Guardy AI", 14, 24);
-    doc.setFontSize(8.5);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(210, 228, 255);
-    doc.text(`Diagnóstico personalizado para ${domain}  ·  Claude Sonnet`, 14, 35);
-    doc.setFillColor(255, 255, 255);
-    doc.rect(0, 40, 210, 4, "F");
-
-    let yAI = 52;
-
-    const addAISection = (label: string, raw: string) => {
-      if (!raw) return;
-      const text = cleanAI(raw);
-      const lines = doc.splitTextToSize(text, 172);
-      const bh = Math.max(lines.length * 5.8 + 18, 24);
-
-      // Salto de página si el contenido no cabe
-      if (yAI + bh + 14 > 282) {
-        doc.addPage();
-        doc.setFillColor(37, 99, 235);
-        doc.rect(0, 0, 210, 40, "F");
-        doc.setTextColor(210, 228, 255);
-        doc.setFontSize(8.5);
-        doc.setFont("helvetica", "normal");
-        doc.text(`Análisis Inteligente — ${domain}  (continuación)`, 14, 26);
-        doc.setFillColor(255, 255, 255);
-        doc.rect(0, 38, 210, 4, "F");
-        yAI = 52;
-      }
-
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(37, 99, 235);
-      doc.text(label, 14, yAI);
-      yAI += 5;
-      doc.setFillColor(237, 244, 255);
-      doc.roundedRect(14, yAI, 182, bh, 3, 3, "F");
-      doc.setFillColor(37, 99, 235);
-      doc.rect(14, yAI, 3, bh, "F");
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(30, 64, 175);
-      doc.text(lines, 21, yAI + 10);
-      yAI += bh + 9;
-    };
-
-    addAISection("Diagnóstico Ejecutivo", claudeAnalysis.diagnosticoEjecutivo ?? "");
-    addAISection("Impacto en el Negocio", claudeAnalysis.impactoNegocio ?? "");
-    addAISection("Análisis Técnico Detallado", claudeAnalysis.analisisTecnico ?? "");
-    addAISection("Plan de Remediación Priorizado", claudeAnalysis.planRemediacion ?? "");
-  }
 
   // Footer
   const totalPages = (doc as any).internal.getNumberOfPages();
