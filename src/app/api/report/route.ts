@@ -3,6 +3,7 @@ import { generateExecutiveReportPDF } from "@/lib/pdf-generator";
 import { getReportData } from "@/lib/report-data";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { generateReportAnalysis } from "@/lib/claude-report";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,7 +14,26 @@ export async function GET(req: NextRequest) {
     }
 
     const data = await getReportData(session.user.id);
-    const pdfBuffer = await generateExecutiveReportPDF(data);
+
+    // Generar análisis con Claude (lenguaje técnico + ejecutivo)
+    let claudeAnalysis = null;
+    if (process.env.ANTHROPIC_API_KEY) {
+      try {
+        claudeAnalysis = await generateReportAnalysis({
+          company: data.company,
+          period: data.period,
+          summary: data.summary,
+          scans: data.scans,
+          incidents: data.incidents,
+          vulnerabilities: data.vulnerabilities,
+          compliance: data.compliance,
+        });
+      } catch (e) {
+        console.error("Claude report analysis failed, continuing without AI text:", e);
+      }
+    }
+
+    const pdfBuffer = await generateExecutiveReportPDF({ ...data, claudeAnalysis });
 
     return new NextResponse(pdfBuffer, {
       status: 200,
@@ -30,4 +50,5 @@ export async function GET(req: NextRequest) {
     );
   }
 }
+
 

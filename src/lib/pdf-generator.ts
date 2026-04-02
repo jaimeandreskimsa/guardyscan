@@ -23,6 +23,7 @@ export async function generateExecutiveReportPDF({
   incidents = [],
   vulnerabilities = [],
   compliance = [],
+  claudeAnalysis = null,
 }: {
   company?: string;
   user?: string;
@@ -33,6 +34,14 @@ export async function generateExecutiveReportPDF({
   incidents?: any[];
   vulnerabilities?: any[];
   compliance?: any[];
+  claudeAnalysis?: {
+    resumenEjecutivo?: string;
+    analisisEscaneos?: string;
+    analisisIncidentes?: string;
+    analisisVulnerabilidades?: string;
+    analisisCumplimiento?: string;
+    conclusionesYPlan?: string;
+  } | null;
 }) {
   const doc = new jsPDF();
 
@@ -56,14 +65,16 @@ export async function generateExecutiveReportPDF({
   doc.setFontSize(18);
   doc.text("Resumen Ejecutivo", 14, 20);
   doc.setFontSize(12);
-  doc.text(
-    "Este informe consolida el estado de ciberseguridad de la organización en los últimos 30 días, incluyendo escaneos, incidentes, vulnerabilidades y cumplimiento normativo.",
-    14,
-    28,
-    { maxWidth: 180 }
-  );
+
+  // Si hay análisis de Claude, mostrarlo; si no, texto genérico
+  const resumenText = claudeAnalysis?.resumenEjecutivo ||
+    "Este informe consolida el estado de ciberseguridad de la organización en los últimos 30 días, incluyendo escaneos, incidentes, vulnerabilidades y cumplimiento normativo.";
+  const resumenLines = doc.splitTextToSize(resumenText, 182);
+  doc.text(resumenLines, 14, 28);
+  const resumenY = 28 + resumenLines.length * 6 + 4;
+
   autoTable(doc, {
-    startY: 38,
+    startY: resumenY,
     head: [["KPI", "Valor"]],
     body: [
       ["Score Seguridad", summary.score ?? "N/A"],
@@ -98,16 +109,11 @@ export async function generateExecutiveReportPDF({
   doc.setFontSize(11);
   doc.setTextColor(...COLORS.muted);
   const scansTableY = (doc as any).lastAutoTable.finalY;
-  doc.text(
-    "Explicación técnica: El score refleja la postura de seguridad técnica del dominio.",
-    14,
-    scansTableY + 8
-  );
-  doc.text(
-    "Impacto en el negocio: Un score bajo puede significar riesgo de multas, pérdida de clientes o incidentes.",
-    14,
-    scansTableY + 14
-  );
+
+  const scansAnalysis = claudeAnalysis?.analisisEscaneos ||
+    "Análisis técnico: El score refleja la postura de seguridad técnica del dominio. Impacto en el negocio: Un score bajo puede significar riesgo de multas, pérdida de clientes o incidentes.";
+  const scansLines = doc.splitTextToSize(scansAnalysis, 182);
+  doc.text(scansLines, 14, scansTableY + 8);
 
   // Incidentes
   doc.addPage();
@@ -130,16 +136,11 @@ export async function generateExecutiveReportPDF({
   doc.setFontSize(11);
   doc.setTextColor(...COLORS.muted);
   const incidentsTableY = (doc as any).lastAutoTable.finalY;
-  doc.text(
-    "Explicación técnica: Incidentes clasificados por severidad y estado.",
-    14,
-    incidentsTableY + 8
-  );
-  doc.text(
-    "Impacto en el negocio: Incidentes críticos pueden afectar operaciones, reputación y finanzas.",
-    14,
-    incidentsTableY + 14
-  );
+
+  const incidentsAnalysis = claudeAnalysis?.analisisIncidentes ||
+    "Análisis técnico: Incidentes clasificados por severidad y estado. Impacto en el negocio: Incidentes críticos pueden afectar operaciones, reputación y finanzas.";
+  const incidentsLines = doc.splitTextToSize(incidentsAnalysis, 182);
+  doc.text(incidentsLines, 14, incidentsTableY + 8);
 
   // Vulnerabilidades
   doc.addPage();
@@ -162,16 +163,11 @@ export async function generateExecutiveReportPDF({
   doc.setFontSize(11);
   doc.setTextColor(...COLORS.muted);
   const vulnsTableY = (doc as any).lastAutoTable.finalY;
-  doc.text(
-    "Explicación técnica: Vulnerabilidades priorizadas por severidad.",
-    14,
-    vulnsTableY + 8
-  );
-  doc.text(
-    "Impacto en el negocio: Vulnerabilidades críticas pueden ser puerta de entrada a ataques y sanciones regulatorias.",
-    14,
-    vulnsTableY + 14
-  );
+
+  const vulnsAnalysis = claudeAnalysis?.analisisVulnerabilidades ||
+    "Análisis técnico: Vulnerabilidades priorizadas por severidad. Impacto en el negocio: Vulnerabilidades críticas pueden ser puerta de entrada a ataques y sanciones regulatorias.";
+  const vulnsLines = doc.splitTextToSize(vulnsAnalysis, 182);
+  doc.text(vulnsLines, 14, vulnsTableY + 8);
 
   // Cumplimiento
   doc.addPage();
@@ -193,16 +189,23 @@ export async function generateExecutiveReportPDF({
   doc.setFontSize(11);
   doc.setTextColor(...COLORS.muted);
   const complianceTableY = (doc as any).lastAutoTable.finalY;
-  doc.text(
-    "Explicación técnica: Avance en controles ISO 27001, Ley 21.663, PCI DSS, etc.",
-    14,
-    complianceTableY + 8
-  );
-  doc.text(
-    "Impacto en el negocio: El cumplimiento reduce riesgos legales, reputacionales y habilita nuevos negocios.",
-    14,
-    complianceTableY + 14
-  );
+
+  const complianceAnalysis = claudeAnalysis?.analisisCumplimiento ||
+    "Análisis técnico: Avance en controles ISO 27001, Ley 21.663, PCI DSS, etc. Impacto en el negocio: El cumplimiento reduce riesgos legales, reputacionales y habilita nuevos negocios.";
+  const complianceLines = doc.splitTextToSize(complianceAnalysis, 182);
+  doc.text(complianceLines, 14, complianceTableY + 8);
+
+  // Conclusiones y plan de acción generadas por Claude
+  if (claudeAnalysis?.conclusionesYPlan) {
+    doc.addPage();
+    doc.setFontSize(18);
+    doc.setTextColor(...COLORS.dark);
+    doc.text("Conclusiones y Plan de Acción", 14, 20);
+    doc.setFontSize(11);
+    doc.setTextColor(...COLORS.muted);
+    const conclusionesLines = doc.splitTextToSize(claudeAnalysis.conclusionesYPlan, 182);
+    doc.text(conclusionesLines, 14, 32);
+  }
 
   // Footer
   doc.setFontSize(9);
