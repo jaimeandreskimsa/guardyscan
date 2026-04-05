@@ -412,7 +412,7 @@ async function persistScanVulnerabilities(input: PersistVulnsInput): Promise<voi
           userId,
           title: vuln.title,
           assetName: hostname,
-          status: { notIn: ['RESOLVED', 'FALSE_POSITIVE'] },
+          status: { notIn: ['RESOLVED', 'REMEDIATED', 'FALSE_POSITIVE'] },
         },
       })
       if (!existing) {

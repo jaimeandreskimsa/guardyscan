@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     })
 
     const severityCounts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0, INFO: 0 }
-    const statusCounts = { OPEN: 0, IN_PROGRESS: 0, RESOLVED: 0, ACCEPTED: 0, FALSE_POSITIVE: 0 }
+    const statusCounts = { OPEN: 0, IN_PROGRESS: 0, REMEDIATED: 0, RESOLVED: 0, ACCEPTED: 0, FALSE_POSITIVE: 0 }
 
     stats.forEach(s => {
       if (s.severity in severityCounts) {
