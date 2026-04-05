@@ -41,7 +41,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
     { name: "Incidentes", href: "/dashboard/incidents", icon: AlertTriangle },
     { name: "Inventario", href: "/dashboard/inventory", icon: Laptop },
     { name: "Trabajadores", href: "/dashboard/workers", icon: Users },
-    { name: "Terceros", href: "/dashboard/third-party", icon: Network },
+    { name: "Proveedores", href: "/dashboard/third-party", icon: Network },
     { name: "Cumplimiento", href: "/dashboard/compliance", icon: FileCheck },
     { name: "Continuidad", href: "/dashboard/bcp", icon: Building2 },
     { name: "Comité", href: "/dashboard/committee", icon: Users },
