@@ -244,12 +244,8 @@ export default function SiemPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Score circle */}
             <div className="flex flex-col items-center justify-center">
-              {/* Clickable score circle */}
-              <button
-                onClick={() => setShowScoreInfo(v => !v)}
-                className="relative w-36 h-36 cursor-pointer focus:outline-none group"
-                title="Ver explicación de la puntuación"
-              >
+              {/* Circle + info button wrapper */}
+              <div className="relative w-36 h-36">
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
                   <circle cx="60" cy="60" r="52" fill="none" stroke="#e5e7eb" strokeWidth="12" className="dark:stroke-gray-700" />
                   <circle cx="60" cy="60" r="52" fill="none" strokeWidth="12" strokeLinecap="round"
@@ -262,14 +258,19 @@ export default function SiemPage() {
                   <span className={`text-4xl font-bold ${riskLevel.color}`}>{riskData.total}</span>
                   <span className="text-xs text-gray-500 font-medium">/ 100</span>
                 </div>
-                {/* Hover hint ring */}
-                <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-blue-400/50 transition-all duration-200" />
-              </button>
+                {/* Info button — top-right corner of circle */}
+                <button
+                  onClick={() => setShowScoreInfo(v => !v)}
+                  className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-white dark:bg-gray-800 border-2 border-blue-400 flex items-center justify-center shadow-md hover:bg-blue-50 dark:hover:bg-blue-900/40 transition-colors"
+                  title="Ver cómo se calcula"
+                >
+                  <Info className="h-3.5 w-3.5 text-blue-500" />
+                </button>
+              </div>
 
-              <div className={`mt-3 flex items-center gap-2 px-4 py-1.5 rounded-full cursor-pointer ${riskLevel.bgLight}`} onClick={() => setShowScoreInfo(v => !v)}>
+              <div className={`mt-3 flex items-center gap-2 px-4 py-1.5 rounded-full ${riskLevel.bgLight}`}>
                 <RiskIcon className={`h-4 w-4 ${riskLevel.color}`} />
                 <span className={`text-sm font-bold ${riskLevel.color}`}>Seguridad {riskLevel.label}</span>
-                <Info className="h-3.5 w-3.5 text-gray-400 ml-1" />
               </div>
               {riskData.scansCount > 0 && (
                 <p className="text-xs text-gray-500 mt-2 text-center">
