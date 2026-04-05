@@ -1119,7 +1119,6 @@ export default function HomePage() {
               <ul className="space-y-3 text-sm text-gray-400">
                 <li><button onClick={() => smoothScrollTo('features')} className="hover:text-white transition-colors">Funcionalidades</button></li>
                 <li><button onClick={() => smoothScrollTo('pricing')} className="hover:text-white transition-colors">Precios</button></li>
-                <li><Link href="/docs" className="hover:text-white transition-colors">Documentación</Link></li>
               </ul>
             </div>
             <div>
