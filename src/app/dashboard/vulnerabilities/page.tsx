@@ -679,8 +679,8 @@ export default function VulnerabilitiesPage() {
           </div>
 
           {/* Table */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-            <div className="overflow-x-auto">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="overflow-x-auto overflow-y-visible">
               <table className="w-full">
                 <thead className="bg-gray-50 dark:bg-gray-700/50">
                   <tr>
@@ -711,16 +711,48 @@ export default function VulnerabilitiesPage() {
                     const st = STATUS_MAP[vuln.status] || STATUS_MAP.OPEN
                     const srcInfo = SOURCE_MAP[vuln.source] || SOURCE_MAP.MANUAL
                     const SrcIcon = srcInfo.icon
+                    const enrichedDesc = getEnrichedDescription(vuln)
+                    const impacts = getImpactForVuln(vuln).slice(0, 3)
                     return (
-                      <tr key={vuln.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                      <tr key={vuln.id} className="group hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors relative">
                         <td className="px-4 py-3"><span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${sev.bg} ${sev.text}`}><div className={`w-2 h-2 rounded-full ${sev.dot}`} />{sev.label}</span></td>
-                        <td className="px-4 py-3">
-                          <div>
+                        <td className="px-4 py-3 relative">
+                          <div className="cursor-default">
                             <p className="font-medium text-gray-900 dark:text-white text-sm">{vuln.title}</p>
                             {vuln.cveId && <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5">{vuln.cveId}</p>}
                             <div className="flex gap-1.5 mt-1">
                               {vuln.exploitAvailable && <span className="text-[10px] text-red-600 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded font-medium">⚡ Exploit</span>}
                               {vuln.patchAvailable && <span className="text-[10px] text-green-600 bg-green-50 dark:bg-green-900/20 px-1.5 py-0.5 rounded font-medium">🔧 Parche</span>}
+                            </div>
+                          </div>
+
+                          {/* Hover tooltip */}
+                          <div className="pointer-events-none absolute left-0 top-full mt-1 z-50 w-80 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className={`rounded-xl border shadow-xl p-4 space-y-3 bg-white dark:bg-gray-900 border-l-4 ${sev.border}`}>
+                              <div>
+                                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">¿Qué es?</p>
+                                <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">{enrichedDesc}</p>
+                              </div>
+                              {impacts.length > 0 && (
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Impacto potencial</p>
+                                  <ul className="space-y-1">
+                                    {impacts.map((imp, i) => (
+                                      <li key={i} className="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-1.5">
+                                        <span className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${sev.dot}`} />
+                                        {imp}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              {vuln.remediation && (
+                                <div>
+                                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Remediación</p>
+                                  <p className="text-xs text-green-700 dark:text-green-400 leading-relaxed">{vuln.remediation}</p>
+                                </div>
+                              )}
+                              <p className="text-[10px] text-gray-400 pt-1 border-t border-gray-100 dark:border-gray-700">Click en 👁 para ver detalle completo</p>
                             </div>
                           </div>
                         </td>
