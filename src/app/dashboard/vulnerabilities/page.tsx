@@ -370,21 +370,21 @@ export default function VulnerabilitiesPage() {
     return Object.entries(map).sort((a, b) => b[1] - a[1])
   }, [vulnerabilities])
 
-  // Priority chart data
-  const priorityData = [
-    { name: 'Críticas', value: stats.bySeverity?.CRITICAL || 0, fill: '#ef4444' },
-    { name: 'Altas', value: stats.bySeverity?.HIGH || 0, fill: '#f97316' },
-    { name: 'Medias', value: stats.bySeverity?.MEDIUM || 0, fill: '#eab308' },
-    { name: 'Bajas', value: stats.bySeverity?.LOW || 0, fill: '#3b82f6' },
-  ]
+  // Priority chart data — derived from local state so it reacts instantly to status changes
+  const priorityData = useMemo(() => [
+    { name: 'Críticas', value: vulnerabilities.filter(v => v.severity === 'CRITICAL' && (v.status === 'OPEN' || v.status === 'IN_PROGRESS')).length, fill: '#ef4444' },
+    { name: 'Altas',    value: vulnerabilities.filter(v => v.severity === 'HIGH'     && (v.status === 'OPEN' || v.status === 'IN_PROGRESS')).length, fill: '#f97316' },
+    { name: 'Medias',   value: vulnerabilities.filter(v => v.severity === 'MEDIUM'   && (v.status === 'OPEN' || v.status === 'IN_PROGRESS')).length, fill: '#eab308' },
+    { name: 'Bajas',    value: vulnerabilities.filter(v => v.severity === 'LOW'      && (v.status === 'OPEN' || v.status === 'IN_PROGRESS')).length, fill: '#3b82f6' },
+  ], [vulnerabilities])
 
-  // Remediation status data
-  const remediationData = [
-    { name: 'En progreso', value: stats.byStatus?.IN_PROGRESS || 0, fill: '#eab308' },
-    { name: 'Abiertas', value: stats.byStatus?.OPEN || 0, fill: '#ef4444' },
-    { name: 'Resueltas', value: (stats.byStatus?.REMEDIATED || 0) + (stats.byStatus?.RESOLVED || 0), fill: '#22c55e' },
-    { name: 'Falso positivo', value: stats.byStatus?.FALSE_POSITIVE || 0, fill: '#6b7280' },
-  ]
+  // Remediation status data — derived from local state
+  const remediationData = useMemo(() => [
+    { name: 'En progreso',    value: vulnerabilities.filter(v => v.status === 'IN_PROGRESS').length,                                     fill: '#eab308' },
+    { name: 'Abiertas',       value: vulnerabilities.filter(v => v.status === 'OPEN').length,                                           fill: '#ef4444' },
+    { name: 'Resueltas',      value: vulnerabilities.filter(v => v.status === 'REMEDIATED' || v.status === 'RESOLVED').length,           fill: '#22c55e' },
+    { name: 'Falso positivo', value: vulnerabilities.filter(v => v.status === 'FALSE_POSITIVE').length,                                 fill: '#6b7280' },
+  ], [vulnerabilities])
 
   // Trend data (last 6 months simulated from discoveredAt)
   const trendData = useMemo(() => {
