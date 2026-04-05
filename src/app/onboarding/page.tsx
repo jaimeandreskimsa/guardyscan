@@ -7,7 +7,7 @@ import Image from "next/image";
 import {
   Shield, Building2, Globe, Users, ArrowRight, ArrowLeft,
   Check, Zap, Target, FileCheck, Lock, Sparkles, Loader2,
-  ChevronDown, Crown, CreditCard, Star,
+  ChevronDown, Crown, CreditCard, Star, Activity, Briefcase,
 } from "lucide-react";
 
 const INDUSTRIES = [
@@ -38,13 +38,13 @@ const GOALS = [
     id: "web",
     icon: Globe,
     label: "Proteger mi sitio web",
-    desc: "Análisis de vulnerabilidades y configuración segura",
+    desc: "Análisis de vulnerabilidades, monitoreo y escaneos continuos",
   },
   {
-    id: "data",
-    icon: Lock,
-    label: "Proteger datos de clientes",
-    desc: "Privacidad y cifrado de información sensible",
+    id: "incidents",
+    icon: Activity,
+    label: "Gestionar incidentes y riesgos",
+    desc: "Incidentes de seguridad, análisis de riesgos y documentación",
   },
   {
     id: "compliance",
@@ -53,10 +53,10 @@ const GOALS = [
     desc: "ISO 27001, GDPR, NIS2, SOC 2, ENS",
   },
   {
-    id: "infra",
-    icon: Target,
-    label: "Seguridad de infraestructura",
-    desc: "Servidores, cloud y redes internas",
+    id: "bcp",
+    icon: Briefcase,
+    label: "Continuidad del negocio",
+    desc: "BCP, DRP, comité de seguridad y gestión de proveedores",
   },
 ];
 
@@ -100,7 +100,7 @@ const PLANS_ONBOARDING = [
     icon: Crown,
     popular: true,
     features: ["Todo Essential", "Incidentes & Riesgos", "Documentos", "Guardy Agente IA"],
-    goals: ["web", "data", "infra"],
+    goals: ["web", "incidents"],
   },
   {
     key: "ENTERPRISE",
@@ -111,13 +111,13 @@ const PLANS_ONBOARDING = [
     color: "purple",
     icon: Building2,
     features: ["Todo Professional", "Cumplimiento Normativo", "BCP/DRP", "Comité & Terceros"],
-    goals: ["compliance"],
+    goals: ["compliance", "bcp"],
   },
 ];
 
 function getRecommendedPlan(goals: string[]): string {
-  if (goals.includes("compliance")) return "ENTERPRISE";
-  if (goals.includes("infra") || goals.includes("data")) return "PROFESSIONAL";
+  if (goals.includes("compliance") || goals.includes("bcp")) return "ENTERPRISE";
+  if (goals.includes("incidents")) return "PROFESSIONAL";
   if (goals.includes("web")) return "BASIC";
   return "FREE";
 }
