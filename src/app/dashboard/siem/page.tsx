@@ -8,7 +8,7 @@ import {
   Shield, AlertTriangle, Activity, Clock, Bell, RefreshCw,
   BarChart3, Info, ShieldCheck, Gauge, Siren, Eye,
   Globe, Lock, Server, Network, CheckCircle, XCircle,
-  Bug
+  Bug, Loader2, Sparkles
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────
@@ -654,14 +654,34 @@ function FindingRow({ finding }: { finding: SecurityFinding }) {
   const config = SEVERITY_CONFIG[finding.severity] || SEVERITY_CONFIG.INFO;
   const Icon = finding.icon;
   const [showInfo, setShowInfo] = useState(false);
+  const [explanation, setExplanation] = useState<string | null>(null);
+  const [loadingExplanation, setLoadingExplanation] = useState(false);
 
-  const riskExplanation: Record<string, { why: string; deduction: string }> = {
-    CRITICAL: { why: 'Problema crítico que compromete gravemente la seguridad.', deduction: '−10 pts al score total' },
-    HIGH:     { why: 'Problema de alta severidad que requiere atención urgente.', deduction: '−7 pts al score total' },
-    MEDIUM:   { why: 'Problema moderado que puede ser explotado en combinación con otros.', deduction: '−4 pts al score total' },
-    LOW:      { why: 'Problema de bajo impacto, se recomienda corregir a mediano plazo.', deduction: '−1 pt al score total' },
+  const handleBadgeClick = async () => {
+    setShowInfo(v => {
+      const next = !v;
+      // Fetch explanation the first time it's opened
+      if (next && !explanation && !loadingExplanation) {
+        setLoadingExplanation(true);
+        fetch("/api/siem/explain-finding", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: finding.title,
+            description: finding.description,
+            severity: finding.severity,
+            source: finding.source,
+            category: finding.category,
+          }),
+        })
+          .then(r => r.json())
+          .then(data => setExplanation(data.explanation || "No se pudo generar la explicación."))
+          .catch(() => setExplanation("Error al contactar el servicio de análisis."))
+          .finally(() => setLoadingExplanation(false));
+      }
+      return next;
+    });
   };
-  const explanation = riskExplanation[finding.severity] || riskExplanation.LOW;
 
   return (
     <div className="flex items-start gap-3 p-4 rounded-xl border border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
@@ -685,24 +705,40 @@ function FindingRow({ finding }: { finding: SecurityFinding }) {
           <span className="flex items-center gap-1"><Globe className="h-3 w-3" />{finding.source}</span>
           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{new Date(finding.timestamp).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</span>
         </div>
-        {/* Inline explanation */}
+
+        {/* AI Explanation — expands below on click */}
         {showInfo && (
-          <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs space-y-1">
-            <p className="text-gray-700 dark:text-gray-300">{explanation.why}</p>
-            <p className={`font-bold ${config.color}`}>{explanation.deduction}</p>
+          <div className="mt-3 p-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 border border-blue-200 dark:border-blue-800 rounded-lg text-xs">
+            {loadingExplanation ? (
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <span>Analizando con IA...</span>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Sparkles className="h-3.5 w-3.5 text-blue-500" />
+                  <span className="font-semibold text-blue-700 dark:text-blue-400 text-[11px] uppercase tracking-wide">Análisis Guardy AI</span>
+                </div>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{explanation}</p>
+              </div>
+            )}
           </div>
         )}
       </div>
-      {/* Risk badge — click to toggle explanation */}
+
+      {/* Risk badge — click to toggle AI explanation */}
       <button
-        onClick={() => setShowInfo(v => !v)}
+        onClick={handleBadgeClick}
         className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-white flex-shrink-0 transition-transform hover:scale-110 active:scale-95 ${
           finding.severity === 'CRITICAL' ? 'bg-red-600' : finding.severity === 'HIGH' ? 'bg-orange-500' : finding.severity === 'MEDIUM' ? 'bg-amber-500' : 'bg-blue-500'
-        }`}
-        title="Ver explicación"
+        } ${showInfo ? 'ring-2 ring-offset-1 ring-blue-400' : ''}`}
+        title="Ver análisis de IA"
       >
-        <span className="text-sm font-bold">{config.weight * 10}</span>
-        <span className="text-[8px] leading-none">risk</span>
+        {loadingExplanation
+          ? <Loader2 className="h-4 w-4 animate-spin" />
+          : <><span className="text-sm font-bold">{config.weight * 10}</span><span className="text-[8px] leading-none">risk</span></>
+        }
       </button>
     </div>
   );
