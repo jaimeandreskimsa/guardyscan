@@ -152,6 +152,25 @@ const SEVERITY_CONFIG: Record<string, { color: string; badge: string; weight: nu
   INFO: { color: 'text-gray-600', badge: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400', weight: 0 },
 };
 
+const SEVERITY_DESCRIPTIONS: Record<string, string> = {
+  CRITICAL: 'Vulnerabilidad crítica. Explotación activa probable. Requiere acción inmediata.',
+  HIGH:     'Riesgo elevado que puede comprometer el sistema. Resolver a la brevedad.',
+  MEDIUM:   'Riesgo moderado. Explotable bajo ciertas condiciones. Planificar corrección.',
+  LOW:      'Impacto bajo. No representa peligro inmediato pero debe corregirse.',
+};
+
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  ssl:           'Problemas con certificados SSL/TLS que afectan la encriptación y confianza del sitio.',
+  headers:       'Cabeceras HTTP de seguridad ausentes que exponen la app a ataques como clickjacking o XSS.',
+  vulnerability: 'Vulnerabilidades conocidas detectadas en la aplicación o sus dependencias.',
+  firewall:      'Ausencia de protecciones perimetrales como WAF o protección anti-DDoS.',
+  network:       'Exposición de servicios de red innecesarios a través de puertos abiertos.',
+};
+
+const SEVERITY_DOT: Record<string, string> = {
+  CRITICAL: 'bg-red-500', HIGH: 'bg-orange-500', MEDIUM: 'bg-amber-500', LOW: 'bg-blue-500', INFO: 'bg-gray-400',
+};
+
 // ─── Main Component ──────────────────────────────────────────────
 export default function SiemPage() {
   const { data: session } = useSession();
@@ -332,14 +351,34 @@ export default function SiemPage() {
                   const count = severityCount[key];
                   const total = findings.length || 1;
                   const pct = Math.round((count / total) * 100);
+                  const sevFindings = findings.filter(f => f.severity === key);
                   return (
-                    <div key={key} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm">
+                    <div key={key} className="group space-y-1">
+                      <div className="flex items-center justify-between text-sm cursor-default">
                         <span className="font-medium text-gray-700 dark:text-gray-300">{label}</span>
                         <span className={`font-bold ${SEVERITY_CONFIG[key].color}`}>{count}</span>
                       </div>
                       <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                         <div className={`h-2 rounded-full transition-all duration-700 ${color}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="max-h-0 group-hover:max-h-52 overflow-hidden transition-all duration-300 ease-in-out">
+                        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 mt-1 space-y-1.5">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{SEVERITY_DESCRIPTIONS[key]}</p>
+                          {sevFindings.length === 0 ? (
+                            <p className="text-xs text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" /> Sin hallazgos en este nivel
+                            </p>
+                          ) : (
+                            <ul className="space-y-1">
+                              {sevFindings.map(f => (
+                                <li key={f.id} className="text-xs text-gray-700 dark:text-gray-300 flex items-start gap-1.5">
+                                  <span className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${color}`} />
+                                  <span className="line-clamp-1">{f.title}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -361,13 +400,29 @@ export default function SiemPage() {
                   {Object.entries(categoryCount).sort((a, b) => b[1] - a[1]).map(([cat, count]) => {
                     const info = categoryLabels[cat] || { label: cat, icon: AlertTriangle, color: 'text-gray-600' };
                     const Icon = info.icon;
+                    const catFindings = findings.filter(f => f.category === cat);
                     return (
-                      <div key={cat} className="flex items-center justify-between text-sm p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50">
-                        <span className="flex items-center gap-2">
-                          <Icon className={`h-4 w-4 ${info.color}`} />
-                          <span className="text-gray-700 dark:text-gray-300">{info.label}</span>
-                        </span>
-                        <span className="font-bold text-gray-900 dark:text-white">{count}</span>
+                      <div key={cat} className="group">
+                        <div className="flex items-center justify-between text-sm p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors cursor-default">
+                          <span className="flex items-center gap-2">
+                            <Icon className={`h-4 w-4 ${info.color}`} />
+                            <span className="text-gray-700 dark:text-gray-300">{info.label}</span>
+                          </span>
+                          <span className="font-bold text-gray-900 dark:text-white">{count}</span>
+                        </div>
+                        <div className="max-h-0 group-hover:max-h-40 overflow-hidden transition-all duration-300 ease-in-out">
+                          <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 mt-0.5 space-y-1.5">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{CATEGORY_DESCRIPTIONS[cat] || 'Hallazgos de seguridad en esta categoría.'}</p>
+                            <ul className="space-y-1">
+                              {catFindings.map(f => (
+                                <li key={f.id} className="text-xs text-gray-700 dark:text-gray-300 flex items-start gap-1.5">
+                                  <span className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${SEVERITY_DOT[f.severity] || 'bg-gray-400'}`} />
+                                  <span className="line-clamp-1">{f.title}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
                       </div>
                     );
                   })}
