@@ -246,34 +246,19 @@ export default async function DashboardPage() {
 
   const securityScore = averageScore._avg.score?.toFixed(0) || 0;
 
-  // Calculate compliance score dynamically (0-100) based on real user data
-  // A new user with no activity should start at 0%
-  const calcComplianceScore = () => {
-    if (stats.totalScans === 0) return 0; // No scans = no baseline data
+  // Compliance score: based on ComplianceEvidence records the user has uploaded
+  // COMPLIANT / (total - NOT_APPLICABLE) — 0% if no evidence exists
+  const complianceEvidence = await prisma.complianceEvidence.groupBy({
+    by: ['status'],
+    where: { userId: user.id },
+    _count: { status: true },
+  }).catch(() => []);
 
-    let score = 0;
-    // 40 pts: has completed scans with a good security score
-    const avgSc = averageScore._avg.score ?? 0;
-    if (avgSc >= 80) score += 40;
-    else if (avgSc >= 60) score += 25;
-    else if (avgSc > 0) score += 10;
-
-    // 30 pts: vulnerability resolution rate
-    if (totalVulnerabilities > 0) {
-      const resolvedRate = closedVulnerabilities / totalVulnerabilities;
-      score += Math.round(resolvedRate * 30);
-    }
-
-    // 20 pts: incident management (no open critical incidents)
-    if (stats.criticalIncidents === 0 && stats.totalScans > 0) score += 20;
-    else if (stats.criticalIncidents <= 1) score += 10;
-
-    // 10 pts: company profile complete
-    if (user.company && user.website && user.industry) score += 10;
-
-    return Math.min(score, 100);
-  };
-  const complianceScore = calcComplianceScore();
+  const evTotal = complianceEvidence.reduce((acc, r) => acc + r._count.status, 0);
+  const evNotApplicable = complianceEvidence.find(r => r.status === 'NOT_APPLICABLE')?._count.status ?? 0;
+  const evCompliant = complianceEvidence.find(r => r.status === 'COMPLIANT')?._count.status ?? 0;
+  const evApplicable = evTotal - evNotApplicable;
+  const complianceScore = evApplicable > 0 ? Math.round((evCompliant / evApplicable) * 100) : 0;
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-emerald-500";
