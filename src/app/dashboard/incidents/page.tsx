@@ -63,7 +63,6 @@ const ASSET_SYSTEMS = [
 const SOURCE_ICONS: Record<string, { icon: any; color: string; label: string }> = {
   vulnerability: { icon: ShieldAlert, color: 'text-red-500', label: 'Vulnerabilidades' },
   siem:          { icon: Activity, color: 'text-blue-500', label: 'SIEM' },
-  threat:        { icon: Target, color: 'text-purple-500', label: 'Amenazas' },
   scan:          { icon: Globe, color: 'text-cyan-500', label: 'Escaneos' },
 }
 
@@ -142,10 +141,9 @@ export default function IncidentsPage() {
   const loadSuggestions = async () => {
     setLoadingSuggestions(true)
     try {
-      const [vulnRes, siemRes, threatRes, scanRes] = await Promise.all([
+      const [vulnRes, siemRes, scanRes] = await Promise.all([
         fetch('/api/vulnerabilities?severity=CRITICAL&status=OPEN').then(r => r.json()).catch(() => ({ vulnerabilities: [] })),
         fetch('/api/siem/events').then(r => r.json()).catch(() => []),
-        fetch('/api/siem/threats').then(r => r.json()).catch(() => []),
         fetch('/api/scans').then(r => r.json()).catch(() => []),
       ])
 
@@ -217,25 +215,7 @@ export default function IncidentsPage() {
           })
         })
 
-      // Active threats
-      const allThreats = Array.isArray(threatRes) ? threatRes : []
-      allThreats
-        .filter((t: any) => t.active)
-        .slice(0, 3)
-        .forEach((t: any) => {
-          items.push({
-            id: `threat-${t.id}`,
-            type: 'threat',
-            title: `Amenaza: ${t.type || t.indicator || 'IOC detectado'}`,
-            description: t.description || `Indicador de compromiso (${t.type}) detectado: ${t.indicator || 'N/A'}`,
-            severity: t.severity || 'HIGH',
-            source: 'Threat Intelligence',
-            detectedAt: t.lastSeen || t.createdAt,
-            origin: 'SIEM',
-            category: 'Malware',
-            raw: t,
-          })
-        })
+      // Active threats — omitted: global IOC feed unrelated to user's assets
 
       // Scans with low scores
       const allScans = Array.isArray(scanRes) ? scanRes : []
@@ -595,7 +575,7 @@ export default function IncidentsPage() {
                   <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <Zap className="h-5 w-5 text-amber-500" />⚠ Incidentes detectados automáticamente
                   </h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Origen: Vulnerabilidades / SIEM / Amenazas / Escaneos</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Origen: Vulnerabilidades / SIEM / Escaneos</p>
                 </div>
                 <button onClick={() => setShowSuggested(false)} className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"><X className="h-5 w-5" /></button>
               </div>
@@ -680,7 +660,7 @@ export default function IncidentsPage() {
             {suggestions.length > 0 && !loadingSuggestions && (
               <div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-2xl">
                 <p className="text-[11px] text-gray-500">
-                  💡 Los incidentes sugeridos se generan a partir de vulnerabilidades críticas/altas abiertas, eventos SIEM de alta severidad, amenazas activas y escaneos con puntuación baja.
+                  💡 Los incidentes sugeridos se generan a partir de vulnerabilidades críticas/altas abiertas, eventos SIEM de alta severidad y escaneos con puntuación baja.
                 </p>
               </div>
             )}
