@@ -7,7 +7,7 @@ import Image from "next/image";
 import {
   Shield, Building2, Globe, Users, ArrowRight, ArrowLeft,
   Check, Zap, Target, FileCheck, Lock, Sparkles, Loader2,
-  ChevronDown,
+  ChevronDown, Crown, CreditCard, Star,
 } from "lucide-react";
 
 const INDUSTRIES = [
@@ -63,8 +63,64 @@ const GOALS = [
 const STEPS = [
   { label: "Tu empresa", num: 1 },
   { label: "Objetivos", num: 2 },
-  { label: "Primer escaneo", num: 3 },
+  { label: "Tu plan", num: 3 },
+  { label: "Primer escaneo", num: 4 },
 ];
+
+const PLANS_ONBOARDING = [
+  {
+    key: "FREE",
+    name: "Free",
+    tagline: "Radiografía inicial",
+    priceLabel: "Gratis",
+    note: "Siempre gratis",
+    color: "gray",
+    icon: Shield,
+    features: ["1 escaneo de seguridad", "Score de riesgo inicial", "Vista general de exposición"],
+    goals: [],
+  },
+  {
+    key: "BASIC",
+    name: "Essential",
+    tagline: "Detección continua",
+    priceLabel: "CLP 12.000",
+    note: "+ IVA / mes",
+    color: "emerald",
+    icon: Zap,
+    features: ["Escaneos ilimitados", "Monitoreo de Seguridad", "Vulnerabilidades", "Alertas automáticas"],
+    goals: ["web"],
+  },
+  {
+    key: "PROFESSIONAL",
+    name: "Professional",
+    tagline: "Control y gestión",
+    priceLabel: "CLP 59.000",
+    note: "+ IVA / mes",
+    color: "blue",
+    icon: Crown,
+    popular: true,
+    features: ["Todo Essential", "Incidentes & Riesgos", "Documentos", "Guardy Agente IA"],
+    goals: ["web", "data", "infra"],
+  },
+  {
+    key: "ENTERPRISE",
+    name: "Enterprise",
+    tagline: "Gobernanza completa",
+    priceLabel: "CLP 299.000",
+    note: "+ IVA / mes",
+    color: "purple",
+    icon: Building2,
+    features: ["Todo Professional", "Cumplimiento Normativo", "BCP/DRP", "Comité & Terceros"],
+    goals: ["compliance"],
+  },
+];
+
+function getRecommendedPlan(goals: string[]): string {
+  if (goals.includes("compliance")) return "ENTERPRISE";
+  if (goals.includes("infra") || goals.includes("data")) return "PROFESSIONAL";
+  if (goals.includes("web")) return "BASIC";
+  return "FREE";
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -104,7 +160,7 @@ export default function OnboardingPage() {
   const toggleGoal = (id: string) =>
     setGoals((g) => (g.includes(id) ? g.filter((x) => x !== id) : [...g, id]));
 
-  const goNext = () => setStep((s) => Math.min(s + 1, 3));
+  const goNext = () => setStep((s) => Math.min(s + 1, 4));
   const goBack = () => setStep((s) => Math.max(s - 1, 1));
 
   const handleComplete = async (startScan = false) => {
@@ -249,7 +305,7 @@ export default function OnboardingPage() {
             {step === 1 && (
               <div className="onboarding-step space-y-6">
                 <div>
-                  <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2">Paso 1 de 3</p>
+                  <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2">Paso 1 de 4</p>
                   <h1 className="text-2xl font-black text-gray-900">Cuéntanos sobre tu empresa</h1>
                   <p className="text-gray-400 mt-1 text-sm">Esta información personaliza toda tu experiencia en GuardyScan</p>
                 </div>
@@ -343,7 +399,7 @@ export default function OnboardingPage() {
             {step === 2 && (
               <div className="onboarding-step space-y-6">
                 <div>
-                  <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2">Paso 2 de 3</p>
+                  <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2">Paso 2 de 4</p>
                   <h1 className="text-2xl font-black text-gray-900">¿Qué deseas proteger?</h1>
                   <p className="text-gray-400 mt-1 text-sm">Selecciona todos los que apliquen a tu organización</p>
                 </div>
@@ -392,11 +448,125 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* ── STEP 3: First scan ── */}
-            {step === 3 && (
+            {/* ── STEP 3: Plan recommendation ── */}
+            {step === 3 && (() => {
+              const recommended = getRecommendedPlan(goals)
+              return (
+                <div className="onboarding-step space-y-5">
+                  <div>
+                    <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2">Paso 3 de 4</p>
+                    <h1 className="text-2xl font-black text-gray-900">Te recomendamos este plan</h1>
+                    <p className="text-gray-400 mt-1 text-sm">Basado en tus objetivos de seguridad. Siempre puedes cambiarlo después.</p>
+                  </div>
+
+                  {/* Recommended plan highlight */}
+                  {(() => {
+                    const rec = PLANS_ONBOARDING.find(p => p.key === recommended)!
+                    const RecIcon = rec.icon
+                    const colorMap: Record<string, string> = {
+                      gray: 'border-gray-300 bg-gray-50',
+                      emerald: 'border-emerald-400 bg-emerald-50',
+                      blue: 'border-blue-400 bg-blue-50',
+                      purple: 'border-purple-400 bg-purple-50',
+                    }
+                    const iconColorMap: Record<string, string> = {
+                      gray: 'text-gray-600 bg-gray-100',
+                      emerald: 'text-emerald-600 bg-emerald-100',
+                      blue: 'text-blue-600 bg-blue-100',
+                      purple: 'text-purple-600 bg-purple-100',
+                    }
+                    const badgeColorMap: Record<string, string> = {
+                      gray: 'bg-gray-100 text-gray-600',
+                      emerald: 'bg-emerald-100 text-emerald-700',
+                      blue: 'bg-blue-100 text-blue-700',
+                      purple: 'bg-purple-100 text-purple-700',
+                    }
+                    return (
+                      <div className={`rounded-2xl border-2 p-5 relative ${colorMap[rec.color]}`}>
+                        <div className="absolute -top-3 left-5">
+                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-600 text-white text-[11px] font-bold shadow-sm">
+                            <Star className="h-3 w-3 fill-white" /> Recomendado para ti
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-4 mt-2">
+                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${iconColorMap[rec.color]}`}>
+                            <RecIcon className="h-6 w-6" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="text-lg font-black text-gray-900">{rec.name}</h3>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${badgeColorMap[rec.color]}`}>{rec.tagline}</span>
+                            </div>
+                            <div className="flex items-baseline gap-1 mt-0.5">
+                              <span className="text-2xl font-black text-gray-900">{rec.priceLabel}</span>
+                              {rec.note && <span className="text-xs text-gray-400">{rec.note}</span>}
+                            </div>
+                            <ul className="mt-3 space-y-1.5">
+                              {rec.features.map((f, i) => (
+                                <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
+                                  <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />{f}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  {/* Other plans */}
+                  <div>
+                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2.5">Otros planes disponibles</p>
+                    <div className="space-y-2">
+                      {PLANS_ONBOARDING.filter(p => p.key !== recommended).map(plan => {
+                        const PlanIcon = plan.icon
+                        const miniIconColor: Record<string, string> = {
+                          gray: 'text-gray-500 bg-gray-100',
+                          emerald: 'text-emerald-600 bg-emerald-50',
+                          blue: 'text-blue-600 bg-blue-50',
+                          purple: 'text-purple-600 bg-purple-50',
+                        }
+                        return (
+                          <div key={plan.key} className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-100 bg-white hover:border-gray-200 hover:bg-gray-50/50 transition-all">
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${miniIconColor[plan.color]}`}>
+                              <PlanIcon className="h-4.5 w-4.5" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-sm font-bold text-gray-800">{plan.name}</p>
+                                {plan.popular && <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-bold">Popular</span>}
+                              </div>
+                              <p className="text-xs text-gray-400">{plan.tagline}</p>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <p className="text-sm font-bold text-gray-900">{plan.priceLabel}</p>
+                              {plan.note && <p className="text-[10px] text-gray-400">{plan.note}</p>}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-gray-400 text-center">ℹ️ Puedes cambiar tu plan en cualquier momento desde Facturación</p>
+
+                  <div className="flex gap-3">
+                    <button onClick={goBack} className="flex items-center gap-2 px-5 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-all">
+                      <ArrowLeft className="h-4 w-4" /> Atrás
+                    </button>
+                    <button onClick={goNext} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.01] active:scale-[0.99]">
+                      Continuar <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* ── STEP 4: First scan ── */}
+            {step === 4 && (
               <div className="onboarding-step space-y-6">
                 <div>
-                  <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-2">Paso 3 de 3</p>
+                  <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest mb-2">Paso 4 de 4</p>
                   <div className="w-14 h-14 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-4">
                     <Zap className="h-7 w-7 text-emerald-500" />
                   </div>
