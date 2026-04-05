@@ -76,6 +76,35 @@ export async function PUT(
       data: updateData,
     });
 
+    // Si el incidente se resuelve o cierra y tiene una vulnerabilidad vinculada,
+    // actualizar automáticamente la vulnerabilidad a REMEDIATED
+    const isNowResolved =
+      (status === "RESOLVED" || status === "CLOSED") &&
+      existingIncident.status !== "RESOLVED" &&
+      existingIncident.status !== "CLOSED";
+
+    const vulnId = updateData.linkedVulnerabilityId ?? existingIncident.linkedVulnerabilityId;
+
+    if (isNowResolved && vulnId) {
+      try {
+        const vuln = await prisma.vulnerability.findFirst({
+          where: { id: vulnId, userId: user.id },
+        });
+        if (vuln && vuln.status !== "REMEDIATED" && vuln.status !== "FALSE_POSITIVE") {
+          await prisma.vulnerability.update({
+            where: { id: vulnId },
+            data: {
+              status: "REMEDIATED",
+              remediatedAt: new Date(),
+            },
+          });
+        }
+      } catch (vulnError) {
+        // No bloqueamos la respuesta si falla la actualización de la vulnerabilidad
+        console.error("Error actualizando vulnerabilidad vinculada:", vulnError);
+      }
+    }
+
     return NextResponse.json(incident);
   } catch (error) {
     console.error("Error updating incident:", error);
