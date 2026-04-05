@@ -158,6 +158,7 @@ export default function SiemPage() {
   const [scans, setScans] = useState<ScanData[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'findings' | 'history'>('overview');
+  const [showScoreInfo, setShowScoreInfo] = useState(false);
 
   useEffect(() => { loadData(); }, []);
 
@@ -243,20 +244,87 @@ export default function SiemPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Score circle */}
             <div className="flex flex-col items-center justify-center">
-              <div className="relative w-36 h-36">
-                <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-                  <circle cx="60" cy="60" r="52" fill="none" stroke="#e5e7eb" strokeWidth="12" className="dark:stroke-gray-700" />
-                  <circle cx="60" cy="60" r="52" fill="none" strokeWidth="12" strokeLinecap="round"
-                    className={riskLevel.bg.replace('bg-', 'stroke-')}
-                    strokeDasharray={`${(riskData.total / 100) * 327} 327`}
-                    style={{ transition: 'stroke-dasharray 1s ease-in-out' }}
-                  />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className={`text-4xl font-bold ${riskLevel.color}`}>{riskData.total}</span>
-                  <span className="text-xs text-gray-500 font-medium">/ 100</span>
-                </div>
+              <div className="relative">
+                {/* Clickable score circle */}
+                <button
+                  onClick={() => setShowScoreInfo(v => !v)}
+                  onMouseEnter={() => setShowScoreInfo(true)}
+                  onMouseLeave={() => setShowScoreInfo(false)}
+                  className="relative w-36 h-36 cursor-pointer focus:outline-none group"
+                  title="Ver explicación de la puntuación"
+                >
+                  <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                    <circle cx="60" cy="60" r="52" fill="none" stroke="#e5e7eb" strokeWidth="12" className="dark:stroke-gray-700" />
+                    <circle cx="60" cy="60" r="52" fill="none" strokeWidth="12" strokeLinecap="round"
+                      className={riskLevel.bg.replace('bg-', 'stroke-')}
+                      strokeDasharray={`${(riskData.total / 100) * 327} 327`}
+                      style={{ transition: 'stroke-dasharray 1s ease-in-out' }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className={`text-4xl font-bold ${riskLevel.color}`}>{riskData.total}</span>
+                    <span className="text-xs text-gray-500 font-medium">/ 100</span>
+                  </div>
+                  {/* Hover hint ring */}
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent group-hover:border-blue-400/50 transition-all duration-200" />
+                </button>
+
+                {/* Score explanation popover */}
+                {showScoreInfo && (
+                  <div
+                    className="absolute z-50 left-1/2 -translate-x-1/2 top-full mt-3 w-72 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-2xl p-4 text-left"
+                    onMouseEnter={() => setShowScoreInfo(true)}
+                    onMouseLeave={() => setShowScoreInfo(false)}
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <Info className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                      <span className="text-sm font-bold text-gray-900 dark:text-white">Cómo se calcula la puntuación</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                      El score parte de <strong className="text-gray-700 dark:text-gray-200">100 puntos</strong> y se descuentan puntos según los problemas encontrados:
+                    </p>
+                    <div className="space-y-2 mb-3">
+                      {[
+                        { label: 'Cabecera de seguridad faltante', deduction: '−5 pts', color: 'text-amber-600' },
+                        { label: 'Vulnerabilidad detectada', deduction: '−10 pts', color: 'text-orange-600' },
+                        { label: 'Certificado SSL inválido', deduction: '−20 pts', color: 'text-red-600' },
+                      ].map(item => (
+                        <div key={item.label} className="flex items-center justify-between text-xs">
+                          <span className="text-gray-600 dark:text-gray-400">{item.label}</span>
+                          <span className={`font-bold ${item.color}`}>{item.deduction}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="border-t border-gray-100 dark:border-gray-800 pt-3 space-y-1.5">
+                      <p className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Rangos</p>
+                      {[
+                        { range: '85 – 100', label: 'Óptimo',   color: 'bg-emerald-500' },
+                        { range: '70 – 84',  label: 'Moderado', color: 'bg-amber-500' },
+                        { range: '50 – 69',  label: 'Alto',     color: 'bg-orange-500' },
+                        { range: '0 – 49',   label: 'Crítico',  color: 'bg-red-500' },
+                      ].map(r => (
+                        <div key={r.range} className="flex items-center gap-2 text-xs">
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${r.color}`} />
+                          <span className="text-gray-500 dark:text-gray-400 w-16">{r.range}</span>
+                          <span className="font-medium text-gray-700 dark:text-gray-300">{r.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {riskData.scansCount > 0 && (
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                        <p className="text-xs text-gray-400">
+                          Promedio de <strong>{riskData.scansCount}</strong> escaneo{riskData.scansCount > 1 ? 's' : ''} completado{riskData.scansCount > 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    )}
+                    {/* Triangle pointer */}
+                    <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-2 overflow-hidden">
+                      <div className="w-3 h-3 bg-white dark:bg-gray-900 border-l border-t border-gray-200 dark:border-gray-700 rotate-45 mx-auto translate-y-1" />
+                    </div>
+                  </div>
+                )}
               </div>
+
               <div className={`mt-3 flex items-center gap-2 px-4 py-1.5 rounded-full ${riskLevel.bgLight}`}>
                 <RiskIcon className={`h-4 w-4 ${riskLevel.color}`} />
                 <span className={`text-sm font-bold ${riskLevel.color}`}>Seguridad {riskLevel.label}</span>
