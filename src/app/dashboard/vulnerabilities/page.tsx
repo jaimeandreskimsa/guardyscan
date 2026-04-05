@@ -814,12 +814,35 @@ export default function VulnerabilitiesPage() {
           {/* Threat Intel & Recent Scans */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
-              <h3 className="text-base font-semibold mb-4 flex items-center gap-2"><Target className="h-5 w-5 text-purple-500" />Inteligencia de Amenazas</h3>
-              <div className="text-center py-4">
-                <p className="text-3xl font-bold text-purple-600">{activeIOCs}</p>
-                <p className="text-sm text-gray-500 mt-1">IOCs activos que pueden correlacionar con vulnerabilidades</p>
-                <Link href="/dashboard/siem" className="text-xs text-purple-500 hover:underline mt-3 inline-flex items-center gap-1">Ver amenazas <ArrowRight className="h-3 w-3" /></Link>
-              </div>
+              <h3 className="text-base font-semibold mb-1 flex items-center gap-2"><Target className="h-5 w-5 text-purple-500" />Inteligencia de Amenazas</h3>
+              <p className="text-xs text-gray-400 mb-4">Feed global de IOCs activos (IPs, dominios, hashes maliciosos)</p>
+              {activeIOCs === 0 ? (
+                <div className="text-center py-6 text-gray-400">
+                  <Target className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">Sin IOCs activos en el feed</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {threats.filter((t: any) => t.active).slice(0, 5).map((t: any) => (
+                    <div key={t.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[10px] font-bold uppercase bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 px-1.5 py-0.5 rounded flex-shrink-0">{t.iocType}</span>
+                        <span className="text-xs text-gray-700 dark:text-gray-300 truncate font-mono">{t.iocValue}</span>
+                      </div>
+                      <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded flex-shrink-0 ml-2 ${
+                        t.severity === 'CRITICAL' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                        t.severity === 'HIGH'     ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                        t.severity === 'MEDIUM'   ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                    'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                      }`}>{t.severity}</span>
+                    </div>
+                  ))}
+                  {activeIOCs > 5 && (
+                    <p className="text-xs text-gray-400 text-center pt-1">+{activeIOCs - 5} IOCs adicionales</p>
+                  )}
+                  <Link href="/dashboard/siem" className="text-xs text-purple-500 hover:underline mt-2 inline-flex items-center gap-1">Ver en Monitoreo <ArrowRight className="h-3 w-3" /></Link>
+                </div>
+              )}
             </div>
 
             <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-700">
