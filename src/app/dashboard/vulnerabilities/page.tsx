@@ -301,6 +301,8 @@ export default function VulnerabilitiesPage() {
   const [selectedVuln, setSelectedVuln] = useState<Vulnerability | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [activeTab, setActiveTab] = useState<ActiveTab>('overview')
+  const [showCreateIncident, setShowCreateIncident] = useState(false)
+  const [vulnForIncident, setVulnForIncident] = useState<Vulnerability | null>(null)
 
   // Connected module data
   const [siemEvents, setSiemEvents] = useState<any[]>([])
@@ -771,9 +773,16 @@ export default function VulnerabilitiesPage() {
                         <td className="px-4 py-3"><span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${st.bg} ${st.text}`}>{st.emoji} {st.label}</span></td>
                         <td className="px-4 py-3 text-xs text-gray-500">{new Date(vuln.discoveredAt).toLocaleDateString('es-ES')}</td>
                         <td className="px-4 py-3">
-                          <button onClick={() => setSelectedVuln(vuln)} className="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors">
-                            <Eye className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => setSelectedVuln(vuln)} className="p-2 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors" title="Ver detalle">
+                              <Eye className="h-4 w-4" />
+                            </button>
+                            {(vuln.status === 'OPEN' || vuln.status === 'IN_PROGRESS') && (
+                              <button onClick={() => { setVulnForIncident(vuln); setShowCreateIncident(true) }} className="p-2 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors" title="Crear incidente">
+                                <AlertTriangle className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     )
@@ -942,7 +951,7 @@ export default function VulnerabilitiesPage() {
       )}
 
       {/* ════════════ DETAIL MODAL ════════════ */}
-      {selectedVuln && <VulnDetailModal vuln={selectedVuln} onClose={() => setSelectedVuln(null)} onUpdate={updateVulnerability} />}
+      {selectedVuln && <VulnDetailModal vuln={selectedVuln} onClose={() => setSelectedVuln(null)} onUpdate={updateVulnerability} onCreateIncident={(v) => { setSelectedVuln(null); setVulnForIncident(v); setShowCreateIncident(true) }} />}
 
       {/* ════════════ ADD MODAL ════════════ */}
       {showAddModal && <AddVulnModal onClose={() => setShowAddModal(false)} onSave={async (data) => {
@@ -952,6 +961,15 @@ export default function VulnerabilitiesPage() {
           else alert('Error al crear la vulnerabilidad')
         } catch { alert('Error al crear la vulnerabilidad') }
       }} />}
+
+      {/* ════════════ CREATE INCIDENT FROM VULN MODAL ════════════ */}
+      {showCreateIncident && vulnForIncident && (
+        <CreateIncidentFromVulnModal
+          vuln={vulnForIncident}
+          onClose={() => { setShowCreateIncident(false); setVulnForIncident(null) }}
+          onCreated={() => { setShowCreateIncident(false); setVulnForIncident(null) }}
+        />
+      )}
     </div>
   )
 }
@@ -970,7 +988,7 @@ function MiniStat({ label, value, dotColor }: { label: string; value: number; do
   )
 }
 
-function VulnDetailModal({ vuln, onClose, onUpdate }: { vuln: Vulnerability; onClose: () => void; onUpdate: (id: string, data: any) => void }) {
+function VulnDetailModal({ vuln, onClose, onUpdate, onCreateIncident }: { vuln: Vulnerability; onClose: () => void; onUpdate: (id: string, data: any) => void; onCreateIncident?: (v: Vulnerability) => void }) {
   const sev = SEV[vuln.severity] || SEV.INFO
   const st = STATUS_MAP[vuln.status] || STATUS_MAP.OPEN
   const srcInfo = SOURCE_MAP[vuln.source] || SOURCE_MAP.MANUAL
@@ -1154,8 +1172,138 @@ function VulnDetailModal({ vuln, onClose, onUpdate }: { vuln: Vulnerability; onC
               className="flex-1 min-w-[120px] px-4 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm font-medium">Aceptar riesgo</button>
             <button onClick={() => onUpdate(vuln.id, { status: 'FALSE_POSITIVE' })} disabled={vuln.status === 'FALSE_POSITIVE'}
               className="flex-1 min-w-[120px] px-4 py-2.5 bg-gray-500 text-white rounded-xl hover:bg-gray-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm font-medium">Falso positivo</button>
+            {onCreateIncident && (vuln.status === 'OPEN' || vuln.status === 'IN_PROGRESS') && (
+              <button onClick={() => onCreateIncident(vuln)} className="w-full px-4 py-2.5 bg-orange-600 text-white rounded-xl hover:bg-orange-700 transition-colors text-sm font-medium flex items-center justify-center gap-2 mt-1">
+                <AlertTriangle className="h-4 w-4" />🚨 Escalar a Incidente
+              </button>
+            )}
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function CreateIncidentFromVulnModal({ vuln, onClose, onCreated }: { vuln: Vulnerability; onClose: () => void; onCreated: () => void }) {
+  const sevMap: Record<string, string> = { CRITICAL: 'CRITICAL', HIGH: 'HIGH', MEDIUM: 'MEDIUM', LOW: 'LOW', INFO: 'LOW' }
+  const [form, setForm] = useState({
+    title: `Incidente: ${vuln.title}`,
+    description: `Incidente originado por vulnerabilidad detectada${vuln.assetName ? ` en ${vuln.assetName}` : ''}. ${vuln.description || ''}${vuln.cveId ? ` CVE: ${vuln.cveId}` : ''}`.trim(),
+    severity: sevMap[vuln.severity] || 'HIGH',
+    category: vuln.cweId ? 'Vulnerabilidad de Sistema' : 'Explotación de Vulnerabilidad',
+    affectedSystems: vuln.assetName || '',
+    origin: 'Vulnerabilidad',
+    immediateActions: vuln.remediation || '',
+    notes: vuln.cveId ? `Referencia CVE: ${vuln.cveId}` : '',
+    assignedTo: '',
+    linkedVulnerabilityId: vuln.id,
+  })
+  const [saving, setSaving] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const res = await fetch('/api/incidents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      if (res.ok) { setSuccess(true); setTimeout(onCreated, 1500) }
+      else alert('Error al crear el incidente')
+    } catch { alert('Error al crear el incidente') }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-2xl w-full max-h-[92vh] overflow-y-auto shadow-2xl">
+        <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-orange-500" />Crear Incidente desde Vulnerabilidad</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Los campos se prellenan con los datos de la vulnerabilidad. Puedes editarlos antes de guardar.</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+        </div>
+
+        {success ? (
+          <div className="p-12 text-center">
+            <CheckCircle className="h-14 w-14 text-green-500 mx-auto mb-4" />
+            <p className="text-lg font-semibold text-gray-900 dark:text-white">¡Incidente creado con éxito!</p>
+            <p className="text-sm text-gray-500 mt-1">Puedes verlo en la sección de Incidentes.</p>
+          </div>
+        ) : (
+          <form onSubmit={submit} className="p-6 space-y-4">
+            <div className={`rounded-xl p-3 border-l-4 ${SEV[vuln.severity]?.border || 'border-gray-400'} bg-gray-50 dark:bg-gray-800`}>
+              <p className="text-xs text-gray-500 uppercase font-semibold tracking-wide mb-0.5">Vulnerabilidad origen</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{vuln.title}</p>
+              {vuln.assetName && <p className="text-xs text-gray-500 mt-0.5">📍 {vuln.assetName}{vuln.cveId ? ` · ${vuln.cveId}` : ''}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Título del incidente *</label>
+              <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripción *</label>
+              <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required rows={3}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Severidad *</label>
+                <select value={form.severity} onChange={e => setForm({ ...form, severity: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-orange-500">
+                  <option value="CRITICAL">🔴 Crítica</option>
+                  <option value="HIGH">🟠 Alta</option>
+                  <option value="MEDIUM">🟡 Media</option>
+                  <option value="LOW">🔵 Baja</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Categoría *</label>
+                <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-orange-500">
+                  <option value="Vulnerabilidad de Sistema">Vulnerabilidad de Sistema</option>
+                  <option value="Explotación de Vulnerabilidad">Explotación de Vulnerabilidad</option>
+                  <option value="Acceso No Autorizado">Acceso No Autorizado</option>
+                  <option value="Malware">Malware</option>
+                  <option value="Configuración Insegura">Configuración Insegura</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sistemas afectados</label>
+              <input type="text" value={form.affectedSystems} onChange={e => setForm({ ...form, affectedSystems: e.target.value })} placeholder="Nombre del activo o sistema afectado"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Acciones inmediatas recomendadas</label>
+              <textarea value={form.immediateActions} onChange={e => setForm({ ...form, immediateActions: e.target.value })} rows={2} placeholder="Pasos de remediación o contención..."
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none" />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asignado a</label>
+              <input type="text" value={form.assignedTo} onChange={e => setForm({ ...form, assignedTo: e.target.value })} placeholder="Responsable del incidente (opcional)"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none" />
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm">Cancelar</button>
+              <button type="submit" disabled={saving} className="flex-1 px-4 py-2.5 bg-orange-600 text-white rounded-xl hover:bg-orange-700 disabled:opacity-50 transition-colors text-sm font-medium flex items-center justify-center gap-2">
+                {saving ? <><Loader2 className="h-4 w-4 animate-spin" />Creando...</> : <><AlertTriangle className="h-4 w-4" />Crear Incidente</>}
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   )
