@@ -1122,11 +1122,6 @@ export default function HomePage() {
               </ul>
             </div>
             <div>
-              <h4 className="text-white font-semibold mb-4">Empresa</h4>
-              <ul className="space-y-3 text-sm text-gray-400">
-              </ul>
-            </div>
-            <div>
               <h4 className="text-white font-semibold mb-4">Legal</h4>
               <ul className="space-y-3 text-sm text-gray-400">
                 <li><Link href="/privacy" className="hover:text-white transition-colors">Privacidad</Link></li>
