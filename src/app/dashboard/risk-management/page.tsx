@@ -185,6 +185,25 @@ export default function RiskManagementPage() {
   const criticalAssets = biaData.filter(b => b.criticality === "CRITICAL").length;
   const highRiskVendors = thirdParties.filter(tp => tp.riskScore >= 70).length;
 
+  // Convert raw simulation results (sorted number array) into histogram bins for the chart
+  const buildHistogram = (rawResults: number[], bins = 20) => {
+    if (!Array.isArray(rawResults) || rawResults.length === 0) return [];
+    const min = rawResults[0];
+    const max = rawResults[rawResults.length - 1];
+    if (min === max) return [{ range: `€${Math.round(min).toLocaleString()}`, frequency: rawResults.length, probability: 1 }];
+    const binSize = (max - min) / bins;
+    const counts = Array(bins).fill(0);
+    for (const v of rawResults) {
+      const idx = Math.min(Math.floor((v - min) / binSize), bins - 1);
+      counts[idx]++;
+    }
+    return counts.map((freq, i) => ({
+      range: `€${Math.round((min + i * binSize) / 1000)}K`,
+      frequency: freq,
+      probability: freq / rawResults.length,
+    }));
+  };
+
   const getRiskColor = (score: number) => {
     if (score >= 4.0) return "bg-red-500";
     if (score >= 3.0) return "bg-orange-500";
@@ -443,7 +462,21 @@ export default function RiskManagementPage() {
                 })()}
               </div>
             )}
-            <MonteCarloChart data={simulations[0]} />
+            <MonteCarloChart
+              data={buildHistogram((simulations[0]?.results as any)?.results ?? [])}
+              statistics={(() => {
+                const stats = (simulations[0]?.results as any)?.statistics;
+                if (stats) return stats;
+                // Fallback: use top-level columns stored in DB
+                return {
+                  mean: simulations[0]?.expectedLoss ?? 0,
+                  var95: simulations[0]?.var95 ?? 0,
+                  var99: simulations[0]?.var99 ?? 0,
+                  max: simulations[0]?.worstCase ?? 0,
+                  min: simulations[0]?.bestCase ?? 0,
+                };
+              })()}
+            />
           </CardContent>
         </Card>
       )}
