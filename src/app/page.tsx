@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Check, ArrowRight, Globe, BarChart3, Mail, Phone, MapPin, ShieldAlert, Bell, TrendingDown, Monitor, Users, Building2, BadgeCheck, RefreshCw, Crown, FolderOpen, Search, Network, KeyRound, Award, Scale, Archive, Workflow, Bot, Settings2 } from "lucide-react";
+import { Check, ArrowRight, Globe, BarChart3, Mail, Phone, MapPin, ShieldAlert, Bell, TrendingDown, Monitor, Users, Building2, BadgeCheck, RefreshCw, Crown, FolderOpen, Search, Network, KeyRound, Award, Scale, Archive, Workflow, Bot, Settings2, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import React, { useState, useEffect, useRef } from "react";
@@ -106,6 +106,90 @@ const CHAT_SCRIPT = [
   { q: "¿Qué debo hacer primero?",
     a: "Activa el monitoreo continuo para los 6 proveedores críticos. Eso te cubre el 40% del riesgo de terceros con un solo clic." },
 ];
+
+// ── Feature Slider ─────────────────────────────────────────────
+type FeatureItem = { Icon: React.ElementType; grad: string; ic: string; bg: string; title: string; desc: string };
+
+function FeatureSlider({ items }: { items: FeatureItem[] }) {
+  const [pos, setPos] = useState(0);
+  const outerRef = useRef<HTMLDivElement>(null);
+  const [cardW, setCardW] = useState(290);
+  const GAP = 16;
+  const VISIBLE = 4;
+  const max = Math.max(0, items.length - VISIBLE);
+
+  useEffect(() => {
+    const measure = () => {
+      if (outerRef.current) {
+        setCardW(Math.floor((outerRef.current.offsetWidth - GAP * (VISIBLE - 1)) / VISIBLE));
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (outerRef.current) ro.observe(outerRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  const step = cardW + GAP;
+
+  return (
+    <div className="relative px-12">
+      <div ref={outerRef} className="overflow-hidden">
+        <div
+          className="flex gap-4 transition-transform duration-500 ease-in-out"
+          style={{ transform: `translateX(-${pos * step}px)` }}
+        >
+          {items.map((m) => (
+            <div
+              key={m.title}
+              style={{ width: cardW, flexShrink: 0 }}
+              className={`p-[1.5px] rounded-[22px] bg-gradient-to-br ${m.grad} card-glow-light group`}
+            >
+              <div className="bg-white p-6 rounded-[20px] h-full">
+                <div className={`icon-box-prem ${m.bg} mb-4`}>
+                  <m.Icon className={`h-5 w-5 ${m.ic}`} />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2 tracking-[-0.02em] text-[15px]">{m.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{m.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Left arrow */}
+      <button
+        onClick={() => setPos((p) => Math.max(0, p - 1))}
+        disabled={pos === 0}
+        className="absolute left-0 top-[calc(50%-20px)] -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center disabled:opacity-20 hover:bg-gray-50 transition z-10"
+      >
+        <ChevronLeft className="h-4 w-4 text-gray-600" />
+      </button>
+
+      {/* Right arrow */}
+      <button
+        onClick={() => setPos((p) => Math.min(max, p + 1))}
+        disabled={pos === max}
+        className="absolute right-0 top-[calc(50%-20px)] -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center disabled:opacity-20 hover:bg-gray-50 transition z-10"
+      >
+        <ChevronRight className="h-4 w-4 text-gray-600" />
+      </button>
+
+      {/* Dots */}
+      <div className="flex justify-center gap-2 mt-5">
+        {Array.from({ length: max + 1 }, (_, i) => (
+          <button
+            key={i}
+            onClick={() => setPos(i)}
+            className={`rounded-full h-2 transition-all duration-300 ${
+              i === pos ? 'w-6 bg-indigo-500' : 'w-2 bg-gray-300 hover:bg-gray-400'
+            }`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const [contactForm, setContactForm] = useState({
@@ -520,32 +604,30 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* 12-module grid */}
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {([
-              { Icon: Globe,        grad: "from-blue-400/55 via-blue-300/20 to-indigo-500/35",    ic: "text-blue-600",    bg: "bg-gradient-to-br from-blue-100 to-blue-50",    title: "Evaluación Web",  desc: "Analiza certificados, DNS, cabeceras, tecnologías, cookies y WAF para detectar exposición.", delay: "reveal-d1" },
-              { Icon: BarChart3,    grad: "from-indigo-400/55 via-indigo-300/20 to-purple-500/35",  ic: "text-indigo-600",  bg: "bg-gradient-to-br from-indigo-100 to-indigo-50",  title: "Monitoreo",        desc: "Consolida score, severidad, tendencias y hallazgos en un panel simple y ejecutivo.", delay: "reveal-d2" },
-              { Icon: ShieldAlert,  grad: "from-orange-400/55 via-orange-300/20 to-amber-500/35",   ic: "text-orange-600",  bg: "bg-gradient-to-br from-orange-100 to-amber-50",  title: "Vulnerabilidades",  desc: "Prioriza remediación por criticidad, estado y exposición con trazabilidad completa.", delay: "reveal-d3" },
-              { Icon: Bell,         grad: "from-red-400/55 via-red-300/20 to-rose-500/35",       ic: "text-red-600",     bg: "bg-gradient-to-br from-red-100 to-rose-50",     title: "Incidentes",      desc: "Registra eventos, seguimiento, SLA y resolución con visibilidad clara para el equipo.", delay: "reveal-d4" },
-              { Icon: TrendingDown, grad: "from-amber-400/55 via-amber-300/20 to-yellow-500/35",   ic: "text-amber-600",   bg: "bg-gradient-to-br from-amber-100 to-yellow-50",   title: "Riesgos",          desc: "Evalúa impacto, probabilidad y tendencia con una visión cuantitativa del negocio.", delay: "reveal-d5" },
-              { Icon: Monitor,      grad: "from-slate-400/55 via-slate-300/20 to-gray-500/35",     ic: "text-slate-600",   bg: "bg-gradient-to-br from-slate-100 to-gray-50",  title: "Activos",          desc: "Mantén inventario tecnológico, criticidad, responsables, parches y contexto operativo.", delay: "reveal-d6" },
-              { Icon: Users,        grad: "from-violet-400/55 via-violet-300/20 to-purple-500/35",  ic: "text-violet-600",  bg: "bg-gradient-to-br from-violet-100 to-purple-50",  title: "Trabajadores",    desc: "Gestiona accesos críticos, roles, validaciones, capacitación y trazabilidad de personas.", delay: "reveal-d7" },
-              { Icon: Building2,    grad: "from-sky-400/55 via-sky-300/20 to-cyan-500/35",       ic: "text-sky-600",     bg: "bg-gradient-to-br from-sky-100 to-cyan-50",     title: "Terceros",        desc: "Evalúa proveedores, exposición, cumplimiento, contratos y nivel de riesgo de la cadena.", delay: "reveal-d8" },
-              { Icon: BadgeCheck,   grad: "from-green-400/55 via-green-300/20 to-emerald-500/35",  ic: "text-green-600",   bg: "bg-gradient-to-br from-green-100 to-emerald-50",   title: "Cumplimiento",    desc: "Mapea controles, progreso y evidencias para ISO 27001:2022 y Ley 21.663 de Chile.", delay: "reveal-d9" },
-              { Icon: RefreshCw,    grad: "from-teal-400/55 via-teal-300/20 to-cyan-500/35",      ic: "text-teal-600",    bg: "bg-gradient-to-br from-teal-100 to-cyan-50",    title: "BCP / DRP",       desc: "Crea planes de continuidad y recuperación con métricas operativas como RTO y RPO.", delay: "reveal-d10" },
-              { Icon: Crown,        grad: "from-yellow-400/55 via-yellow-300/20 to-amber-500/35",   ic: "text-yellow-600",  bg: "bg-gradient-to-br from-yellow-100 to-amber-50",  title: "Comité",          desc: "Formaliza miembros, decisiones y gobernanza del comité de ciberseguridad.", delay: "reveal-d11" },
-              { Icon: FolderOpen,   grad: "from-rose-400/55 via-rose-300/20 to-pink-500/35",      ic: "text-rose-600",    bg: "bg-gradient-to-br from-rose-100 to-pink-50",    title: "Documentos",      desc: "Centraliza políticas, contratos, certificaciones y documentación crítica de la empresa.", delay: "reveal-d12" },
-            ] as { Icon: React.ElementType; grad: string; ic: string; bg: string; title: string; desc: string; delay: string }[]).map((m) => (
-              <div key={m.title} className={`reveal ${m.delay} p-[1.5px] rounded-[22px] bg-gradient-to-br ${m.grad} card-glow-light group`}>
-                <div className="bg-white p-6 rounded-[20px] h-full">
-                  <div className={`icon-box-prem ${m.bg} mb-4`}>
-                    <m.Icon className={`h-5 w-5 ${m.ic}`} />
-                  </div>
-                  <h3 className="font-semibold text-gray-900 mb-2 tracking-[-0.02em] text-[15px]">{m.title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{m.desc}</p>
-                </div>
-              </div>
-            ))}
+          {/* Slider 1 — Análisis & Detección */}
+          <div className="mb-10">
+            <p className="text-xs font-semibold text-indigo-500 uppercase tracking-widest mb-4 text-center">Análisis &amp; Detección</p>
+            <FeatureSlider items={[
+              { Icon: Globe,        grad: "from-blue-400/55 via-blue-300/20 to-indigo-500/35",     ic: "text-blue-600",    bg: "bg-gradient-to-br from-blue-100 to-blue-50",       title: "Evaluación Web",    desc: "Analiza certificados, DNS, cabeceras, tecnologías, cookies y WAF para detectar exposición." },
+              { Icon: BarChart3,    grad: "from-indigo-400/55 via-indigo-300/20 to-purple-500/35",  ic: "text-indigo-600",  bg: "bg-gradient-to-br from-indigo-100 to-indigo-50",   title: "Monitoreo",         desc: "Consolida score, severidad, tendencias y hallazgos en un panel simple y ejecutivo." },
+              { Icon: ShieldAlert,  grad: "from-orange-400/55 via-orange-300/20 to-amber-500/35",   ic: "text-orange-600",  bg: "bg-gradient-to-br from-orange-100 to-amber-50",    title: "Vulnerabilidades",  desc: "Prioriza remediación por criticidad, estado y exposición con trazabilidad completa." },
+              { Icon: Bell,         grad: "from-red-400/55 via-red-300/20 to-rose-500/35",          ic: "text-red-600",     bg: "bg-gradient-to-br from-red-100 to-rose-50",        title: "Incidentes",        desc: "Registra eventos, seguimiento, SLA y resolución con visibilidad clara para el equipo." },
+              { Icon: TrendingDown, grad: "from-amber-400/55 via-amber-300/20 to-yellow-500/35",    ic: "text-amber-600",   bg: "bg-gradient-to-br from-amber-100 to-yellow-50",    title: "Riesgos",           desc: "Evalúa impacto, probabilidad y tendencia con una visión cuantitativa del negocio." },
+              { Icon: Monitor,      grad: "from-slate-400/55 via-slate-300/20 to-gray-500/35",      ic: "text-slate-600",   bg: "bg-gradient-to-br from-slate-100 to-gray-50",      title: "Activos",           desc: "Mantén inventario tecnológico, criticidad, responsables, parches y contexto operativo." },
+            ]} />
+          </div>
+
+          {/* Slider 2 — Gestión & Cumplimiento */}
+          <div>
+            <p className="text-xs font-semibold text-purple-500 uppercase tracking-widest mb-4 text-center">Gestión &amp; Cumplimiento</p>
+            <FeatureSlider items={[
+              { Icon: Users,       grad: "from-violet-400/55 via-violet-300/20 to-purple-500/35",  ic: "text-violet-600",  bg: "bg-gradient-to-br from-violet-100 to-purple-50",   title: "Trabajadores",    desc: "Gestiona accesos críticos, roles, validaciones, capacitación y trazabilidad de personas." },
+              { Icon: Building2,   grad: "from-sky-400/55 via-sky-300/20 to-cyan-500/35",          ic: "text-sky-600",     bg: "bg-gradient-to-br from-sky-100 to-cyan-50",        title: "Proveedores",     desc: "Evalúa proveedores, exposición, cumplimiento, contratos y nivel de riesgo de la cadena." },
+              { Icon: BadgeCheck,  grad: "from-green-400/55 via-green-300/20 to-emerald-500/35",   ic: "text-green-600",   bg: "bg-gradient-to-br from-green-100 to-emerald-50",   title: "Cumplimiento",    desc: "Mapea controles, progreso y evidencias para ISO 27001:2022 y Ley 21.663 de Chile." },
+              { Icon: RefreshCw,   grad: "from-teal-400/55 via-teal-300/20 to-cyan-500/35",        ic: "text-teal-600",    bg: "bg-gradient-to-br from-teal-100 to-cyan-50",       title: "BCP / DRP",       desc: "Crea planes de continuidad y recuperación con métricas operativas como RTO y RPO." },
+              { Icon: Crown,       grad: "from-yellow-400/55 via-yellow-300/20 to-amber-500/35",   ic: "text-yellow-600",  bg: "bg-gradient-to-br from-yellow-100 to-amber-50",    title: "Comité",          desc: "Formaliza miembros, decisiones y gobernanza del comité de ciberseguridad." },
+              { Icon: FolderOpen,  grad: "from-rose-400/55 via-rose-300/20 to-pink-500/35",        ic: "text-rose-600",    bg: "bg-gradient-to-br from-rose-100 to-pink-50",       title: "Documentos",      desc: "Centraliza políticas, contratos, certificaciones y documentación crítica de la empresa." },
+            ]} />
           </div>
         </div>
       </section>
