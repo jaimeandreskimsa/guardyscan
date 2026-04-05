@@ -97,6 +97,7 @@ model User {
   vulnerabilities Vulnerability[]
   businessContinuityPlans BusinessContinuityPlan[]
   advisoryRequests AdvisoryRequest[]
+  claudeDiagnostics ClaudeDiagnostic[]
   
   // Organization relations
   ownedOrganizations Organization[]
@@ -1106,5 +1107,33 @@ model AdvisoryRequest {
   @@index([status])
   @@index([createdAt])
   @@map("advisory_requests")
+}
+
+// Diagnósticos generados por Claude — se guardan para usar como fallback
+model ClaudeDiagnostic {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Tipo de diagnóstico: "agent_response", "report_analysis", "scan_analysis", "security_summary"
+  type      String
+
+  // Contexto (qué pregunta/escaneo originó el diagnóstico)
+  context   String?  @db.Text
+
+  // El contenido generado por Claude (JSON o texto plano)
+  content   String   @db.Text
+
+  // Metadata
+  model     String   @default("claude-sonnet-4-5")
+  tokens    Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, type])
+  @@index([createdAt])
+  @@map("claude_diagnostics")
 }
 
