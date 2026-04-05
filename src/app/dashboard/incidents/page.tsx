@@ -49,6 +49,9 @@ const ORIGIN_OPTIONS = [
 ]
 
 const WORKERS_STORAGE_KEY = 'guardyscan_workers_registry_v1'
+const INITIAL_WORKERS = [
+  { id: 'W-001', fullName: 'Ana Torres Silva', position: 'Analista de Seguridad', department: 'TI' },
+]
 
 const ASSET_SYSTEMS = [
   'Servidor Web Principal', 'Base de Datos PostgreSQL', 'Servidor de Correo',
@@ -126,14 +129,22 @@ export default function IncidentsPage() {
   // ─── Data loading ─────────────────────────────────────────────
   useEffect(() => {
     loadIncidents()
-    // Load workers from localStorage
+    // Load workers from localStorage, fallback to initial demo workers
     try {
       const raw = localStorage.getItem(WORKERS_STORAGE_KEY)
       if (raw) {
         const parsed = JSON.parse(raw)
-        if (Array.isArray(parsed)) setWorkers(parsed)
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setWorkers(parsed)
+        } else {
+          setWorkers(INITIAL_WORKERS)
+        }
+      } else {
+        setWorkers(INITIAL_WORKERS)
       }
-    } catch {}
+    } catch {
+      setWorkers(INITIAL_WORKERS)
+    }
   }, [])
 
   const loadIncidents = async () => {
