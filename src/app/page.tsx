@@ -1124,7 +1124,6 @@ export default function HomePage() {
             <div>
               <h4 className="text-white font-semibold mb-4">Empresa</h4>
               <ul className="space-y-3 text-sm text-gray-400">
-                <li><a href="https://wa.me/56934401855" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Contacto</a></li>
               </ul>
             </div>
             <div>
