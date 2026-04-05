@@ -56,7 +56,10 @@ export function planHasAgent(plan: string): boolean {
 }
 
 export function planCanAccessPath(plan: string, path: string): boolean {
-  const allowed = PLAN_NAV_PATHS[plan as PlanKey] ?? PLAN_NAV_PATHS.FREE
+  // Use FREE as fallback only when the plan key is unknown — NOT when it's null
+  // (ENTERPRISE uses null to mean "all paths allowed")
+  const planKey = plan as PlanKey
+  const allowed = planKey in PLAN_NAV_PATHS ? PLAN_NAV_PATHS[planKey] : PLAN_NAV_PATHS.FREE
   if (allowed === null) return true
   return allowed.some(p => {
     // Exact match always works
