@@ -341,7 +341,7 @@ export default function SiemPage() {
           bgGrad="from-red-50 to-white dark:from-gray-800 dark:to-gray-900" sub="Acción urgente" />
         <StatCard title="Hallazgos Altos" value={severityCount.HIGH} icon={<AlertTriangle className="h-5 w-5 text-orange-600" />}
           bgGrad="from-orange-50 to-white dark:from-gray-800 dark:to-gray-900" sub="Prioridad alta" />
-        <StatCard title="Puntuación" value={`${riskData.avgScore}/100`} icon={<BarChart3 className="h-5 w-5 text-emerald-600" />}
+        <StatCard title="Puntuación" value={riskData.avgScore} icon={<BarChart3 className="h-5 w-5 text-emerald-600" />}
           bgGrad="from-emerald-50 to-white dark:from-gray-800 dark:to-gray-900" sub="Score de seguridad" />
         <StatCard title="Total Hallazgos" value={findings.length} icon={<Eye className="h-5 w-5 text-purple-600" />}
           bgGrad="from-purple-50 to-white dark:from-gray-800 dark:to-gray-900" sub="Detectados" />
