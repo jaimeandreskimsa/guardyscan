@@ -653,6 +653,16 @@ export default function SiemPage() {
 function FindingRow({ finding }: { finding: SecurityFinding }) {
   const config = SEVERITY_CONFIG[finding.severity] || SEVERITY_CONFIG.INFO;
   const Icon = finding.icon;
+  const [showInfo, setShowInfo] = useState(false);
+
+  const riskExplanation: Record<string, { why: string; deduction: string }> = {
+    CRITICAL: { why: 'Problema crítico que compromete gravemente la seguridad.', deduction: '−10 pts al score total' },
+    HIGH:     { why: 'Problema de alta severidad que requiere atención urgente.', deduction: '−7 pts al score total' },
+    MEDIUM:   { why: 'Problema moderado que puede ser explotado en combinación con otros.', deduction: '−4 pts al score total' },
+    LOW:      { why: 'Problema de bajo impacto, se recomienda corregir a mediano plazo.', deduction: '−1 pt al score total' },
+  };
+  const explanation = riskExplanation[finding.severity] || riskExplanation.LOW;
+
   return (
     <div className="flex items-start gap-3 p-4 rounded-xl border border-gray-100 dark:border-gray-800 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
       <div className={`mt-0.5 p-2 rounded-lg ${
@@ -675,13 +685,25 @@ function FindingRow({ finding }: { finding: SecurityFinding }) {
           <span className="flex items-center gap-1"><Globe className="h-3 w-3" />{finding.source}</span>
           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{new Date(finding.timestamp).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}</span>
         </div>
+        {/* Inline explanation */}
+        {showInfo && (
+          <div className="mt-3 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs space-y-1">
+            <p className="text-gray-700 dark:text-gray-300">{explanation.why}</p>
+            <p className={`font-bold ${config.color}`}>{explanation.deduction}</p>
+          </div>
+        )}
       </div>
-      <div className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-white flex-shrink-0 ${
-        finding.severity === 'CRITICAL' ? 'bg-red-600' : finding.severity === 'HIGH' ? 'bg-orange-500' : finding.severity === 'MEDIUM' ? 'bg-amber-500' : 'bg-blue-500'
-      }`}>
+      {/* Risk badge — click to toggle explanation */}
+      <button
+        onClick={() => setShowInfo(v => !v)}
+        className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center text-white flex-shrink-0 transition-transform hover:scale-110 active:scale-95 ${
+          finding.severity === 'CRITICAL' ? 'bg-red-600' : finding.severity === 'HIGH' ? 'bg-orange-500' : finding.severity === 'MEDIUM' ? 'bg-amber-500' : 'bg-blue-500'
+        }`}
+        title="Ver explicación"
+      >
         <span className="text-sm font-bold">{config.weight * 10}</span>
         <span className="text-[8px] leading-none">risk</span>
-      </div>
+      </button>
     </div>
   );
 }
