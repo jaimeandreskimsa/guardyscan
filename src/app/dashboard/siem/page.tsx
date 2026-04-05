@@ -131,15 +131,17 @@ function calculateRiskFromScans(scans: ScanData[]) {
   const completed = scans.filter(s => s.status === 'COMPLETED' && s.score != null);
   if (completed.length === 0) return { total: 0, avgScore: 0, scansCount: 0 };
   const avgScore = Math.round(completed.reduce((s, sc) => s + (sc.score || 0), 0) / completed.length);
-  return { total: Math.min(Math.max(0, 100 - avgScore), 100), avgScore, scansCount: completed.length };
+  // total = same security score shown in scanner (no inversion — both modules use same scale)
+  return { total: avgScore, avgScore, scansCount: completed.length };
 }
 
+// Higher score = better security (same scale as Centro de Análisis)
 function getRiskLevel(score: number) {
-  if (score >= 70) return { label: 'Crítico', color: 'text-red-600', bg: 'bg-red-500', bgLight: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-500', icon: Siren };
-  if (score >= 50) return { label: 'Alto', color: 'text-orange-600', bg: 'bg-orange-500', bgLight: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-500', icon: AlertTriangle };
-  if (score >= 30) return { label: 'Moderado', color: 'text-amber-600', bg: 'bg-amber-500', bgLight: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-500', icon: AlertTriangle };
-  if (score >= 10) return { label: 'Bajo', color: 'text-blue-600', bg: 'bg-blue-500', bgLight: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-500', icon: ShieldCheck };
-  return { label: 'Mínimo', color: 'text-green-600', bg: 'bg-green-500', bgLight: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-500', icon: ShieldCheck };
+  if (score >= 85) return { label: 'Óptimo',    color: 'text-emerald-600', bg: 'bg-emerald-500', bgLight: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-500', icon: ShieldCheck };
+  if (score >= 70) return { label: 'Moderado',  color: 'text-amber-600',   bg: 'bg-amber-500',   bgLight: 'bg-amber-50 dark:bg-amber-900/20',   border: 'border-amber-500',   icon: AlertTriangle };
+  if (score >= 50) return { label: 'Alto',      color: 'text-orange-600',  bg: 'bg-orange-500',  bgLight: 'bg-orange-50 dark:bg-orange-900/20',  border: 'border-orange-500',  icon: AlertTriangle };
+  if (score >= 1)  return { label: 'Crítico',   color: 'text-red-600',     bg: 'bg-red-500',     bgLight: 'bg-red-50 dark:bg-red-900/20',         border: 'border-red-500',     icon: Siren };
+  return             { label: 'Sin datos',  color: 'text-gray-500',    bg: 'bg-gray-400',    bgLight: 'bg-gray-50 dark:bg-gray-800',          border: 'border-gray-300',    icon: ShieldCheck };
 }
 
 const SEVERITY_CONFIG: Record<string, { color: string; badge: string; weight: number }> = {
@@ -257,11 +259,11 @@ export default function SiemPage() {
               </div>
               <div className={`mt-3 flex items-center gap-2 px-4 py-1.5 rounded-full ${riskLevel.bgLight}`}>
                 <RiskIcon className={`h-4 w-4 ${riskLevel.color}`} />
-                <span className={`text-sm font-bold ${riskLevel.color}`}>Riesgo {riskLevel.label}</span>
+                <span className={`text-sm font-bold ${riskLevel.color}`}>Seguridad {riskLevel.label}</span>
               </div>
               {riskData.scansCount > 0 && (
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  Basado en {riskData.scansCount} escaneo{riskData.scansCount > 1 ? 's' : ''} &bull; Score promedio: {riskData.avgScore}/100
+                  Basado en {riskData.scansCount} escaneo{riskData.scansCount > 1 ? 's' : ''} · igual al Centro de Análisis
                 </p>
               )}
             </div>
@@ -295,7 +297,7 @@ export default function SiemPage() {
               <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
                 <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
                   <Info className="h-3 w-3" />
-                  El riesgo se calcula a partir de los resultados reales de los escaneos.
+                  La puntuación es la misma que muestra el Centro de Análisis.
                 </p>
               </div>
             </div>
@@ -339,8 +341,8 @@ export default function SiemPage() {
           bgGrad="from-red-50 to-white dark:from-gray-800 dark:to-gray-900" sub="Acción urgente" />
         <StatCard title="Hallazgos Altos" value={severityCount.HIGH} icon={<AlertTriangle className="h-5 w-5 text-orange-600" />}
           bgGrad="from-orange-50 to-white dark:from-gray-800 dark:to-gray-900" sub="Prioridad alta" />
-        <StatCard title="Score Promedio" value={riskData.avgScore} icon={<BarChart3 className="h-5 w-5 text-emerald-600" />}
-          bgGrad="from-emerald-50 to-white dark:from-gray-800 dark:to-gray-900" sub="Índice de seguridad" />
+        <StatCard title="Puntuación" value={`${riskData.avgScore}/100`} icon={<BarChart3 className="h-5 w-5 text-emerald-600" />}
+          bgGrad="from-emerald-50 to-white dark:from-gray-800 dark:to-gray-900" sub="Score de seguridad" />
         <StatCard title="Total Hallazgos" value={findings.length} icon={<Eye className="h-5 w-5 text-purple-600" />}
           bgGrad="from-purple-50 to-white dark:from-gray-800 dark:to-gray-900" sub="Detectados" />
       </div>
