@@ -48,10 +48,7 @@ const ORIGIN_OPTIONS = [
   { value: 'Scanner', label: 'Scanner', icon: Target },
 ]
 
-const RESPONSIBLE_OPTIONS = [
-  'Jaime Gómez', 'Carlos Rodríguez', 'María López', 'Ana Martínez',
-  'Pedro Sánchez', 'Laura García', 'SOC Team', 'CISO', 'IT Security'
-]
+const WORKERS_STORAGE_KEY = 'guardyscan_workers_registry_v1'
 
 const ASSET_SYSTEMS = [
   'Servidor Web Principal', 'Base de Datos PostgreSQL', 'Servidor de Correo',
@@ -109,6 +106,7 @@ export default function IncidentsPage() {
   const [filterStatus, setFilterStatus] = useState('ALL')
   const [searchTerm, setSearchTerm] = useState('')
   const [saving, setSaving] = useState(false)
+  const [workers, setWorkers] = useState<any[]>([])
 
   // Suggested incidents from connected modules
   const [suggestions, setSuggestions] = useState<any[]>([])
@@ -126,7 +124,17 @@ export default function IncidentsPage() {
   })
 
   // ─── Data loading ─────────────────────────────────────────────
-  useEffect(() => { loadIncidents() }, [])
+  useEffect(() => {
+    loadIncidents()
+    // Load workers from localStorage
+    try {
+      const raw = localStorage.getItem(WORKERS_STORAGE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) setWorkers(parsed)
+      }
+    } catch {}
+  }, [])
 
   const loadIncidents = async () => {
     try {
@@ -842,12 +850,26 @@ export default function IncidentsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider flex items-center gap-1"><User className="h-3.5 w-3.5" />Responsable asignado</label>
-                    <input type="text" list="responsible-list" value={form.assignedTo} onChange={e => setForm({ ...form, assignedTo: e.target.value })}
-                      placeholder="Seleccionar o escribir responsable..."
-                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-500" />
-                    <datalist id="responsible-list">
-                      {RESPONSIBLE_OPTIONS.map(r => <option key={r} value={r} />)}
-                    </datalist>
+                    <select value={form.assignedTo} onChange={e => setForm({ ...form, assignedTo: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-500">
+                      <option value="">— Sin asignar —</option>
+                      {workers.length > 0 ? (
+                        workers.map((w: any) => (
+                          <option key={w.id} value={w.fullName}>
+                            {w.fullName}{w.position ? ` · ${w.position}` : ''}{w.department ? ` (${w.department})` : ''}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="SOC Team">SOC Team</option>
+                          <option value="CISO">CISO</option>
+                          <option value="IT Security">IT Security</option>
+                        </>
+                      )}
+                    </select>
+                    {workers.length === 0 && (
+                      <p className="text-[10px] text-gray-400 mt-1">Agrega trabajadores en <a href="/dashboard/workers" className="text-indigo-500 hover:underline">Gestión de Trabajadores</a> para ver la lista.</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider flex items-center gap-1"><Timer className="h-3.5 w-3.5" />SLA de resolución</label>
