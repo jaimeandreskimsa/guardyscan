@@ -134,6 +134,7 @@ export default function OnboardingPage() {
   const [industry, setIndustry] = useState("");
   const [companySize, setCompanySize] = useState("");
   const [goals, setGoals] = useState<string[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<string>("");
 
   // Pre-fill company from session
   useEffect(() => {
@@ -160,7 +161,12 @@ export default function OnboardingPage() {
   const toggleGoal = (id: string) =>
     setGoals((g) => (g.includes(id) ? g.filter((x) => x !== id) : [...g, id]));
 
-  const goNext = () => setStep((s) => Math.min(s + 1, 4));
+  const goNext = () => {
+    if (step === 2 && !selectedPlan) {
+      setSelectedPlan(getRecommendedPlan(goals));
+    }
+    setStep((s) => Math.min(s + 1, 4));
+  };
   const goBack = () => setStep((s) => Math.max(s - 1, 1));
 
   const handleComplete = async (startScan = false) => {
@@ -451,101 +457,75 @@ export default function OnboardingPage() {
             {/* ── STEP 3: Plan recommendation ── */}
             {step === 3 && (() => {
               const recommended = getRecommendedPlan(goals)
+              const colorMap: Record<string, { border: string; bg: string; icon: string; badge: string; check: string }> = {
+                gray:    { border: 'border-gray-300',    bg: 'bg-gray-50',    icon: 'text-gray-600 bg-gray-100',      badge: 'bg-gray-100 text-gray-600',    check: 'border-gray-400 bg-gray-400' },
+                emerald: { border: 'border-emerald-400', bg: 'bg-emerald-50', icon: 'text-emerald-600 bg-emerald-100', badge: 'bg-emerald-100 text-emerald-700', check: 'border-emerald-500 bg-emerald-500' },
+                blue:    { border: 'border-blue-400',    bg: 'bg-blue-50',    icon: 'text-blue-600 bg-blue-100',      badge: 'bg-blue-100 text-blue-700',    check: 'border-blue-500 bg-blue-500' },
+                purple:  { border: 'border-purple-400',  bg: 'bg-purple-50',  icon: 'text-purple-600 bg-purple-100',  badge: 'bg-purple-100 text-purple-700', check: 'border-purple-500 bg-purple-500' },
+              }
               return (
                 <div className="onboarding-step space-y-5">
                   <div>
                     <p className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2">Paso 3 de 4</p>
-                    <h1 className="text-2xl font-black text-gray-900">Te recomendamos este plan</h1>
-                    <p className="text-gray-400 mt-1 text-sm">Basado en tus objetivos de seguridad. Siempre puedes cambiarlo después.</p>
+                    <h1 className="text-2xl font-black text-gray-900">Elige tu plan</h1>
+                    <p className="text-gray-400 mt-1 text-sm">Te recomendamos <span className="font-semibold text-gray-700">{PLANS_ONBOARDING.find(p => p.key === recommended)?.name}</span> según tus objetivos. Puedes elegir cualquier otro.</p>
                   </div>
 
-                  {/* Recommended plan highlight */}
-                  {(() => {
-                    const rec = PLANS_ONBOARDING.find(p => p.key === recommended)!
-                    const RecIcon = rec.icon
-                    const colorMap: Record<string, string> = {
-                      gray: 'border-gray-300 bg-gray-50',
-                      emerald: 'border-emerald-400 bg-emerald-50',
-                      blue: 'border-blue-400 bg-blue-50',
-                      purple: 'border-purple-400 bg-purple-50',
-                    }
-                    const iconColorMap: Record<string, string> = {
-                      gray: 'text-gray-600 bg-gray-100',
-                      emerald: 'text-emerald-600 bg-emerald-100',
-                      blue: 'text-blue-600 bg-blue-100',
-                      purple: 'text-purple-600 bg-purple-100',
-                    }
-                    const badgeColorMap: Record<string, string> = {
-                      gray: 'bg-gray-100 text-gray-600',
-                      emerald: 'bg-emerald-100 text-emerald-700',
-                      blue: 'bg-blue-100 text-blue-700',
-                      purple: 'bg-purple-100 text-purple-700',
-                    }
-                    return (
-                      <div className={`rounded-2xl border-2 p-5 relative ${colorMap[rec.color]}`}>
-                        <div className="absolute -top-3 left-5">
-                          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-600 text-white text-[11px] font-bold shadow-sm">
-                            <Star className="h-3 w-3 fill-white" /> Recomendado para ti
-                          </span>
-                        </div>
-                        <div className="flex items-start gap-4 mt-2">
-                          <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${iconColorMap[rec.color]}`}>
-                            <RecIcon className="h-6 w-6" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <h3 className="text-lg font-black text-gray-900">{rec.name}</h3>
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${badgeColorMap[rec.color]}`}>{rec.tagline}</span>
+                  <div className="space-y-3">
+                    {PLANS_ONBOARDING.map(plan => {
+                      const PlanIcon = plan.icon
+                      const isSelected = selectedPlan === plan.key
+                      const isRec = plan.key === recommended
+                      const c = colorMap[plan.color]
+                      return (
+                        <button
+                          key={plan.key}
+                          type="button"
+                          onClick={() => setSelectedPlan(plan.key)}
+                          className={`w-full text-left rounded-2xl border-2 p-4 relative transition-all duration-200 ${
+                            isSelected ? `${c.border} ${c.bg} shadow-sm` : 'border-gray-100 bg-white hover:border-gray-200 hover:bg-gray-50/60'
+                          }`}
+                        >
+                          {isRec && (
+                            <div className="absolute -top-3 left-4">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold shadow-sm">
+                                <Star className="h-2.5 w-2.5 fill-white" /> Recomendado
+                              </span>
                             </div>
-                            <div className="flex items-baseline gap-1 mt-0.5">
-                              <span className="text-2xl font-black text-gray-900">{rec.priceLabel}</span>
-                              {rec.note && <span className="text-xs text-gray-400">{rec.note}</span>}
-                            </div>
-                            <ul className="mt-3 space-y-1.5">
-                              {rec.features.map((f, i) => (
-                                <li key={i} className="flex items-center gap-2 text-sm text-gray-700">
-                                  <Check className="h-3.5 w-3.5 text-emerald-500 flex-shrink-0" />{f}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })()}
-
-                  {/* Other plans */}
-                  <div>
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2.5">Otros planes disponibles</p>
-                    <div className="space-y-2">
-                      {PLANS_ONBOARDING.filter(p => p.key !== recommended).map(plan => {
-                        const PlanIcon = plan.icon
-                        const miniIconColor: Record<string, string> = {
-                          gray: 'text-gray-500 bg-gray-100',
-                          emerald: 'text-emerald-600 bg-emerald-50',
-                          blue: 'text-blue-600 bg-blue-50',
-                          purple: 'text-purple-600 bg-purple-50',
-                        }
-                        return (
-                          <div key={plan.key} className="flex items-center gap-3 p-3.5 rounded-xl border border-gray-100 bg-white hover:border-gray-200 hover:bg-gray-50/50 transition-all">
-                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${miniIconColor[plan.color]}`}>
-                              <PlanIcon className="h-4.5 w-4.5" />
+                          )}
+                          <div className="flex items-center gap-3 mt-1">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isSelected ? c.icon : 'text-gray-400 bg-gray-100'}`}>
+                              <PlanIcon className="h-5 w-5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <p className="text-sm font-bold text-gray-800">{plan.name}</p>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className="text-sm font-bold text-gray-900">{plan.name}</p>
                                 {plan.popular && <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 text-[10px] font-bold">Popular</span>}
                               </div>
                               <p className="text-xs text-gray-400">{plan.tagline}</p>
+                              {isSelected && (
+                                <ul className="mt-2 space-y-0.5">
+                                  {plan.features.map((f, i) => (
+                                    <li key={i} className="flex items-center gap-1.5 text-xs text-gray-600">
+                                      <Check className="h-3 w-3 text-emerald-500 flex-shrink-0" />{f}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
                             </div>
-                            <div className="text-right flex-shrink-0">
+                            <div className="text-right flex-shrink-0 ml-2">
                               <p className="text-sm font-bold text-gray-900">{plan.priceLabel}</p>
                               {plan.note && <p className="text-[10px] text-gray-400">{plan.note}</p>}
                             </div>
+                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ml-1 transition-all ${
+                              isSelected ? `${c.check} scale-110` : 'border-gray-300'
+                            }`}>
+                              {isSelected && <Check className="h-2.5 w-2.5 text-white" />}
+                            </div>
                           </div>
-                        )
-                      })}
-                    </div>
+                        </button>
+                      )
+                    })}
                   </div>
 
                   <p className="text-[11px] text-gray-400 text-center">ℹ️ Puedes cambiar tu plan en cualquier momento desde Facturación</p>
@@ -554,7 +534,7 @@ export default function OnboardingPage() {
                     <button onClick={goBack} className="flex items-center gap-2 px-5 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition-all">
                       <ArrowLeft className="h-4 w-4" /> Atrás
                     </button>
-                    <button onClick={goNext} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.01] active:scale-[0.99]">
+                    <button onClick={goNext} disabled={!selectedPlan} className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
                       Continuar <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
