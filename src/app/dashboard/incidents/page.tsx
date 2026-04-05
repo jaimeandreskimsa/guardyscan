@@ -854,13 +854,22 @@ export default function IncidentsPage() {
                       className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-red-500">
                       <option value="">— Sin asignar —</option>
                       {workers.length > 0 ? (
-                        workers.map((w: any) => (
-                          <option key={w.id} value={w.fullName}>
-                            {w.fullName}{w.position ? ` · ${w.position}` : ''}{w.department ? ` (${w.department})` : ''}
-                          </option>
-                        ))
+                        <>
+                          {/* Si el valor actual no está en la lista (dato legacy), mostrarlo igual */}
+                          {form.assignedTo && !workers.some((w: any) => w.fullName === form.assignedTo) && (
+                            <option value={form.assignedTo}>{form.assignedTo}</option>
+                          )}
+                          {workers.map((w: any) => (
+                            <option key={w.id} value={w.fullName}>
+                              {w.fullName}{w.position ? ` · ${w.position}` : ''}{w.department ? ` (${w.department})` : ''}
+                            </option>
+                          ))}
+                        </>
                       ) : (
                         <>
+                          {form.assignedTo && !['SOC Team','CISO','IT Security'].includes(form.assignedTo) && (
+                            <option value={form.assignedTo}>{form.assignedTo}</option>
+                          )}
                           <option value="SOC Team">SOC Team</option>
                           <option value="CISO">CISO</option>
                           <option value="IT Security">IT Security</option>
