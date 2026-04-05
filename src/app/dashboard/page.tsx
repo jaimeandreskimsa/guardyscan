@@ -245,6 +245,36 @@ export default async function DashboardPage() {
   const trend = recentAvg - olderAvg;
 
   const securityScore = averageScore._avg.score?.toFixed(0) || 0;
+
+  // Calculate compliance score dynamically (0-100) based on real user data
+  // A new user with no activity should start at 0%
+  const calcComplianceScore = () => {
+    if (stats.totalScans === 0) return 0; // No scans = no baseline data
+
+    let score = 0;
+    // 40 pts: has completed scans with a good security score
+    const avgSc = averageScore._avg.score ?? 0;
+    if (avgSc >= 80) score += 40;
+    else if (avgSc >= 60) score += 25;
+    else if (avgSc > 0) score += 10;
+
+    // 30 pts: vulnerability resolution rate
+    if (totalVulnerabilities > 0) {
+      const resolvedRate = closedVulnerabilities / totalVulnerabilities;
+      score += Math.round(resolvedRate * 30);
+    }
+
+    // 20 pts: incident management (no open critical incidents)
+    if (stats.criticalIncidents === 0 && stats.totalScans > 0) score += 20;
+    else if (stats.criticalIncidents <= 1) score += 10;
+
+    // 10 pts: company profile complete
+    if (user.company && user.website && user.industry) score += 10;
+
+    return Math.min(score, 100);
+  };
+  const complianceScore = calcComplianceScore();
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-emerald-500";
     if (score >= 60) return "text-amber-500";
@@ -541,11 +571,11 @@ export default async function DashboardPage() {
               </span>
             </div>
             <div className="text-3xl font-bold text-slate-900 dark:text-white mb-1">
-              65%
+              {complianceScore}%
             </div>
             <div className="text-sm text-slate-500 dark:text-slate-400">Cumplimiento</div>
             <div className="mt-3 h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div className="h-full w-[65%] rounded-full bg-gradient-to-r from-violet-500 to-purple-500" />
+              <div className="h-full rounded-full bg-gradient-to-r from-violet-500 to-purple-500" style={{ width: `${complianceScore}%` }} />
             </div>
           </div>
         </div>
