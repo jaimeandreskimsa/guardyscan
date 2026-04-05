@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, AlertTriangle, Shield, Target, Building, Calculator, Users, BarChart3, TrendingDown } from "lucide-react";
+import { TrendingUp, AlertTriangle, Shield, Target, Building, Calculator, Users, BarChart3, TrendingDown, Loader2 } from "lucide-react";
 import RiskHeatMap from "@/components/charts/RiskHeatMap";
 import RiskTrendChart from "@/components/charts/RiskTrendChart";
 import MonteCarloChart from "@/components/charts/MonteCarloChart";
@@ -51,6 +51,8 @@ export default function RiskManagementPage() {
   const [thirdParties, setThirdParties] = useState<ThirdParty[]>([]);
   const [simulations, setSimulations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [simulating, setSimulating] = useState(false);
+  const [simError, setSimError] = useState<string | null>(null);
 
   useEffect(() => {
     loadRiskData();
@@ -84,24 +86,24 @@ export default function RiskManagementPage() {
 
   const runMonteCarloSimulation = async () => {
     try {
-      await fetch("/api/risk-management/simulations", {
+      setSimulating(true);
+      setSimError(null);
+      const res = await fetch("/api/risk-management/simulations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: "Risk Portfolio Simulation",
-          description: "Monte Carlo simulation of current risk portfolio",
-          riskFactors: risks.map(r => ({
-            name: r.title,
-            probability: r.probability,
-            impact: r.impact * 100000, // Convert to monetary value
-            distribution: "normal"
-          })),
-          iterations: 10000
-        })
+        body: JSON.stringify({ useScannedData: true, iterations: 10000 })
       });
+      if (!res.ok) {
+        const err = await res.json();
+        setSimError(err.error || "Error al ejecutar la simulación");
+        return;
+      }
       loadRiskData();
     } catch (error) {
+      setSimError("Error al ejecutar la simulación");
       console.error("Error running simulation:", error);
+    } finally {
+      setSimulating(false);
     }
   };
 
@@ -213,9 +215,9 @@ export default function RiskManagementPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button onClick={runMonteCarloSimulation}>
-            <Calculator className="mr-2 h-4 w-4" />
-            Monte Carlo
+          <Button onClick={runMonteCarloSimulation} disabled={simulating}>
+            {simulating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Calculator className="mr-2 h-4 w-4" />}
+            {simulating ? "Simulando…" : "Simular con datos reales"}
           </Button>
           <Button onClick={generateDemoData} variant="outline">
             <Target className="mr-2 h-4 w-4" />
@@ -223,6 +225,14 @@ export default function RiskManagementPage() {
           </Button>
         </div>
       </div>
+
+      {/* Simulation error banner */}
+      {simError && (
+        <div className="flex items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          {simError}
+        </div>
+      )}
 
       {/* Stats Grid */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
@@ -397,9 +407,42 @@ export default function RiskManagementPage() {
               <Calculator className="h-5 w-5 text-green-600" />
               Resultados Simulación Monte Carlo
             </CardTitle>
-            <CardDescription>Análisis cuantitativo de riesgos y cálculos VaR</CardDescription>
+            <CardDescription>{simulations[0]?.description || "Análisis cuantitativo de riesgos y cálculos VaR"}</CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Data sources breakdown */}
+            {simulations[0]?.riskFactors && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {(() => {
+                  const factors = simulations[0].riskFactors as any[];
+                  const vulnCount = factors.filter((f) => f.source === "vulnerability").length;
+                  const incidentCount = factors.filter((f) => f.source === "incident").length;
+                  const manualCount = factors.filter((f) => !f.source || f.source === "manual").length;
+                  return (
+                    <>
+                      {vulnCount > 0 && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                          <Shield className="h-3 w-3" /> {vulnCount} vulnerabilidades
+                        </span>
+                      )}
+                      {incidentCount > 0 && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1 text-xs font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                          <AlertTriangle className="h-3 w-3" /> {incidentCount} incidentes activos
+                        </span>
+                      )}
+                      {manualCount > 0 && (
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                          <Target className="h-3 w-3" /> {manualCount} riesgos manuales
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                        {factors.length} factores totales · {simulations[0].iterations?.toLocaleString() || "10,000"} iteraciones
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
             <MonteCarloChart data={simulations[0]} />
           </CardContent>
         </Card>

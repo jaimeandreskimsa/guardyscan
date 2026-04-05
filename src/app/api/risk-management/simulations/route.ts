@@ -3,6 +3,68 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+// Maps vuln/incident severity to probability and monetary impact (€)
+const SEVERITY_MAP: Record<string, { probability: number; impact: number }> = {
+  CRITICAL: { probability: 0.85, impact: 500000 },
+  HIGH:     { probability: 0.65, impact: 200000 },
+  MEDIUM:   { probability: 0.40, impact:  75000 },
+  LOW:      { probability: 0.20, impact:  20000 },
+  INFO:     { probability: 0.10, impact:   5000 },
+};
+
+async function buildRiskFactorsFromScannedData(userId: string) {
+  const [vulns, incidents] = await Promise.all([
+    prisma.vulnerability.findMany({
+      where: {
+        userId,
+        status: { notIn: ["REMEDIATED", "FALSE_POSITIVE", "RESOLVED"] },
+      },
+      select: { title: true, severity: true, assetName: true, cvssScore: true },
+    }),
+    prisma.incident.findMany({
+      where: {
+        userId,
+        status: { notIn: ["RESOLVED", "CLOSED"] },
+      },
+      select: { title: true, severity: true, category: true },
+    }),
+  ]);
+
+  const factors: any[] = [];
+
+  // Vulnerabilities → risk factors
+  for (const v of vulns) {
+    const sev = v.severity?.toUpperCase() ?? "MEDIUM";
+    const base = SEVERITY_MAP[sev] ?? SEVERITY_MAP.MEDIUM;
+    // If CVSS score exists, refine the impact proportionally (scale: 1–10 → ×0.5–×1.5)
+    const cvssMultiplier = v.cvssScore ? 0.5 + (v.cvssScore / 10) : 1;
+    factors.push({
+      name: v.assetName ? `[Vuln] ${v.title} (${v.assetName})` : `[Vuln] ${v.title}`,
+      probability: base.probability,
+      impact: Math.round(base.impact * cvssMultiplier),
+      source: "vulnerability",
+      severity: sev,
+      distribution: "normal",
+    });
+  }
+
+  // Incidents → risk factors (active incidents raise the probability)
+  for (const inc of incidents) {
+    const sev = inc.severity?.toUpperCase() ?? "MEDIUM";
+    const base = SEVERITY_MAP[sev] ?? SEVERITY_MAP.MEDIUM;
+    factors.push({
+      name: `[Incidente] ${inc.title}`,
+      probability: Math.min(base.probability + 0.15, 0.99), // active incidents are more likely to recur
+      impact: Math.round(base.impact * 1.2),
+      source: "incident",
+      severity: sev,
+      distribution: "normal",
+    });
+  }
+
+  return factors;
+}
+
 // Simple Monte Carlo simulation function
 function runMonteCarloSimulation(riskFactors: any[], iterations: number = 10000) {
   const results = [];
@@ -95,7 +157,25 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, description, riskFactors, iterations, confidenceLevel } = body;
+    const { name, description, riskFactors: manualFactors, iterations, confidenceLevel, useScannedData } = body;
+
+    // If useScannedData flag is set, build risk factors from real vuln/incident data
+    let riskFactors = manualFactors;
+    let simulationName = name;
+    let simulationDescription = description;
+
+    if (useScannedData) {
+      riskFactors = await buildRiskFactorsFromScannedData(user.id);
+      simulationName = `Simulación de datos escaneados — ${new Date().toLocaleDateString("es-ES")}`;
+      simulationDescription = `Factores de riesgo generados automáticamente a partir de ${riskFactors.filter((f: any) => f.source === "vulnerability").length} vulnerabilidades activas y ${riskFactors.filter((f: any) => f.source === "incident").length} incidentes abiertos.`;
+
+      if (riskFactors.length === 0) {
+        return NextResponse.json(
+          { error: "No hay vulnerabilidades ni incidentes activos para simular. Realiza un escaneo primero." },
+          { status: 400 }
+        );
+      }
+    }
 
     // Run Monte Carlo simulation
     const simulationResults = runMonteCarloSimulation(riskFactors, iterations || 10000);
@@ -103,8 +183,8 @@ export async function POST(request: Request) {
     const simulation = await (prisma as any).monteCarloSimulation.create({
       data: {
         userId: user.id,
-        name,
-        description: description || null,
+        name: simulationName,
+        description: simulationDescription || null,
         riskFactors,
         iterations: iterations || 10000,
         results: simulationResults,
