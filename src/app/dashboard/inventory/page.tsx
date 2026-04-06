@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ClipboardList, Laptop, Plus, Search, ShieldCheck } from "lucide-react";
+import { ClipboardList, Laptop, Plus, Search, ShieldCheck, Shield, AlertTriangle, Database, Lock, Wifi, HardDrive, User, MapPin, Calendar, DollarSign, ChevronRight } from "lucide-react";
 
 type Criticality = "ALTA" | "MEDIA" | "BAJA";
 type EquipmentStatus = "OPERATIVO" | "EN_REPARACION" | "DADO_DE_BAJA" | "OBSOLETO";
@@ -613,152 +613,239 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      {/* ── HEADER ── */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold flex items-center gap-2">
-            <ClipboardList className="h-8 w-8 text-blue-600" />
-            Inventario de Equipos Tecnológicos
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Control de activos TI para auditorías, cumplimiento y gestión de riesgos.
+          <div className="flex items-center gap-3 mb-1">
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 shadow-lg shadow-blue-500/25">
+              <Laptop className="h-6 w-6 text-white" />
+            </div>
+            <h1 className="text-3xl font-black bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              Inventario de Activos TI
+            </h1>
+          </div>
+          <p className="text-gray-500 dark:text-gray-400 text-sm ml-14">
+            Control de equipos tecnológicos para auditorías, cumplimiento y gestión de riesgos.
           </p>
         </div>
-
         <Link href="/dashboard/inventory/new">
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="h-4 w-4 mr-2" />
-            Registrar equipo
-          </Button>
+          <button className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold text-sm shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
+            <Plus className="h-4 w-4" /> Registrar equipo
+          </button>
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card><CardContent className="pt-6"><p className="text-sm text-gray-500">Total activos</p><p className="text-2xl font-bold">{stats.total}</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-sm text-gray-500">Operativos</p><p className="text-2xl font-bold text-green-600">{stats.active}</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-sm text-gray-500">Criticidad alta</p><p className="text-2xl font-bold text-red-600">{stats.critical}</p></CardContent></Card>
-        <Card><CardContent className="pt-6"><p className="text-sm text-gray-500">Con datos sensibles</p><p className="text-2xl font-bold text-purple-600">{stats.sensitive}</p></CardContent></Card>
+      {/* ── STAT CARDS ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: 'Total activos', value: stats.total, icon: ClipboardList, from: 'from-blue-500', to: 'to-cyan-500', text: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+          { label: 'Operativos', value: stats.active, icon: ShieldCheck, from: 'from-emerald-500', to: 'to-green-500', text: 'text-emerald-600', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+          { label: 'Criticidad alta', value: stats.critical, icon: AlertTriangle, from: 'from-red-500', to: 'to-rose-500', text: 'text-red-600', bg: 'bg-red-50 dark:bg-red-900/20' },
+          { label: 'Datos sensibles', value: stats.sensitive, icon: Lock, from: 'from-purple-500', to: 'to-violet-500', text: 'text-purple-600', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+        ].map(({ label, value, icon: Icon, from, to, text, bg }) => (
+          <div key={label} className={`rounded-2xl ${bg} border border-white/60 dark:border-gray-700 p-5 shadow-sm`}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{label}</p>
+              <div className={`p-2 rounded-lg bg-gradient-to-br ${from} ${to} shadow-sm`}>
+                <Icon className="h-3.5 w-3.5 text-white" />
+              </div>
+            </div>
+            <p className={`text-3xl font-black ${text}`}>{value}</p>
+          </div>
+        ))}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Laptop className="h-5 w-5" /> Listado de equipos</CardTitle>
-          <CardDescription>Busca por código, serie, tipo o responsable.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              className="pl-10"
+      {/* ── ASSET TABLE ── */}
+      <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+          <div className="flex items-center gap-2">
+            <Database className="h-5 w-5 text-blue-500" />
+            <h2 className="font-bold text-gray-900 dark:text-white">Listado de equipos</h2>
+            <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 text-xs font-semibold">{filteredInventory.length}</span>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <input
+              className="pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-56"
               placeholder="Buscar equipo..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
-          <div className="overflow-x-auto border rounded-lg">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-gray-800">
-                <tr>
-                  <th className="text-left p-3">Código</th>
-                  <th className="text-left p-3">Equipo</th>
-                  <th className="text-left p-3">Responsable</th>
-                  <th className="text-left p-3">Estado</th>
-                  <th className="text-left p-3">Criticidad</th>
-                  <th className="text-left p-3">Último parche</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredInventory.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="border-t hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
-                    onClick={() => setSelectedRecord(item)}
-                  >
-                    <td className="p-3 font-medium">{item.assetCode}</td>
-                    <td className="p-3">{item.equipmentType} - {item.brand} {item.model}</td>
-                    <td className="p-3">{item.assignedUser || "Sin asignar"}</td>
-                    <td className="p-3"><Badge variant="outline">{statusLabels[item.status]}</Badge></td>
-                    <td className="p-3">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCriticalityClass(item.criticality)}`}>
-                        {criticalityLabels[item.criticality]}
-                      </span>
-                    </td>
-                    <td className="p-3">{item.lastPatchUpdate || "Sin fecha"}</td>
-                  </tr>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 dark:bg-gray-800/60">
+                {['Código', 'Equipo', 'Responsable', 'Estado', 'Criticidad', 'Último parche'].map(h => (
+                  <th key={h} className="text-left px-4 py-3 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{h}</th>
                 ))}
-                {filteredInventory.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="p-6 text-center text-gray-500">
-                      No se encontraron equipos con ese filtro.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
+              {filteredInventory.map((item) => (
+                <tr
+                  key={item.id}
+                  className={`hover:bg-blue-50/50 dark:hover:bg-blue-900/10 cursor-pointer transition-colors ${
+                    selectedRecord?.id === item.id ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-l-blue-500' : ''
+                  }`}
+                  onClick={() => setSelectedRecord(item)}
+                >
+                  <td className="px-4 py-3">
+                    <span className="font-mono text-xs font-bold px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">{item.assetCode}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 flex items-center justify-center flex-shrink-0">
+                        <Laptop className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-900 dark:text-white text-xs">{item.equipmentType}</p>
+                        <p className="text-gray-400 text-xs">{item.brand} {item.model}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <User className="h-3.5 w-3.5 text-gray-400" />
+                      <span className="text-gray-700 dark:text-gray-300">{item.assignedUser || 'Sin asignar'}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                      item.status === 'OPERATIVO' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                      item.status === 'EN_REPARACION' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                      'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>{statusLabels[item.status]}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${getCriticalityClass(item.criticality)}`}>
+                      {criticalityLabels[item.criticality]}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{item.lastPatchUpdate || '—'}</td>
+                </tr>
+              ))}
+              {filteredInventory.length === 0 && (
+                <tr><td colSpan={6} className="px-4 py-12 text-center text-gray-400">
+                  <Laptop className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                  No se encontraron equipos.
+                </td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
+      {/* ── DETAIL PANEL ── */}
       {selectedRecord && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <CardTitle>Ficha detallada: {selectedRecord.assetCode}</CardTitle>
-                <CardDescription>{selectedRecord.equipmentType} - {selectedRecord.brand} {selectedRecord.model}</CardDescription>
+        <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-cyan-600 p-5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur flex items-center justify-center">
+                <HardDrive className="h-6 w-6 text-white" />
               </div>
+              <div>
+                <h2 className="text-lg font-black text-white">{selectedRecord.assetCode}</h2>
+                <p className="text-blue-100 text-sm">{selectedRecord.equipmentType} · {selectedRecord.brand} {selectedRecord.model}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                selectedRecord.criticality === 'ALTA' ? 'bg-red-500 text-white' :
+                selectedRecord.criticality === 'MEDIA' ? 'bg-yellow-400 text-yellow-900' :
+                'bg-emerald-400 text-emerald-900'
+              }`}>{criticalityLabels[selectedRecord.criticality]}</span>
               <Link href={`/dashboard/inventory/${encodeURIComponent(selectedRecord.id)}/edit`}>
-                <Button variant="outline">Editar equipo</Button>
+                <button className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white text-sm font-semibold transition-all">
+                  Editar
+                </button>
               </Link>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
-              <p><strong>Serie:</strong> {selectedRecord.serialNumber}</p>
-              <p><strong>Etiqueta física:</strong> {boolLabel(selectedRecord.physicalLabel)}</p>
-              <p><strong>Estado:</strong> {statusLabels[selectedRecord.status]}</p>
-              <p><strong>Criticidad:</strong> {criticalityLabels[selectedRecord.criticality]}</p>
-              <p><strong>SO:</strong> {selectedRecord.operatingSystem} {selectedRecord.operatingSystemVersion}</p>
-              <p><strong>Procesador:</strong> {selectedRecord.processor || "N/A"}</p>
-              <p><strong>RAM:</strong> {selectedRecord.ram || "N/A"}</p>
-              <p><strong>Disco:</strong> {selectedRecord.storage || "N/A"}</p>
-              <p><strong>IP / MAC:</strong> {(selectedRecord.assignedIp || "N/A")} / {(selectedRecord.macAddress || "N/A")}</p>
-              <p><strong>Dominio:</strong> {selectedRecord.domainOrWorkgroup || "N/A"}</p>
-              <p><strong>Antivirus:</strong> {boolLabel(selectedRecord.antivirusInstalled)} {selectedRecord.antivirusName ? `(${selectedRecord.antivirusName})` : ""}</p>
-              <p><strong>Firewall:</strong> {boolLabel(selectedRecord.firewallActive)}</p>
-              <p><strong>Cifrado:</strong> {boolLabel(selectedRecord.diskEncryption)}</p>
-              <p><strong>Ubicación:</strong> {selectedRecord.physicalLocation}</p>
-              <p><strong>Área:</strong> {selectedRecord.department || "N/A"}</p>
-              <p><strong>Usuario:</strong> {selectedRecord.assignedUser || "Sin asignar"}</p>
-              <p><strong>Cargo:</strong> {selectedRecord.userRole || "N/A"}</p>
-              <p><strong>Correo:</strong> {selectedRecord.corporateEmail || "N/A"}</p>
-              <p><strong>Proveedor:</strong> {selectedRecord.supplier || "N/A"}</p>
-              <p><strong>Costo:</strong> ${selectedRecord.equipmentCost.toLocaleString("es-CL")}</p>
-              <p><strong>Garantía:</strong> {selectedRecord.warrantyUntil || "N/A"}</p>
-              <p><strong>Soporte:</strong> {boolLabel(selectedRecord.supportContract)}</p>
-              <p><strong>Info sensible:</strong> {boolLabel(selectedRecord.hasSensitiveInformation)}</p>
-              <p><strong>Tipo info:</strong> {selectedRecord.sensitiveInformationType || "N/A"}</p>
-              <p><strong>Último parche:</strong> {selectedRecord.lastPatchUpdate || "N/A"}</p>
-              <p><strong>Última revisión seguridad:</strong> {selectedRecord.lastSecurityReview || "N/A"}</p>
-              <p><strong>Respaldo:</strong> {boolLabel(selectedRecord.backupConfigured)}</p>
-              <p><strong>Último respaldo:</strong> {selectedRecord.lastBackupDate || "N/A"}</p>
-              <p><strong>Última mantención:</strong> {selectedRecord.lastMaintenanceDate || "N/A"}</p>
-              <p><strong>Fecha de baja:</strong> {selectedRecord.decommissionDate || "N/A"}</p>
-              <p><strong>Motivo de baja:</strong> {selectedRecord.decommissionReason || "N/A"}</p>
-            </div>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h4 className="font-semibold mb-1">Incidentes reportados</h4>
-                <p className="text-sm text-gray-700 dark:text-gray-300">{selectedRecord.reportedIncidents || "Sin registro"}</p>
+          <div className="p-5 space-y-5">
+            {/* Section rows */}
+            {[
+              {
+                title: 'Información Técnica', icon: HardDrive, color: 'text-blue-500',
+                items: [
+                  ['Número de serie', selectedRecord.serialNumber],
+                  ['Sistema operativo', `${selectedRecord.operatingSystem} ${selectedRecord.operatingSystemVersion}`],
+                  ['Procesador', selectedRecord.processor || '—'],
+                  ['RAM', selectedRecord.ram || '—'],
+                  ['Disco', selectedRecord.storage || '—'],
+                  ['IP / MAC', `${selectedRecord.assignedIp || '—'} / ${selectedRecord.macAddress || '—'}`],
+                ]
+              },
+              {
+                title: 'Ubicación y Responsable', icon: MapPin, color: 'text-emerald-500',
+                items: [
+                  ['Ubicación', selectedRecord.physicalLocation],
+                  ['Área', selectedRecord.department || '—'],
+                  ['Usuario asignado', selectedRecord.assignedUser || '—'],
+                  ['Cargo', selectedRecord.userRole || '—'],
+                  ['Correo', selectedRecord.corporateEmail || '—'],
+                ]
+              },
+              {
+                title: 'Seguridad', icon: Shield, color: 'text-purple-500',
+                items: [
+                  ['Antivirus', `${boolLabel(selectedRecord.antivirusInstalled)}${selectedRecord.antivirusName ? ` (${selectedRecord.antivirusName})` : ''}`],
+                  ['Firewall', boolLabel(selectedRecord.firewallActive)],
+                  ['Cifrado de disco', boolLabel(selectedRecord.diskEncryption)],
+                  ['Info sensible', boolLabel(selectedRecord.hasSensitiveInformation)],
+                  ['Último parche', selectedRecord.lastPatchUpdate || '—'],
+                  ['Última revisión', selectedRecord.lastSecurityReview || '—'],
+                ]
+              },
+              {
+                title: 'Datos Administrativos', icon: DollarSign, color: 'text-amber-500',
+                items: [
+                  ['Proveedor', selectedRecord.supplier || '—'],
+                  ['Costo', `$${selectedRecord.equipmentCost.toLocaleString('es-CL')}`],
+                  ['Garantía hasta', selectedRecord.warrantyUntil || '—'],
+                  ['Contrato soporte', boolLabel(selectedRecord.supportContract)],
+                  ['Respaldo configurado', boolLabel(selectedRecord.backupConfigured)],
+                  ['Último respaldo', selectedRecord.lastBackupDate || '—'],
+                ]
+              },
+            ].map(({ title, icon: Icon, color, items }) => (
+              <div key={title}>
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon className={`h-4 w-4 ${color}`} />
+                  <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">{title}</h3>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {items.map(([label, value]) => (
+                    <div key={label} className="p-3 rounded-xl bg-gray-50 dark:bg-gray-800/60">
+                      <p className="text-xs text-gray-400 mb-0.5">{label}</p>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 truncate">{value}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold mb-1">Cambios relevantes</h4>
-                <p className="text-sm text-gray-700 dark:text-gray-300">{selectedRecord.relevantChanges || "Sin registro"}</p>
+            ))}
+
+            {(selectedRecord.reportedIncidents || selectedRecord.relevantChanges) && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {selectedRecord.reportedIncidents && (
+                  <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800">
+                    <h4 className="text-xs font-bold text-red-600 uppercase tracking-wider mb-1">Incidentes reportados</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{selectedRecord.reportedIncidents}</p>
+                  </div>
+                )}
+                {selectedRecord.relevantChanges && (
+                  <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800">
+                    <h4 className="text-xs font-bold text-amber-600 uppercase tracking-wider mb-1">Cambios relevantes</h4>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{selectedRecord.relevantChanges}</p>
+                  </div>
+                )}
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );
