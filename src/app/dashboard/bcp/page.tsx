@@ -8,7 +8,7 @@ import {
   ChevronLeft, ArrowUpRight, ArrowDownRight, Activity, Target,
   Download, Shield, Database, Globe, Phone, Mail, MapPin,
   LayoutDashboard, ListChecks, TestTube2, Siren, XCircle, Minus,
-  ChevronRight, Info
+  ChevronRight, Info, Sparkles
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -219,6 +219,13 @@ export default function BCPDRPPage() {
   const [showProcessDetail, setShowProcessDetail] = useState<any>(null)
   const [saving, setSaving] = useState(false)
 
+  // AI generation state
+  const [showAIModal, setShowAIModal] = useState(false)
+  const [aiForm, setAiForm] = useState({ orgName: '', sector: '', description: '', planType: 'BCP' })
+  const [aiGenerating, setAiGenerating] = useState(false)
+  const [aiError, setAiError] = useState('')
+  const [aiSuccess, setAiSuccess] = useState('')
+
   // Form states
   const emptyPlan = { name: '', description: '', type: 'BCP', scope: '', rto: 4, rpo: 1, mtpd: 72 }
   const emptyProcess = { name: '', description: '', owner: '', department: '', criticality: 'HIGH', rto: 4, rpo: 1, mtpd: 72 }
@@ -300,6 +307,36 @@ export default function BCPDRPPage() {
       console.error('Error creating plan:', e)
     }
     setSaving(false)
+  }
+
+  const handleGenerateWithAI = async () => {
+    setAiGenerating(true)
+    setAiError('')
+    setAiSuccess('')
+    try {
+      const res = await fetch('/api/bcp/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(aiForm),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setAiError(data.error || 'Error generando el plan')
+        return
+      }
+      setAiSuccess(`✅ Plan "${data.planName}" creado con ${data.processesCreated} procesos y ${data.strategiesCreated} estrategias`)
+      await fetchPlans()
+      setTimeout(() => {
+        setShowAIModal(false)
+        setAiSuccess('')
+        setAiError('')
+        setAiForm({ orgName: '', sector: '', description: '', planType: 'BCP' })
+      }, 2500)
+    } catch {
+      setAiError('Error de conexión. Inténtalo de nuevo.')
+    } finally {
+      setAiGenerating(false)
+    }
   }
 
   const handleAddProcess = async () => {
@@ -459,10 +496,16 @@ export default function BCPDRPPage() {
           </p>
         </div>
         {!selectedPlan && (
-          <button onClick={() => { setPlanForm(emptyPlan); setShowCreatePlan(true) }}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium shadow-sm">
-            <Plus className="h-4 w-4" /> Nuevo Plan
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={() => { setAiForm(f => ({ ...f, planType: 'BCP' })); setAiError(''); setAiSuccess(''); setShowAIModal(true) }}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium shadow-sm">
+              <Sparkles className="h-4 w-4" /> Crear con IA
+            </button>
+            <button onClick={() => { setPlanForm(emptyPlan); setShowCreatePlan(true) }}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium shadow-sm">
+              <Plus className="h-4 w-4" /> Nuevo Plan
+            </button>
+          </div>
         )}
       </div>
 
@@ -1024,6 +1067,145 @@ export default function BCPDRPPage() {
                 </button>
                 <button onClick={() => setShowCreatePlan(false)}
                   className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium">Cancelar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── AI Generate Plan Modal ── */}
+      {showAIModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-start justify-center z-50 p-4 pt-[3vh] overflow-y-auto"
+          onClick={e => { if (e.target === e.currentTarget && !aiGenerating) setShowAIModal(false) }}>
+          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full shadow-2xl mb-8">
+            {/* Header */}
+            <div className="sticky top-0 bg-white dark:bg-gray-900 rounded-t-2xl px-7 py-5 border-b border-gray-200 dark:border-gray-700 z-10">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-purple-500" /> Crear Plan con IA
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-1">La IA generará un plan completo con procesos críticos y estrategias de recuperación adaptados a tu sector</p>
+                </div>
+                <button onClick={() => { if (!aiGenerating) setShowAIModal(false) }}
+                  className="text-gray-400 hover:text-gray-600 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+                  disabled={aiGenerating}>
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-7 py-6 space-y-5">
+              {/* Plan type selector */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase tracking-wider">Tipo de Plan</label>
+                <div className="grid grid-cols-3 gap-3">
+                  {Object.entries(PLAN_TYPES).map(([key, cfg]) => {
+                    const Icon = cfg.icon
+                    const sel = aiForm.planType === key
+                    return (
+                      <button key={key} type="button"
+                        onClick={() => setAiForm(f => ({ ...f, planType: key }))}
+                        disabled={aiGenerating}
+                        className={`p-3 rounded-xl border-2 flex flex-col items-center gap-1.5 transition-all disabled:opacity-50 ${
+                          sel ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 shadow-sm' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                        }`}>
+                        <Icon className={`h-5 w-5 ${sel ? 'text-purple-600' : 'text-gray-400'}`} />
+                        <span className="text-xs font-semibold">{cfg.labelShort}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Org name */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Nombre de la Organización</label>
+                <input type="text" value={aiForm.orgName}
+                  onChange={e => setAiForm(f => ({ ...f, orgName: e.target.value }))}
+                  disabled={aiGenerating}
+                  placeholder="Ej: Empresa ABC S.A."
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50" />
+              </div>
+
+              {/* Sector */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+                  Sector / Industria <span className="text-red-500">*</span>
+                </label>
+                <input type="text" value={aiForm.sector}
+                  onChange={e => setAiForm(f => ({ ...f, sector: e.target.value }))}
+                  disabled={aiGenerating}
+                  placeholder="Ej: Banca, Retail, Salud, Manufactura, Tecnología, Gobierno..."
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50" />
+              </div>
+
+              {/* Context */}
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+                  Contexto Adicional <span className="text-gray-400 font-normal normal-case">(opcional)</span>
+                </label>
+                <textarea value={aiForm.description}
+                  onChange={e => setAiForm(f => ({ ...f, description: e.target.value }))}
+                  disabled={aiGenerating}
+                  rows={3}
+                  placeholder="Describe el tamaño de la empresa, sistemas críticos, procesos más importantes, riesgos conocidos..."
+                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-purple-500 resize-none focus:border-transparent disabled:opacity-50" />
+              </div>
+
+              {/* Info box */}
+              {!aiGenerating && !aiSuccess && !aiError && (
+                <div className="flex items-start gap-3 p-3.5 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                  <Info className="h-4 w-4 text-purple-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-purple-700 dark:text-purple-300">
+                    La IA generará: nombre del plan, descripción, alcance, objetivos de RTO/RPO/MTPD, 3-5 procesos críticos del sector y 2-3 estrategias de recuperación. Todo se guardará automáticamente.
+                  </p>
+                </div>
+              )}
+
+              {/* Generating animation */}
+              {aiGenerating && (
+                <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
+                  <Loader2 className="h-5 w-5 text-purple-500 animate-spin flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">Generando plan con IA...</p>
+                    <p className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-0.5">Analizando el sector y creando procesos críticos adaptados</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Error */}
+              {aiError && (
+                <div className="flex items-start gap-3 p-3.5 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+                  <XCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-700 dark:text-red-300">{aiError}</p>
+                </div>
+              )}
+
+              {/* Success */}
+              {aiSuccess && (
+                <div className="flex items-center gap-3 p-3.5 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
+                  <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <p className="text-xs text-green-700 dark:text-green-300 font-medium">{aiSuccess}</p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-5 border-t border-gray-200 dark:border-gray-700">
+                <button onClick={handleGenerateWithAI}
+                  disabled={!aiForm.sector.trim() || aiGenerating}
+                  className="flex-1 sm:flex-none px-8 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-purple-600/20">
+                  {aiGenerating
+                    ? <><Loader2 className="h-4 w-4 animate-spin" />Generando...</>
+                    : <><Sparkles className="h-4 w-4" />Generar con IA</>
+                  }
+                </button>
+                <button onClick={() => { if (!aiGenerating) setShowAIModal(false) }}
+                  disabled={aiGenerating}
+                  className="px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-sm font-medium disabled:opacity-50">
+                  Cancelar
+                </button>
               </div>
             </div>
           </div>
