@@ -221,10 +221,11 @@ export default function BCPDRPPage() {
 
   // AI generation state
   const [showAIModal, setShowAIModal] = useState(false)
-  const [aiForm, setAiForm] = useState({ orgName: '', sector: '', description: '', planType: 'BCP' })
+  const [aiForm, setAiForm] = useState({ extraContext: '', planType: 'BCP' })
   const [aiGenerating, setAiGenerating] = useState(false)
   const [aiError, setAiError] = useState('')
   const [aiSuccess, setAiSuccess] = useState('')
+  const [aiDataInfo, setAiDataInfo] = useState<any>(null)
 
   // Form states
   const emptyPlan = { name: '', description: '', type: 'BCP', scope: '', rto: 4, rpo: 1, mtpd: 72 }
@@ -313,25 +314,28 @@ export default function BCPDRPPage() {
     setAiGenerating(true)
     setAiError('')
     setAiSuccess('')
+    setAiDataInfo(null)
     try {
       const res = await fetch('/api/bcp/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(aiForm),
+        body: JSON.stringify({ planType: aiForm.planType, extraContext: aiForm.extraContext }),
       })
       const data = await res.json()
       if (!res.ok) {
         setAiError(data.error || 'Error generando el plan')
         return
       }
-      setAiSuccess(`✅ Plan "${data.planName}" creado con ${data.processesCreated} procesos y ${data.strategiesCreated} estrategias`)
+      setAiDataInfo(data.dataUsed)
+      setAiSuccess(`Plan "${data.planName}" creado con ${data.processesCreated} procesos y ${data.strategiesCreated} estrategias`)
       await fetchPlans()
       setTimeout(() => {
         setShowAIModal(false)
         setAiSuccess('')
         setAiError('')
-        setAiForm({ orgName: '', sector: '', description: '', planType: 'BCP' })
-      }, 2500)
+        setAiDataInfo(null)
+        setAiForm({ extraContext: '', planType: 'BCP' })
+      }, 3000)
     } catch {
       setAiError('Error de conexión. Inténtalo de nuevo.')
     } finally {
@@ -1119,58 +1123,47 @@ export default function BCPDRPPage() {
                 </div>
               </div>
 
-              {/* Org name */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">Nombre de la Organización</label>
-                <input type="text" value={aiForm.orgName}
-                  onChange={e => setAiForm(f => ({ ...f, orgName: e.target.value }))}
-                  disabled={aiGenerating}
-                  placeholder="Ej: Empresa ABC S.A."
-                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50" />
-              </div>
-
-              {/* Sector */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
-                  Sector / Industria <span className="text-red-500">*</span>
-                </label>
-                <input type="text" value={aiForm.sector}
-                  onChange={e => setAiForm(f => ({ ...f, sector: e.target.value }))}
-                  disabled={aiGenerating}
-                  placeholder="Ej: Banca, Retail, Salud, Manufactura, Tecnología, Gobierno..."
-                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50" />
-              </div>
-
-              {/* Context */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
-                  Contexto Adicional <span className="text-gray-400 font-normal normal-case">(opcional)</span>
-                </label>
-                <textarea value={aiForm.description}
-                  onChange={e => setAiForm(f => ({ ...f, description: e.target.value }))}
-                  disabled={aiGenerating}
-                  rows={3}
-                  placeholder="Describe el tamaño de la empresa, sistemas críticos, procesos más importantes, riesgos conocidos..."
-                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-purple-500 resize-none focus:border-transparent disabled:opacity-50" />
-              </div>
-
-              {/* Info box */}
-              {!aiGenerating && !aiSuccess && !aiError && (
-                <div className="flex items-start gap-3 p-3.5 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
-                  <Info className="h-4 w-4 text-purple-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-purple-700 dark:text-purple-300">
-                    La IA generará: nombre del plan, descripción, alcance, objetivos de RTO/RPO/MTPD, 3-5 procesos críticos del sector y 2-3 estrategias de recuperación. Todo se guardará automáticamente.
+              {/* Data sources info */}
+              {!aiGenerating && !aiSuccess && (
+                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800 space-y-2">
+                  <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-1.5">
+                    <Info className="h-3.5 w-3.5" /> La IA analizará automáticamente:
                   </p>
+                  <ul className="text-xs text-purple-600 dark:text-purple-400 space-y-1 pl-4">
+                    <li>• Perfil de tu empresa (nombre, industria, tamaño)</li>
+                    <li>• Resultados de todos tus escaneos de seguridad</li>
+                    <li>• Tecnologías detectadas en los escaneos</li>
+                    <li>• Vulnerabilidades críticas/altas sin remediar</li>
+                    <li>• Incidentes activos y evaluaciones de riesgo</li>
+                    <li>• Proveedores terceros y cumplimiento normativo</li>
+                  </ul>
+                </div>
+              )}
+
+              {/* Extra context */}
+              {!aiSuccess && (
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wider">
+                    Contexto Adicional <span className="text-gray-400 font-normal normal-case">(opcional)</span>
+                  </label>
+                  <textarea value={aiForm.extraContext}
+                    onChange={e => setAiForm(f => ({ ...f, extraContext: e.target.value }))}
+                    disabled={aiGenerating}
+                    rows={3}
+                    placeholder="Agrega información extra que la IA deba considerar: procesos clave, dependencias especiales, restricciones regulatorias..."
+                    className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-purple-500 resize-none focus:border-transparent disabled:opacity-50" />
                 </div>
               )}
 
               {/* Generating animation */}
               {aiGenerating && (
-                <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
-                  <Loader2 className="h-5 w-5 text-purple-500 animate-spin flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">Generando plan con IA...</p>
-                    <p className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-0.5">Analizando el sector y creando procesos críticos adaptados</p>
+                <div className="p-5 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="h-5 w-5 text-purple-500 animate-spin flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-purple-700 dark:text-purple-300">Analizando tu organización con IA...</p>
+                      <p className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-0.5">Leyendo scans, vulnerabilidades, incidentes y riesgos</p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1185,16 +1178,23 @@ export default function BCPDRPPage() {
 
               {/* Success */}
               {aiSuccess && (
-                <div className="flex items-center gap-3 p-3.5 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800">
-                  <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
-                  <p className="text-xs text-green-700 dark:text-green-300 font-medium">{aiSuccess}</p>
+                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                    <p className="text-sm font-semibold text-green-700 dark:text-green-300">{aiSuccess}</p>
+                  </div>
+                  {aiDataInfo && (
+                    <p className="text-xs text-green-600/80 dark:text-green-400/80 pl-6">
+                      Basado en {aiDataInfo.scansAnalyzed} escaneo{aiDataInfo.scansAnalyzed !== 1 ? 's' : ''}, {aiDataInfo.vulnerabilitiesAnalyzed} vulnerabilidad{aiDataInfo.vulnerabilitiesAnalyzed !== 1 ? 'es' : ''}, {aiDataInfo.incidentsAnalyzed} incidente{aiDataInfo.incidentsAnalyzed !== 1 ? 's' : ''} y {aiDataInfo.technologiesDetected} tecnología{aiDataInfo.technologiesDetected !== 1 ? 's' : ''} detectada{aiDataInfo.technologiesDetected !== 1 ? 's' : ''}
+                    </p>
+                  )}
                 </div>
               )}
 
               {/* Actions */}
               <div className="flex gap-3 pt-5 border-t border-gray-200 dark:border-gray-700">
                 <button onClick={handleGenerateWithAI}
-                  disabled={!aiForm.sector.trim() || aiGenerating}
+                  disabled={aiGenerating || !!aiSuccess}
                   className="flex-1 sm:flex-none px-8 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 transition-colors text-sm font-semibold flex items-center justify-center gap-2 shadow-lg shadow-purple-600/20">
                   {aiGenerating
                     ? <><Loader2 className="h-4 w-4 animate-spin" />Generando...</>
