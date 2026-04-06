@@ -3,10 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Save } from "lucide-react";
 
 type Criticality = "ALTA" | "MEDIA" | "BAJA";
@@ -61,88 +57,55 @@ type EquipmentRecord = {
 
 const INVENTORY_STORAGE_KEY = "guardyscan_inventory_equipment_v1";
 
-const initialFormData: Omit<EquipmentRecord, "id"> = {
-  assetCode: "",
-  equipmentType: "Notebook",
-  brand: "",
-  model: "",
-  serialNumber: "",
-  physicalLabel: false,
-  status: "OPERATIVO",
-  criticality: "MEDIA",
-  operatingSystem: "",
-  operatingSystemVersion: "",
-  processor: "",
-  ram: "",
-  storage: "",
-  assignedIp: "",
-  macAddress: "",
-  domainOrWorkgroup: "",
-  antivirusInstalled: false,
-  antivirusName: "",
-  firewallActive: true,
-  diskEncryption: false,
-  physicalLocation: "Oficina",
-  exactAddress: "",
-  department: "",
-  assignedUser: "",
-  userRole: "",
-  corporateEmail: "",
-  purchaseDate: "",
-  supplier: "",
-  purchaseDocument: "",
-  equipmentCost: 0,
-  warrantyUntil: "",
-  supportContract: false,
-  hasSensitiveInformation: false,
-  sensitiveInformationType: "",
-  lastPatchUpdate: "",
-  lastSecurityReview: "",
-  backupConfigured: false,
-  lastBackupDate: "",
-  lastMaintenanceDate: "",
-  reportedIncidents: "",
-  relevantChanges: "",
-  decommissionDate: "",
-  decommissionReason: "",
+const empty: Omit<EquipmentRecord, "id"> = {
+  assetCode: "", equipmentType: "Notebook", brand: "", model: "", serialNumber: "",
+  physicalLabel: false, status: "OPERATIVO", criticality: "MEDIA",
+  operatingSystem: "", operatingSystemVersion: "", processor: "", ram: "", storage: "",
+  assignedIp: "", macAddress: "", domainOrWorkgroup: "",
+  antivirusInstalled: false, antivirusName: "", firewallActive: true, diskEncryption: false,
+  physicalLocation: "Oficina", exactAddress: "", department: "", assignedUser: "", userRole: "", corporateEmail: "",
+  purchaseDate: "", supplier: "", purchaseDocument: "", equipmentCost: 0, warrantyUntil: "", supportContract: false,
+  hasSensitiveInformation: false, sensitiveInformationType: "",
+  lastPatchUpdate: "", lastSecurityReview: "", backupConfigured: false, lastBackupDate: "",
+  lastMaintenanceDate: "", reportedIncidents: "", relevantChanges: "", decommissionDate: "", decommissionReason: "",
 };
+
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">
+        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+const inputCls = "w-full h-10 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500";
+const selectCls = `${inputCls} cursor-pointer`;
 
 export default function NewInventoryEquipmentPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState<Omit<EquipmentRecord, "id">>(initialFormData);
+  const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
 
-  const updateField = <K extends keyof Omit<EquipmentRecord, "id">>(
-    field: K,
-    value: Omit<EquipmentRecord, "id">[K]
-  ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
+  const set = <K extends keyof typeof empty>(k: K, v: (typeof empty)[K]) =>
+    setForm(p => ({ ...p, [k]: v }));
 
-  const generateId = () => {
-    if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
-    return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!formData.assetCode || !formData.brand || !formData.model || !formData.serialNumber) {
+    if (!form.assetCode || !form.brand || !form.model || !form.serialNumber) {
       alert("Completa al menos: código, marca, modelo y número de serie.");
       return;
     }
-
     setSaving(true);
     try {
-      const newRecord: EquipmentRecord = { id: generateId(), ...formData };
+      const id = crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
       const raw = localStorage.getItem(INVENTORY_STORAGE_KEY);
       const current = raw ? JSON.parse(raw) : [];
-      const next = Array.isArray(current) ? [newRecord, ...current] : [newRecord];
-      localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify([{ id, ...form }, ...(Array.isArray(current) ? current : [])]));
       router.push("/dashboard/inventory");
-      router.refresh();
-    } catch (error) {
-      console.error(error);
+    } catch {
       alert("No se pudo guardar el equipo.");
     } finally {
       setSaving(false);
@@ -150,110 +113,193 @@ export default function NewInventoryEquipmentPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Registrar equipo</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Completa la ficha de inventario tecnológico.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Registrar equipo</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Ficha de inventario de activos TI</p>
         </div>
         <Link href="/dashboard/inventory">
-          <Button variant="outline">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver al inventario
-          </Button>
+          <button className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            <ArrowLeft className="h-4 w-4" /> Volver
+          </button>
         </Link>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Nueva ficha de equipo</CardTitle>
-          <CardDescription>Formato para control de activos TI, cumplimiento y auditoría.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <section className="space-y-3">
-              <h3 className="font-semibold text-lg">1) Información General del Activo</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Input placeholder="Código interno" value={formData.assetCode} onChange={(e) => updateField("assetCode", e.target.value)} />
-                <Input placeholder="Tipo de equipo" value={formData.equipmentType} onChange={(e) => updateField("equipmentType", e.target.value)} />
-                <Input placeholder="Marca" value={formData.brand} onChange={(e) => updateField("brand", e.target.value)} />
-                <Input placeholder="Modelo" value={formData.model} onChange={(e) => updateField("model", e.target.value)} />
-                <Input placeholder="Número de serie" value={formData.serialNumber} onChange={(e) => updateField("serialNumber", e.target.value)} />
-                <select className="h-10 rounded-md border bg-background px-3 text-sm" value={formData.status} onChange={(e) => updateField("status", e.target.value as EquipmentStatus)}>
-                  <option value="OPERATIVO">Operativo</option>
-                  <option value="EN_REPARACION">En reparación</option>
-                  <option value="DADO_DE_BAJA">Dado de baja</option>
-                  <option value="OBSOLETO">Obsoleto</option>
-                </select>
-              </div>
-            </section>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* ── 1. IDENTIFICACIÓN ── */}
+        <section className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+          <h2 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+            1 · Identificación del equipo
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Código interno del activo" required>
+              <input className={inputCls} placeholder="Ej. KIMSA-NTB-001" value={form.assetCode} onChange={e => set("assetCode", e.target.value)} />
+            </Field>
+            <Field label="Tipo de equipo">
+              <select className={selectCls} value={form.equipmentType} onChange={e => set("equipmentType", e.target.value)}>
+                {["Notebook","PC escritorio","Servidor","Router","Switch","Firewall","Impresora","Celular","Tablet","Otro"].map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Marca" required>
+              <input className={inputCls} placeholder="Ej. Lenovo, Dell, HP" value={form.brand} onChange={e => set("brand", e.target.value)} />
+            </Field>
+            <Field label="Modelo" required>
+              <input className={inputCls} placeholder="Ej. ThinkPad T14, PowerEdge R450" value={form.model} onChange={e => set("model", e.target.value)} />
+            </Field>
+            <Field label="Número de serie" required>
+              <input className={inputCls} placeholder="Número único del fabricante" value={form.serialNumber} onChange={e => set("serialNumber", e.target.value)} />
+            </Field>
+            <Field label="Estado actual">
+              <select className={selectCls} value={form.status} onChange={e => set("status", e.target.value as EquipmentStatus)}>
+                <option value="OPERATIVO">Operativo — en uso normal</option>
+                <option value="EN_REPARACION">En reparación — fuera de servicio temporalmente</option>
+                <option value="DADO_DE_BAJA">Dado de baja — retirado definitivamente</option>
+                <option value="OBSOLETO">Obsoleto — sin soporte del fabricante</option>
+              </select>
+            </Field>
+            <Field label="Criticidad para la organización">
+              <select className={selectCls} value={form.criticality} onChange={e => set("criticality", e.target.value as Criticality)}>
+                <option value="ALTA">Alta — impacto grave si falla o es comprometido</option>
+                <option value="MEDIA">Media — impacto moderado, afecta operaciones parcialmente</option>
+                <option value="BAJA">Baja — impacto mínimo, fácilmente reemplazable</option>
+              </select>
+            </Field>
+          </div>
+        </section>
 
-            <section className="space-y-3">
-              <h3 className="font-semibold text-lg">2) Información Técnica</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Input placeholder="Sistema operativo" value={formData.operatingSystem} onChange={(e) => updateField("operatingSystem", e.target.value)} />
-                <Input placeholder="Versión SO" value={formData.operatingSystemVersion} onChange={(e) => updateField("operatingSystemVersion", e.target.value)} />
-                <Input placeholder="Procesador" value={formData.processor} onChange={(e) => updateField("processor", e.target.value)} />
-                <Input placeholder="RAM" value={formData.ram} onChange={(e) => updateField("ram", e.target.value)} />
-                <Input placeholder="Disco duro / SSD" value={formData.storage} onChange={(e) => updateField("storage", e.target.value)} />
-                <Input placeholder="IP asignada" value={formData.assignedIp} onChange={(e) => updateField("assignedIp", e.target.value)} />
-              </div>
-            </section>
+        {/* ── 2. TÉCNICO ── */}
+        <section className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+          <h2 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+            2 · Información técnica
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Sistema operativo">
+              <input className={inputCls} placeholder="Ej. Windows, Ubuntu Server, macOS" value={form.operatingSystem} onChange={e => set("operatingSystem", e.target.value)} />
+            </Field>
+            <Field label="Versión del sistema operativo">
+              <input className={inputCls} placeholder="Ej. Windows 11 Pro 23H2, 22.04 LTS" value={form.operatingSystemVersion} onChange={e => set("operatingSystemVersion", e.target.value)} />
+            </Field>
+            <Field label="IP asignada">
+              <input className={inputCls} placeholder="Ej. 10.20.15.23" value={form.assignedIp} onChange={e => set("assignedIp", e.target.value)} />
+            </Field>
+            <Field label="Ubicación física">
+              <select className={selectCls} value={form.physicalLocation} onChange={e => set("physicalLocation", e.target.value)}>
+                <option>Oficina</option>
+                <option>Sucursal</option>
+                <option>Remoto</option>
+                <option>Data Center</option>
+                <option>Bodega</option>
+              </select>
+            </Field>
+          </div>
+        </section>
 
-            <section className="space-y-3">
-              <h3 className="font-semibold text-lg">3) Ubicación y Responsable</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Input placeholder="Ubicación física" value={formData.physicalLocation} onChange={(e) => updateField("physicalLocation", e.target.value)} />
-                <Input placeholder="Área / Departamento" value={formData.department} onChange={(e) => updateField("department", e.target.value)} />
-                <Input placeholder="Usuario asignado" value={formData.assignedUser} onChange={(e) => updateField("assignedUser", e.target.value)} />
-                <Input placeholder="Cargo del usuario" value={formData.userRole} onChange={(e) => updateField("userRole", e.target.value)} />
-                <Input type="email" placeholder="Correo corporativo" value={formData.corporateEmail} onChange={(e) => updateField("corporateEmail", e.target.value)} />
-              </div>
-            </section>
+        {/* ── 3. RESPONSABLE ── */}
+        <section className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+          <h2 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+            3 · Responsable del equipo
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Área / Departamento">
+              <input className={inputCls} placeholder="Ej. TI, Infraestructura, Finanzas" value={form.department} onChange={e => set("department", e.target.value)} />
+            </Field>
+            <Field label="Usuario asignado">
+              <input className={inputCls} placeholder="Nombre completo del responsable" value={form.assignedUser} onChange={e => set("assignedUser", e.target.value)} />
+            </Field>
+            <Field label="Cargo del usuario">
+              <input className={inputCls} placeholder="Ej. Analista de Seguridad" value={form.userRole} onChange={e => set("userRole", e.target.value)} />
+            </Field>
+            <Field label="Correo corporativo del usuario">
+              <input className={inputCls} type="email" placeholder="usuario@empresa.cl" value={form.corporateEmail} onChange={e => set("corporateEmail", e.target.value)} />
+            </Field>
+          </div>
+        </section>
 
-            <section className="space-y-3">
-              <h3 className="font-semibold text-lg">4) Información Administrativa</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Input type="date" value={formData.purchaseDate} onChange={(e) => updateField("purchaseDate", e.target.value)} />
-                <Input placeholder="Proveedor" value={formData.supplier} onChange={(e) => updateField("supplier", e.target.value)} />
-                <Input placeholder="Factura / documento" value={formData.purchaseDocument} onChange={(e) => updateField("purchaseDocument", e.target.value)} />
-                <Input type="number" placeholder="Costo del equipo" value={formData.equipmentCost} onChange={(e) => updateField("equipmentCost", Number(e.target.value || 0))} />
-              </div>
-            </section>
+        {/* ── 4. COMPRA Y GARANTÍA ── */}
+        <section className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+          <h2 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+            4 · Compra y garantía
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Proveedor o tienda donde se adquirió">
+              <input className={inputCls} placeholder="Ej. TecnoChile SPA" value={form.supplier} onChange={e => set("supplier", e.target.value)} />
+            </Field>
+            <Field label="Número de factura o documento de compra">
+              <input className={inputCls} placeholder="Ej. FAC-45871, OC-99817" value={form.purchaseDocument} onChange={e => set("purchaseDocument", e.target.value)} />
+            </Field>
+            <Field label="Fecha de compra del equipo">
+              <input className={inputCls} type="date" value={form.purchaseDate} onChange={e => set("purchaseDate", e.target.value)} />
+            </Field>
+            <Field label="Fecha de vencimiento de la garantía">
+              <input className={inputCls} type="date" value={form.warrantyUntil} onChange={e => set("warrantyUntil", e.target.value)} />
+            </Field>
+          </div>
+        </section>
 
-            <section className="space-y-3">
-              <h3 className="font-semibold text-lg">5) Seguridad y Cumplimiento</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <Input placeholder="Tipo de información sensible" value={formData.sensitiveInformationType} onChange={(e) => updateField("sensitiveInformationType", e.target.value)} />
-                <Input type="date" value={formData.lastPatchUpdate} onChange={(e) => updateField("lastPatchUpdate", e.target.value)} />
-                <Input type="date" value={formData.lastSecurityReview} onChange={(e) => updateField("lastSecurityReview", e.target.value)} />
-                <Input type="date" value={formData.lastBackupDate} onChange={(e) => updateField("lastBackupDate", e.target.value)} />
-              </div>
-            </section>
+        {/* ── 5. SEGURIDAD ── */}
+        <section className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-5 space-y-4">
+          <h2 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+            5 · Seguridad del equipo
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {([
+              ["antivirusInstalled", "Tiene antivirus instalado"],
+              ["firewallActive", "Firewall activo"],
+              ["diskEncryption", "Disco cifrado (BitLocker, FileVault, LUKS, etc.)"],
+              ["backupConfigured", "Respaldo automático configurado"],
+              ["hasSensitiveInformation", "Contiene datos sensibles o personales"],
+            ] as [keyof typeof empty, string][]).map(([key, label]) => (
+              <label key={key} className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${
+                form[key]
+                  ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-700"
+                  : "bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700"
+              }`}>
+                <input
+                  type="checkbox"
+                  checked={form[key] as boolean}
+                  onChange={e => set(key, e.target.checked)}
+                  className="accent-emerald-600 w-4 h-4"
+                />
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+              </label>
+            ))}
+          </div>
+          {form.antivirusInstalled && (
+            <Field label="Nombre del antivirus">
+              <input className={inputCls} placeholder="Ej. Microsoft Defender, CrowdStrike, Kaspersky" value={form.antivirusName} onChange={e => set("antivirusName", e.target.value)} />
+            </Field>
+          )}
+          {form.hasSensitiveInformation && (
+            <Field label="Tipo de datos sensibles que contiene">
+              <input className={inputCls} placeholder="Ej. Datos de clientes, información financiera, RRHH" value={form.sensitiveInformationType} onChange={e => set("sensitiveInformationType", e.target.value)} />
+            </Field>
+          )}
+          <Field label="Fecha del último parche de seguridad aplicado">
+            <input className={inputCls} type="date" value={form.lastPatchUpdate} onChange={e => set("lastPatchUpdate", e.target.value)} />
+          </Field>
+        </section>
 
-            <section className="space-y-3">
-              <h3 className="font-semibold text-lg">6) Historial</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <Input type="date" value={formData.lastMaintenanceDate} onChange={(e) => updateField("lastMaintenanceDate", e.target.value)} />
-                <Input type="date" value={formData.decommissionDate} onChange={(e) => updateField("decommissionDate", e.target.value)} />
-              </div>
-              <Textarea placeholder="Incidentes reportados" value={formData.reportedIncidents} onChange={(e) => updateField("reportedIncidents", e.target.value)} />
-              <Textarea placeholder="Cambios relevantes realizados" value={formData.relevantChanges} onChange={(e) => updateField("relevantChanges", e.target.value)} />
-              <Textarea placeholder="Motivo de baja" value={formData.decommissionReason} onChange={(e) => updateField("decommissionReason", e.target.value)} />
-            </section>
-
-            <div className="flex justify-end gap-2">
-              <Link href="/dashboard/inventory">
-                <Button type="button" variant="outline">Cancelar</Button>
-              </Link>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={saving}>
-                <Save className="h-4 w-4 mr-2" />
-                {saving ? "Guardando..." : "Guardar equipo"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+        {/* Actions */}
+        <div className="flex justify-end gap-3 pb-6">
+          <Link href="/dashboard/inventory">
+            <button type="button" className="px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+              Cancelar
+            </button>
+          </Link>
+          <button
+            type="submit"
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-60"
+          >
+            <Save className="h-4 w-4" />
+            {saving ? "Guardando..." : "Guardar equipo"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
