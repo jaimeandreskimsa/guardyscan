@@ -46,7 +46,6 @@ const getNavigationGroups = (userRole: string) => {
     {
       name: "Gestión",
       items: [
-        { name: "Riesgos", href: "/dashboard/risk-management", icon: Target },
         { name: "Inventario de Activos", href: "/dashboard/inventory", icon: Laptop },
         { name: "Trabajadores", href: "/dashboard/workers", icon: Users },
         { name: "Proveedores", href: "/dashboard/third-party", icon: Network },

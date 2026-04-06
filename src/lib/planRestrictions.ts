@@ -39,7 +39,6 @@ export const PLAN_NAV_PATHS: Record<PlanKey, string[] | null> = {
     '/dashboard/siem',
     '/dashboard/vulnerabilities',
     '/dashboard/incidents',
-    '/dashboard/risk-management',
     '/dashboard/documents',
     '/dashboard/settings',
     '/dashboard/billing',

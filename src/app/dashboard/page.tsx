@@ -802,19 +802,6 @@ export default async function DashboardPage() {
             </div>
           </Link>
           
-          <Link href="/dashboard/risk-management" className="group">
-            <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-5 border-2 border-transparent hover:border-amber-500 transition-all duration-300 shadow-sm hover:shadow-lg">
-              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
-              <div className="relative">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 w-fit mb-4 shadow-lg shadow-amber-500/25 group-hover:scale-110 transition-transform">
-                  <BarChart3 className="h-5 w-5 text-white" />
-                </div>
-                <h4 className="font-semibold text-slate-900 dark:text-white mb-1">Riesgos</h4>
-                <p className="text-sm text-slate-500">Gestión integral</p>
-              </div>
-            </div>
-          </Link>
-
           <Link href="/dashboard/committee" className="group">
             <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 p-5 border-2 border-transparent hover:border-pink-500 transition-all duration-300 shadow-sm hover:shadow-lg">
               <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-pink-500/10 to-rose-500/10 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-500" />
