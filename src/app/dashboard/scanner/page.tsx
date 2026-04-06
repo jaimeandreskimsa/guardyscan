@@ -324,11 +324,11 @@ export default function ScannerPage() {
                     <Input
                       type="text"
                       value={targetUrl}
-                      readOnly
+                      onChange={e => setTargetUrl(e.target.value)}
+                      placeholder="https://ejemplo.com"
                       required
-                      className="pl-10 pr-10 bg-gray-50 dark:bg-gray-800 cursor-not-allowed select-none text-gray-700 dark:text-gray-300"
+                      className="pl-10 text-gray-700 dark:text-gray-300"
                     />
-                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   </div>
                   <Button type="submit" disabled={webLoading} className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700">
                     {webLoading ? (
@@ -340,8 +340,8 @@ export default function ScannerPage() {
                 </div>
 
                 <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                  <Lock className="h-3 w-3" />
-                  URL fija según el sitio web registrado de su empresa. Para cambiarla, actualice su perfil en{' '}
+                  <Globe className="h-3 w-3" />
+                  Puede evaluar cualquier URL. Se autocompletará con el sitio de su empresa si tiene uno registrado en{' '}
                   <a href="/dashboard/settings" className="text-blue-500 hover:underline">Configuración</a>.
                 </p>
 
