@@ -56,6 +56,28 @@ type EquipmentRecord = {
 };
 
 const INVENTORY_STORAGE_KEY = "guardyscan_inventory_equipment_v1";
+const WORKERS_STORAGE_KEY = "guardyscan_workers_registry_v1";
+
+type WorkerSummary = { id: string; fullName: string; position: string; department: string; corporateEmail: string };
+
+function loadWorkers(): WorkerSummary[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(WORKERS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((w: Record<string, string>) => ({
+      id: w.id ?? "",
+      fullName: w.fullName ?? "",
+      position: w.position ?? "",
+      department: w.department ?? "",
+      corporateEmail: w.institutionalEmail ?? w.corporateEmail ?? "",
+    }));
+  } catch {
+    return [];
+  }
+}
 
 const empty: Omit<EquipmentRecord, "id"> = {
   assetCode: "", equipmentType: "Notebook", brand: "", model: "", serialNumber: "",
@@ -88,9 +110,22 @@ export default function NewInventoryEquipmentPage() {
   const router = useRouter();
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
+  const [workers] = useState<WorkerSummary[]>(() => loadWorkers());
 
   const set = <K extends keyof typeof empty>(k: K, v: (typeof empty)[K]) =>
     setForm(p => ({ ...p, [k]: v }));
+
+  const handleSelectWorker = (workerId: string) => {
+    const w = workers.find(x => x.id === workerId);
+    if (!w) return;
+    setForm(p => ({
+      ...p,
+      assignedUser: w.fullName,
+      userRole: w.position,
+      department: p.department || w.department,
+      corporateEmail: w.corporateEmail,
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,18 +239,48 @@ export default function NewInventoryEquipmentPage() {
             3 · Responsable del equipo
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Field label="Responsable del equipo">
+              {workers.length > 0 ? (
+                <select
+                  className={selectCls}
+                  value={workers.find(w => w.fullName === form.assignedUser)?.id ?? ""}
+                  onChange={e => handleSelectWorker(e.target.value)}
+                >
+                  <option value="">— Seleccionar trabajador —</option>
+                  {workers.map(w => (
+                    <option key={w.id} value={w.id}>
+                      {w.fullName}{w.position ? ` · ${w.position}` : ""}{w.department ? ` (${w.department})` : ""}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  className={inputCls}
+                  placeholder="Nombre completo del responsable"
+                  value={form.assignedUser}
+                  onChange={e => set("assignedUser", e.target.value)}
+                />
+              )}
+              {workers.length === 0 && (
+                <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">
+                  No hay trabajadores registrados aún.
+                  <a href="/dashboard/workers/new" className="underline ml-1">Registrar uno</a>.
+                </p>
+              )}
+            </Field>
             <Field label="Área / Departamento">
               <input className={inputCls} placeholder="Ej. TI, Infraestructura, Finanzas" value={form.department} onChange={e => set("department", e.target.value)} />
             </Field>
-            <Field label="Usuario asignado">
-              <input className={inputCls} placeholder="Nombre completo del responsable" value={form.assignedUser} onChange={e => set("assignedUser", e.target.value)} />
-            </Field>
-            <Field label="Cargo del usuario">
-              <input className={inputCls} placeholder="Ej. Analista de Seguridad" value={form.userRole} onChange={e => set("userRole", e.target.value)} />
-            </Field>
-            <Field label="Correo corporativo del usuario">
-              <input className={inputCls} type="email" placeholder="usuario@empresa.cl" value={form.corporateEmail} onChange={e => set("corporateEmail", e.target.value)} />
-            </Field>
+            {form.assignedUser ? (
+              <>
+                <Field label="Cargo del responsable">
+                  <input className={`${inputCls} bg-gray-50 dark:bg-gray-700 text-gray-500`} value={form.userRole} readOnly />
+                </Field>
+                <Field label="Correo corporativo del responsable">
+                  <input className={`${inputCls} bg-gray-50 dark:bg-gray-700 text-gray-500`} value={form.corporateEmail} readOnly />
+                </Field>
+              </>
+            ) : null}
           </div>
         </section>
 
