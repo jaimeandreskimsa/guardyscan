@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Users, Plus, Search, ShieldAlert, Wifi, GraduationCap,
@@ -64,59 +64,7 @@ type WorkerRecord = {
   registrationDate: string;
 };
 
-const WORKERS_STORAGE_KEY = "guardyscan_workers_registry_v1";
 
-const initialWorkers: WorkerRecord[] = [
-  {
-    id: "W-001",
-    fullName: "Ana Torres Silva",
-    rut: "17.234.567-8",
-    position: "Analista de Seguridad",
-    department: "TI",
-    contractType: "PLANTA",
-    startDate: "2024-03-01",
-    endDate: "",
-    institutionalEmail: "ana.torres@empresa.cl",
-    corporatePhone: "+56 9 1234 5678",
-    systemRole: "ADMINISTRADOR",
-    accessLevel: "CRITICO",
-    hasPersonalDataAccess: true,
-    hasCriticalInfrastructureAccess: true,
-    hasRemoteAccess: true,
-    systemsAccess: [
-      { id: "sa-1", systemName: "AD Corporativo", accessType: "Admin", assignedAt: "2024-03-02", revokedAt: "" },
-      { id: "sa-2", systemName: "SIEM", accessType: "Analista", assignedAt: "2024-03-05", revokedAt: "" },
-    ],
-    hasNdaSigned: true,
-    hasCyberTraining: true,
-    knowsIncidentProtocol: true,
-    knowsAcceptableUsePolicy: true,
-    knowsAccessControlPolicy: true,
-    lastTrainingDate: "2026-01-20",
-    assignedAssets: [
-      { id: "aa-1", assetName: "Laptop", inventoryCode: "KIMSA-NTB-001", deliveryDate: "2024-03-01", returnDate: "" },
-      { id: "aa-2", assetName: "Token / MFA", inventoryCode: "MFA-0091", deliveryDate: "2024-03-01", returnDate: "" },
-    ],
-    supervisorName: "Carlos Méndez",
-    securityOfficer: "CISO - María Díaz",
-    workerSignature: "Ana Torres",
-    itResponsibleSignature: "Carlos Méndez",
-    registrationDate: "2026-02-17",
-  },
-];
-
-function loadWorkers(): WorkerRecord[] {
-  if (typeof window === "undefined") return initialWorkers;
-  const raw = localStorage.getItem(WORKERS_STORAGE_KEY);
-  if (!raw) return initialWorkers;
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed as WorkerRecord[];
-    return initialWorkers;
-  } catch {
-    return initialWorkers;
-  }
-}
 
 const ACCESS_LEVEL_CONFIG: Record<AccessLevel, { label: string; color: string }> = {
   BAJO:    { label: 'Bajo',    color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
@@ -130,10 +78,18 @@ function initials(name: string) {
 }
 
 export default function WorkersPage() {
-  const [workers, setWorkers] = useState<WorkerRecord[]>(() => loadWorkers())
+  const [workers, setWorkers] = useState<WorkerRecord[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterAccessLevel, setFilterAccessLevel] = useState('ALL')
   const [showDetail, setShowDetail] = useState<WorkerRecord | null>(null)
+
+  useEffect(() => {
+    fetch('/api/workers')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setWorkers(data) })
+      .finally(() => setLoading(false))
+  }, [])
 
   const filtered = useMemo(() => workers.filter(w =>
     (filterAccessLevel === 'ALL' || w.accessLevel === filterAccessLevel) &&
@@ -150,11 +106,18 @@ export default function WorkersPage() {
     trained: workers.filter(w => w.hasCyberTraining).length,
   }), [workers])
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('¿Eliminar este trabajador del registro?')) return
+    await fetch(`/api/workers/${id}`, { method: 'DELETE' })
     setWorkers(prev => prev.filter(w => w.id !== id))
     if (showDetail?.id === id) setShowDetail(null)
   }
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600" />
+    </div>
+  )
 
   return (
     <div className="space-y-6">

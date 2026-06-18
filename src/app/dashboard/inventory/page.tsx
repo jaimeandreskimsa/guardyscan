@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ClipboardList, Laptop, Plus, Search, ShieldCheck, Shield, AlertTriangle,
@@ -71,115 +71,6 @@ const criticalityLabels: Record<Criticality, string> = {
   BAJA: "Baja",
 };
 
-const initialInventory: EquipmentRecord[] = [
-  {
-    id: "INV-1",
-    assetCode: "KIMSA-NTB-001",
-    equipmentType: "Notebook",
-    brand: "Lenovo",
-    model: "ThinkPad T14",
-    serialNumber: "PF-9XK-001",
-    physicalLabel: true,
-    status: "OPERATIVO",
-    criticality: "ALTA",
-    operatingSystem: "Windows",
-    operatingSystemVersion: "Windows 11 Pro 23H2",
-    processor: "Intel Core i7",
-    ram: "16 GB",
-    storage: "SSD 512 GB",
-    assignedIp: "10.20.15.23",
-    macAddress: "00:1A:2B:3C:4D:5E",
-    domainOrWorkgroup: "KIMSA-AD",
-    antivirusInstalled: true,
-    antivirusName: "Microsoft Defender",
-    firewallActive: true,
-    diskEncryption: true,
-    physicalLocation: "Oficina",
-    exactAddress: "Casa Matriz - Piso 3",
-    department: "TI",
-    assignedUser: "Ana Torres",
-    userRole: "Analista de Seguridad",
-    corporateEmail: "ana.torres@empresa.cl",
-    purchaseDate: "2025-03-10",
-    supplier: "TecnoChile SPA",
-    purchaseDocument: "FAC-45871",
-    equipmentCost: 1250000,
-    warrantyUntil: "2028-03-10",
-    supportContract: true,
-    hasSensitiveInformation: true,
-    sensitiveInformationType: "Clientes, Operativa",
-    lastPatchUpdate: "2026-02-10",
-    lastSecurityReview: "2026-02-01",
-    backupConfigured: true,
-    lastBackupDate: "2026-02-16",
-    lastMaintenanceDate: "2026-01-15",
-    reportedIncidents: "Sin incidentes",
-    relevantChanges: "Reemplazo de SSD y hardening del equipo",
-    decommissionDate: "",
-    decommissionReason: "",
-  },
-  {
-    id: "INV-2",
-    assetCode: "KIMSA-SRV-002",
-    equipmentType: "Servidor",
-    brand: "Dell",
-    model: "PowerEdge R450",
-    serialNumber: "DL-R450-7781",
-    physicalLabel: true,
-    status: "OPERATIVO",
-    criticality: "ALTA",
-    operatingSystem: "Ubuntu Server",
-    operatingSystemVersion: "22.04 LTS",
-    processor: "Intel Xeon Silver",
-    ram: "64 GB",
-    storage: "SSD 2 TB",
-    assignedIp: "10.10.0.12",
-    macAddress: "AA:BB:CC:DD:EE:11",
-    domainOrWorkgroup: "Datacenter",
-    antivirusInstalled: true,
-    antivirusName: "CrowdStrike",
-    firewallActive: true,
-    diskEncryption: true,
-    physicalLocation: "Data Center",
-    exactAddress: "Rack A-14",
-    department: "Infraestructura",
-    assignedUser: "Equipo TI",
-    userRole: "Administración",
-    corporateEmail: "infra@empresa.cl",
-    purchaseDate: "2024-09-20",
-    supplier: "InfraSecure Ltda",
-    purchaseDocument: "OC-99817",
-    equipmentCost: 4850000,
-    warrantyUntil: "2029-09-20",
-    supportContract: true,
-    hasSensitiveInformation: true,
-    sensitiveInformationType: "Financiera, RRHH",
-    lastPatchUpdate: "2026-02-12",
-    lastSecurityReview: "2026-01-25",
-    backupConfigured: true,
-    lastBackupDate: "2026-02-16",
-    lastMaintenanceDate: "2026-02-05",
-    reportedIncidents: "Alerta de CPU alta el 2025-12-11",
-    relevantChanges: "Actualización de kernel y reglas de firewall",
-    decommissionDate: "",
-    decommissionReason: "",
-  },
-];
-
-const INVENTORY_STORAGE_KEY = "guardyscan_inventory_equipment_v1";
-
-function loadInventoryRecords(): EquipmentRecord[] {
-  if (typeof window === "undefined") return initialInventory;
-  const raw = localStorage.getItem(INVENTORY_STORAGE_KEY);
-  if (!raw) return initialInventory;
-  try {
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return parsed as EquipmentRecord[];
-    return initialInventory;
-  } catch {
-    return initialInventory;
-  }
-}
 
 function EquipmentIcon({ type }: { type: string }) {
   const map: Record<string, React.ReactNode> = {
@@ -195,11 +86,19 @@ function EquipmentIcon({ type }: { type: string }) {
 }
 
 export default function InventoryPage() {
-  const [inventory, setInventory] = useState<EquipmentRecord[]>(() => loadInventoryRecords());
+  const [inventory, setInventory] = useState<EquipmentRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("TODOS");
   const [filterCriticality, setFilterCriticality] = useState("TODOS");
   const [showDetail, setShowDetail] = useState<EquipmentRecord | null>(null);
+
+  useEffect(() => {
+    fetch("/api/inventory")
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setInventory(data); })
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = useMemo(() => {
     return inventory.filter(item => {
@@ -225,13 +124,10 @@ export default function InventoryPage() {
     sensitive: inventory.filter(i => i.hasSensitiveInformation).length,
   }), [inventory]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("¿Eliminar este equipo del inventario?")) return;
-    setInventory(prev => {
-      const updated = prev.filter(i => i.id !== id);
-      localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(updated));
-      return updated;
-    });
+    await fetch(`/api/inventory/${id}`, { method: "DELETE" });
+    setInventory(prev => prev.filter(i => i.id !== id));
     if (showDetail?.id === id) setShowDetail(null);
   };
 
@@ -245,6 +141,12 @@ export default function InventoryPage() {
   };
 
   const boolLabel = (value: boolean) => (value ? "Sí" : "No");
+
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600" />
+    </div>
+  );
 
   return (
     <div className="space-y-5">

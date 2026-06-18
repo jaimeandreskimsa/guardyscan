@@ -99,6 +99,8 @@ model User {
   advisoryRequests AdvisoryRequest[]
   claudeDiagnostics ClaudeDiagnostic[]
   documents         Document[]
+  workers           Worker[]
+  equipment         Equipment[]
 
   // Organization relations
   ownedOrganizations Organization[]
@@ -1164,3 +1166,117 @@ model Document {
   @@map("documents")
 }
 
+// ============ WORKERS ============
+
+model Worker {
+  id                              String   @id @default(cuid())
+  userId                          String
+
+  fullName                        String
+  rut                             String   @default("")
+  position                        String   @default("")
+  department                      String   @default("")
+  contractType                    String   @default("PLANTA") // PLANTA, CONTRATA, HONORARIOS, EXTERNO
+  startDate                       String   @default("")
+  endDate                         String   @default("")
+  institutionalEmail              String   @default("")
+  corporatePhone                  String   @default("")
+
+  systemRole                      String   @default("USUARIO") // USUARIO, ADMINISTRADOR, SOPORTE, AUDITOR, OTRO
+  accessLevel                     String   @default("MEDIO")   // BAJO, MEDIO, ALTO, CRITICO
+  hasPersonalDataAccess           Boolean  @default(false)
+  hasCriticalInfrastructureAccess Boolean  @default(false)
+  hasRemoteAccess                 Boolean  @default(false)
+
+  systemsAccess                   Json     @default("[]") // SystemAccess[]
+
+  hasNdaSigned                    Boolean  @default(false)
+  hasCyberTraining                Boolean  @default(false)
+  knowsIncidentProtocol           Boolean  @default(false)
+  knowsAcceptableUsePolicy        Boolean  @default(false)
+  knowsAccessControlPolicy        Boolean  @default(false)
+  lastTrainingDate                String   @default("")
+
+  assignedAssets                  Json     @default("[]") // AssignedAsset[]
+
+  supervisorName                  String   @default("")
+  securityOfficer                 String   @default("")
+  workerSignature                 String   @default("")
+  itResponsibleSignature          String   @default("")
+  registrationDate                String   @default("")
+
+  createdAt                       DateTime @default(now())
+  updatedAt                       DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("workers")
+}
+
+// ============ EQUIPMENT / INVENTORY ============
+
+model Equipment {
+  id                       String   @id @default(cuid())
+  userId                   String
+
+  assetCode                String   @default("")
+  equipmentType            String   @default("")
+  brand                    String   @default("")
+  model                    String   @default("")
+  serialNumber             String   @default("")
+  physicalLabel            Boolean  @default(false)
+  status                   String   @default("OPERATIVO")   // OPERATIVO, EN_REPARACION, DADO_DE_BAJA, OBSOLETO
+  criticality              String   @default("MEDIA")       // ALTA, MEDIA, BAJA
+
+  operatingSystem          String   @default("")
+  operatingSystemVersion   String   @default("")
+  processor                String   @default("")
+  ram                      String   @default("")
+  storage                  String   @default("")
+  assignedIp               String   @default("")
+  macAddress               String   @default("")
+  domainOrWorkgroup        String   @default("")
+
+  antivirusInstalled       Boolean  @default(false)
+  antivirusName            String   @default("")
+  firewallActive           Boolean  @default(false)
+  diskEncryption           Boolean  @default(false)
+
+  physicalLocation         String   @default("")
+  exactAddress             String   @default("")
+  department               String   @default("")
+  assignedUser             String   @default("")
+  userRole                 String   @default("")
+  corporateEmail           String   @default("")
+
+  purchaseDate             String   @default("")
+  supplier                 String   @default("")
+  purchaseDocument         String   @default("")
+  equipmentCost            Float    @default(0)
+  warrantyUntil            String   @default("")
+  supportContract          Boolean  @default(false)
+
+  hasSensitiveInformation  Boolean  @default(false)
+  sensitiveInformationType String   @default("")
+
+  lastPatchUpdate          String   @default("")
+  lastSecurityReview       String   @default("")
+  backupConfigured         Boolean  @default(false)
+  lastBackupDate           String   @default("")
+  lastMaintenanceDate      String   @default("")
+
+  reportedIncidents        String   @default("") @db.Text
+  relevantChanges          String   @default("") @db.Text
+  decommissionDate         String   @default("")
+  decommissionReason       String   @default("")
+
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, status])
+  @@map("equipment")
+}
