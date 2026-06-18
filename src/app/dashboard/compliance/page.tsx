@@ -222,7 +222,7 @@ function exportToCSV(controls: any[], controlStates: Record<string, ControlData>
 
 export default function CompliancePage() {
   const { data: session } = useSession()
-  const [activeFramework, setActiveFramework] = useState<'ISO27001' | 'LEY21663'>('ISO27001')
+  const [activeFramework, setActiveFramework] = useState<'ISO27001' | 'LEY21663'>('LEY21663')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('ALL')
   const [loading, setLoading] = useState(true)
@@ -253,7 +253,7 @@ export default function CompliancePage() {
       const res = await fetch(`/api/compliance?framework=${activeFramework}`)
       const data = await res.json()
       if (Array.isArray(data)) {
-        const newStates: Record<string, ControlData> = { ...controlStates }
+        const newStates: Record<string, ControlData> = {}
         data.forEach((saved: any) => {
           newStates[saved.controlId] = {
             implementationStatus: saved.implementationStatus || (saved.implemented ? 'IMPLEMENTED' : 'NOT_STARTED'),
