@@ -6,25 +6,22 @@ import { prisma } from "@/lib/prisma";
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
-    const frameworkId = searchParams.get("framework") || "ISO27001";
+    const frameworkId = searchParams.get("framework") || "LEY21663";
 
-    const controls = await prisma.complianceControl.findMany({
-      where: { frameworkId },
+    const states = await (prisma as any).userComplianceState.findMany({
+      where: { userId: session.user.id, frameworkId },
       orderBy: { controlId: "asc" },
     });
 
-    return NextResponse.json(controls);
+    return NextResponse.json(states);
   } catch (error) {
-    console.error("Error loading compliance controls:", error);
-    return NextResponse.json(
-      { error: "Error al cargar controles" },
-      { status: 500 }
-    );
+    console.error("Error loading compliance states:", error);
+    return NextResponse.json({ error: "Error al cargar controles" }, { status: 500 });
   }
 }
 

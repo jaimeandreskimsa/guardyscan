@@ -101,6 +101,7 @@ model User {
   documents         Document[]
   workers           Worker[]
   equipment         Equipment[]
+  complianceStates  UserComplianceState[]
 
   // Organization relations
   ownedOrganizations Organization[]
@@ -1279,4 +1280,32 @@ model Equipment {
   @@index([userId])
   @@index([userId, status])
   @@map("equipment")
+}
+
+// ============ COMPLIANCE STATE PER USER ============
+
+model UserComplianceState {
+  id                   String   @id @default(cuid())
+  userId               String
+  frameworkId          String   // "LEY21663" | "ISO27001"
+  controlId            String   // "L1" ... "L30" or "A.5.1" etc.
+
+  implementationStatus String   @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | IMPLEMENTED | NOT_APPLICABLE
+  docType              String?  // "upload" | "link" | "manual"
+  evidence             String?  @db.Text
+  notes                String?  @db.Text
+  responsible          String   @default("")
+  targetDate           String   @default("")
+  fileName             String   @default("")
+  lastReviewed         String?
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, frameworkId, controlId])
+  @@index([userId])
+  @@index([userId, frameworkId])
+  @@map("user_compliance_states")
 }
