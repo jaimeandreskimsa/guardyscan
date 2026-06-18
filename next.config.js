@@ -2,12 +2,18 @@
 const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
-  
+
   // Optimizaciones de compilación
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
-  
+
+  // Excluir paquetes con sintaxis moderna del bundle del servidor
+  experimental: {
+    serverComponentsExternalPackages: ['@vercel/blob', 'undici'],
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
+
   // Optimización de imágenes
   images: {
     remotePatterns: [
@@ -17,11 +23,6 @@ const nextConfig = {
       },
     ],
     minimumCacheTTL: 60 * 60 * 24, // 24 horas de caché
-  },
-  
-  // Optimización experimental
-  experimental: {
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   
   // Headers de caché para assets estáticos

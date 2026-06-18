@@ -41,7 +41,6 @@ type WorkerRecord = {
   registrationDate: string;
 };
 
-const WORKERS_STORAGE_KEY = "guardyscan_workers_registry_v1";
 
 const empty: Omit<WorkerRecord, "id"> = {
   fullName: "", rut: "", position: "", department: "",
@@ -80,7 +79,7 @@ export default function NewWorkerPage() {
   const set = <K extends keyof typeof empty>(k: K, v: (typeof empty)[K]) =>
     setForm(p => ({ ...p, [k]: v }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.fullName || !form.rut || !form.position) {
       alert("Completa al menos nombre, RUT y cargo.");
@@ -88,10 +87,12 @@ export default function NewWorkerPage() {
     }
     setSaving(true);
     try {
-      const raw = localStorage.getItem(WORKERS_STORAGE_KEY);
-      const current = raw ? JSON.parse(raw) : [];
-      const id = crypto?.randomUUID?.() ?? `${Date.now()}`;
-      localStorage.setItem(WORKERS_STORAGE_KEY, JSON.stringify([{ id, ...form }, ...(Array.isArray(current) ? current : [])]));
+      const res = await fetch("/api/workers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error("Error al guardar");
       router.push("/dashboard/workers");
     } catch {
       alert("No se pudo guardar el trabajador.");

@@ -59,7 +59,6 @@ type EquipmentRecord = {
   decommissionReason: string;
 };
 
-const INVENTORY_STORAGE_KEY = "guardyscan_inventory_equipment_v1";
 
 export default function EditInventoryEquipmentPage() {
   const router = useRouter();
@@ -71,23 +70,20 @@ export default function EditInventoryEquipmentPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(INVENTORY_STORAGE_KEY);
-      const list: EquipmentRecord[] = raw ? JSON.parse(raw) : [];
-      const found = list.find((item) => item.id === equipmentId) || null;
-      setRecord(found);
-    } catch {
-      setRecord(null);
-    } finally {
-      setLoading(false);
-    }
+    fetch("/api/inventory")
+      .then(r => r.json())
+      .then((list: EquipmentRecord[]) => {
+        if (Array.isArray(list)) setRecord(list.find(item => item.id === equipmentId) || null);
+      })
+      .catch(() => setRecord(null))
+      .finally(() => setLoading(false));
   }, [equipmentId]);
 
   const updateField = <K extends keyof EquipmentRecord>(field: K, value: EquipmentRecord[K]) => {
     setRecord((prev) => (prev ? { ...prev, [field]: value } : prev));
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!record) return;
 
@@ -98,10 +94,12 @@ export default function EditInventoryEquipmentPage() {
 
     setSaving(true);
     try {
-      const raw = localStorage.getItem(INVENTORY_STORAGE_KEY);
-      const list: EquipmentRecord[] = raw ? JSON.parse(raw) : [];
-      const updated = list.map((item) => (item.id === record.id ? record : item));
-      localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify(updated));
+      const res = await fetch(`/api/inventory/${record.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(record),
+      });
+      if (!res.ok) throw new Error("Error al actualizar");
       router.push("/dashboard/inventory");
       router.refresh();
     } catch (error) {

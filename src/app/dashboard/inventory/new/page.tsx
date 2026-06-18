@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save } from "lucide-react";
@@ -55,29 +55,7 @@ type EquipmentRecord = {
   decommissionReason: string;
 };
 
-const INVENTORY_STORAGE_KEY = "guardyscan_inventory_equipment_v1";
-const WORKERS_STORAGE_KEY = "guardyscan_workers_registry_v1";
-
 type WorkerSummary = { id: string; fullName: string; position: string; department: string; corporateEmail: string };
-
-function loadWorkers(): WorkerSummary[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(WORKERS_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map((w: Record<string, string>) => ({
-      id: w.id ?? "",
-      fullName: w.fullName ?? "",
-      position: w.position ?? "",
-      department: w.department ?? "",
-      corporateEmail: w.institutionalEmail ?? w.corporateEmail ?? "",
-    }));
-  } catch {
-    return [];
-  }
-}
 
 const empty: Omit<EquipmentRecord, "id"> = {
   assetCode: "", equipmentType: "Notebook", brand: "", model: "", serialNumber: "",
@@ -110,7 +88,14 @@ export default function NewInventoryEquipmentPage() {
   const router = useRouter();
   const [form, setForm] = useState(empty);
   const [saving, setSaving] = useState(false);
-  const [workers] = useState<WorkerSummary[]>(() => loadWorkers());
+  const [workers, setWorkers] = useState<WorkerSummary[]>([]);
+
+  useEffect(() => {
+    fetch("/api/workers")
+      .then(r => r.json())
+      .then((data: WorkerSummary[]) => { if (Array.isArray(data)) setWorkers(data); })
+      .catch(() => {});
+  }, []);
 
   const set = <K extends keyof typeof empty>(k: K, v: (typeof empty)[K]) =>
     setForm(p => ({ ...p, [k]: v }));
@@ -135,10 +120,12 @@ export default function NewInventoryEquipmentPage() {
     }
     setSaving(true);
     try {
-      const id = crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const raw = localStorage.getItem(INVENTORY_STORAGE_KEY);
-      const current = raw ? JSON.parse(raw) : [];
-      localStorage.setItem(INVENTORY_STORAGE_KEY, JSON.stringify([{ id, ...form }, ...(Array.isArray(current) ? current : [])]));
+      const res = await fetch("/api/inventory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) throw new Error("Error al guardar");
       router.push("/dashboard/inventory");
     } catch {
       alert("No se pudo guardar el equipo.");

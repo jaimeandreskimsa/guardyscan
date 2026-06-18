@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { upload } from '@vercel/blob/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -101,30 +100,20 @@ export default function DocumentsPage() {
     if (!form.file || !form.name) return
     setUploading(true)
     setUploadErr('')
-    setUploadMsg('Subiendo archivo a storage...')
+    setUploadMsg('Subiendo archivo...')
     try {
-      const blob = await upload(form.file.name, form.file, {
-        access: 'public',
-        handleUploadUrl: '/api/documents/upload',
-      })
-      setUploadMsg('Guardando en base de datos...')
-      const res = await fetch('/api/documents', {
+      const formData = new FormData()
+      formData.append('file', form.file)
+      formData.append('name', form.name)
+      formData.append('category', form.category)
+      formData.append('description', form.description || '')
+      formData.append('tags', form.tags)
+      formData.append('isConfidential', String(form.isConfidential))
+      const res = await fetch('/api/documents/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name,
-          originalName: form.file.name,
-          category: form.category,
-          description: form.description || null,
-          tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-          size: form.file.size,
-          mimeType: form.file.type || 'application/octet-stream',
-          fileType: form.file.name.split('.').pop() || '',
-          url: blob.url,
-          isConfidential: form.isConfidential,
-        }),
+        body: formData,
       })
-      if (!res.ok) throw new Error('Error guardando metadata')
+      if (!res.ok) throw new Error('Error al subir el archivo')
       await fetchDocs()
       setShowModal(false)
       setForm(EMPTY_FORM)

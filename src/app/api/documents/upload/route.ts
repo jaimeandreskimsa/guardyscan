@@ -1,55 +1,56 @@
-import { handleUpload, type HandleUploadBody } from '@vercel/blob/client'
+import { put } from '@vercel/blob'
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
-// Handles Vercel Blob client uploads:
-// 1. Client calls upload() from @vercel/blob/client pointing here
-// 2. This route generates a short-lived upload token
-// 3. The file goes directly from browser → Vercel Blob (no size limit on server)
 export async function POST(request: Request): Promise<NextResponse> {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
 
-  const body = (await request.json()) as HandleUploadBody
-
   try {
-    const jsonResponse = await handleUpload({
-      body,
-      request,
-      onBeforeGenerateToken: async (_pathname) => ({
-        allowedContentTypes: [
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'application/vnd.ms-powerpoint',
-          'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-          'image/png',
-          'image/jpeg',
-          'image/gif',
-          'image/webp',
-          'text/plain',
-          'text/csv',
-          'application/zip',
-          'application/octet-stream',
-        ],
-        maximumSizeInBytes: 50 * 1024 * 1024, // 50 MB
-        tokenPayload: JSON.stringify({ userId: session.user.id }),
-      }),
-      onUploadCompleted: async ({ blob }) => {
-        console.log('[blob] Upload completed:', blob.url)
+    const formData = await request.formData()
+    const file = formData.get('file') as File | null
+    if (!file) return NextResponse.json({ error: 'No se recibió archivo' }, { status: 400 })
+
+    const name         = (formData.get('name')         as string) || file.name
+    const category     = (formData.get('category')     as string) || 'other'
+    const description  = (formData.get('description')  as string) || ''
+    const tagsRaw      = (formData.get('tags')         as string) || ''
+    const isConfidential = formData.get('isConfidential') === 'true'
+
+    // Subir a Vercel Blob (server-side, sin undici en el cliente)
+    const blob = await put(file.name, file, {
+      access: 'public',
+      addRandomSuffix: true,
+    })
+
+    // Guardar metadata en Neon
+    const doc = await prisma.document.create({
+      data: {
+        userId:       session.user.id,
+        name,
+        originalName: file.name,
+        category,
+        description:  description || null,
+        tags:         tagsRaw.split(',').map(t => t.trim()).filter(Boolean),
+        size:         file.size,
+        mimeType:     file.type || 'application/octet-stream',
+        fileType:     file.name.split('.').pop() || '',
+        url:          blob.url,
+        isConfidential,
+        uploadedBy:   session.user.name || session.user.email || null,
       },
     })
 
-    return NextResponse.json(jsonResponse)
+    return NextResponse.json(doc, { status: 201 })
   } catch (error) {
+    console.error('[documents/upload]', error)
     return NextResponse.json(
       { error: (error as Error).message },
-      { status: 400 },
+      { status: 500 },
     )
   }
 }

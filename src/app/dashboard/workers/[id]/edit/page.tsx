@@ -46,7 +46,6 @@ type WorkerRecord = {
   registrationDate: string;
 };
 
-const WORKERS_STORAGE_KEY = "guardyscan_workers_registry_v1";
 
 export default function EditWorkerPage() {
   const router = useRouter();
@@ -58,15 +57,13 @@ export default function EditWorkerPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(WORKERS_STORAGE_KEY);
-      const list: WorkerRecord[] = raw ? JSON.parse(raw) : [];
-      setWorker(list.find((item) => item.id === workerId) || null);
-    } catch {
-      setWorker(null);
-    } finally {
-      setLoading(false);
-    }
+    fetch("/api/workers")
+      .then(r => r.json())
+      .then((list: WorkerRecord[]) => {
+        if (Array.isArray(list)) setWorker(list.find(item => item.id === workerId) || null);
+      })
+      .catch(() => setWorker(null))
+      .finally(() => setLoading(false));
   }, [workerId]);
 
   const updateField = <K extends keyof WorkerRecord>(key: K, value: WorkerRecord[K]) => {
@@ -81,7 +78,7 @@ export default function EditWorkerPage() {
     setWorker((prev) => prev ? ({ ...prev, assignedAssets: prev.assignedAssets.map((row) => (row.id === id ? { ...row, [key]: value } : row)) }) : prev);
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!worker) return;
 
@@ -92,10 +89,12 @@ export default function EditWorkerPage() {
 
     setSaving(true);
     try {
-      const raw = localStorage.getItem(WORKERS_STORAGE_KEY);
-      const list: WorkerRecord[] = raw ? JSON.parse(raw) : [];
-      const updated = list.map((item) => (item.id === worker.id ? worker : item));
-      localStorage.setItem(WORKERS_STORAGE_KEY, JSON.stringify(updated));
+      const res = await fetch(`/api/workers/${worker.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(worker),
+      });
+      if (!res.ok) throw new Error("Error al actualizar");
       router.push("/dashboard/workers");
       router.refresh();
     } catch (error) {
