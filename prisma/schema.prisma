@@ -98,7 +98,8 @@ model User {
   businessContinuityPlans BusinessContinuityPlan[]
   advisoryRequests AdvisoryRequest[]
   claudeDiagnostics ClaudeDiagnostic[]
-  
+  documents         Document[]
+
   // Organization relations
   ownedOrganizations Organization[]
   organizationMemberships OrganizationMember[]
@@ -1135,5 +1136,31 @@ model ClaudeDiagnostic {
   @@index([userId, type])
   @@index([createdAt])
   @@map("claude_diagnostics")
+}
+
+model Document {
+  id             String   @id @default(cuid())
+  userId         String
+
+  name           String
+  originalName   String
+  category       String   // contracts, legal, policies, compliance, certificates, bcp, ethical-hacking, other
+  description    String?  @db.Text
+  tags           String[] @default([])
+  size           Int      // bytes
+  mimeType       String
+  fileType       String   // pdf, docx, xlsx, etc
+  url            String   // Vercel Blob URL
+  isConfidential Boolean  @default(false)
+  uploadedBy     String?
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, category])
+  @@map("documents")
 }
 
