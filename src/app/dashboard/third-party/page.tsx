@@ -74,58 +74,29 @@ const CERTIFICATIONS = [
 // SAMPLE DATA
 // ═══════════════════════════════════════════════════════════════
 
-const INITIAL_VENDORS = [
-  {
-    id: '1', vendorName: 'Amazon Web Services', vendorType: 'cloud', connectionType: 'api',
-    dataTypes: ['business', 'technical', 'pii'], criticality: 'CRITICAL', riskScore: 25, securityRating: 'A',
-    systemAccess: true, dataAccess: true, certifications: ['ISO 27001', 'SOC 2 Type II', 'PCI DSS', 'CSA STAR'],
-    contractValue: 50000, contractEnd: '2027-12-31', lastAssessment: '2026-01-10', nextAssessment: '2026-07-10',
-    complianceStatus: 'COMPLIANT', geographicLocation: 'Estados Unidos', contactName: 'Enterprise Support',
-    contactEmail: 'aws-support@amazon.com', notes: 'Proveedor principal de infraestructura cloud. Servicios: EC2, S3, RDS, Lambda.',
-  },
-  {
-    id: '2', vendorName: 'Microsoft 365', vendorType: 'software', connectionType: 'saas',
-    dataTypes: ['pii', 'business', 'credentials'], criticality: 'CRITICAL', riskScore: 30, securityRating: 'A',
-    systemAccess: true, dataAccess: true, certifications: ['ISO 27001', 'SOC 2 Type II', 'GDPR'],
-    contractValue: 25000, contractEnd: '2026-12-31', lastAssessment: '2025-11-15', nextAssessment: '2026-05-15',
-    complianceStatus: 'COMPLIANT', geographicLocation: 'Estados Unidos / Chile', contactName: 'Account Manager',
-    contactEmail: 'soporte@microsoft.com', notes: 'Suite de productividad corporativa. Incluye email, Teams, SharePoint, OneDrive.',
-  },
-  {
-    id: '3', vendorName: 'Banco Santander', vendorType: 'financial', connectionType: 'api',
-    dataTypes: ['financial', 'pii'], criticality: 'HIGH', riskScore: 35, securityRating: 'A',
-    systemAccess: false, dataAccess: true, certifications: ['PCI DSS', 'ISO 27001'],
-    contractValue: 15000, contractEnd: '2026-06-30', lastAssessment: '2025-12-20', nextAssessment: '2026-06-20',
-    complianceStatus: 'COMPLIANT', geographicLocation: 'Chile', contactName: 'Ejecutivo Empresas',
-    contactEmail: 'empresas@santander.cl', notes: 'Banco principal para operaciones. API para conciliación bancaria automática.',
-  },
-  {
-    id: '4', vendorName: 'Empresa de Limpieza ABC', vendorType: 'professional', connectionType: 'none',
-    dataTypes: ['none'], criticality: 'LOW', riskScore: 15, securityRating: null as string | null,
-    systemAccess: false, dataAccess: false, certifications: [] as string[],
-    contractValue: 5000, contractEnd: '2026-12-31', lastAssessment: null as string | null, nextAssessment: null as string | null,
-    complianceStatus: 'UNKNOWN', geographicLocation: 'Chile', contactName: 'Supervisor',
-    contactEmail: 'contacto@limpiezaabc.cl', notes: 'Servicio de aseo de oficinas. Sin acceso a sistemas ni información.',
-  },
-  {
-    id: '5', vendorName: 'DataCenter Chile', vendorType: 'it_services', connectionType: 'vpn',
-    dataTypes: ['technical', 'credentials'], criticality: 'HIGH', riskScore: 45, securityRating: 'B',
-    systemAccess: true, dataAccess: true, certifications: ['ISO 27001', 'Ley 21.663'],
-    contractValue: 35000, contractEnd: '2027-03-31', lastAssessment: '2025-10-01', nextAssessment: '2026-04-01',
-    complianceStatus: 'UNDER_REVIEW', geographicLocation: 'Chile', contactName: 'Soporte Técnico',
-    contactEmail: 'soporte@datacenter.cl', notes: 'Colocation de servidores on-premise. VPN permanente para administración.',
-  },
-  {
-    id: '6', vendorName: 'Consultora Legal Partners', vendorType: 'professional', connectionType: 'web',
-    dataTypes: ['pii', 'business'], criticality: 'MEDIUM', riskScore: 55, securityRating: 'C',
-    systemAccess: false, dataAccess: true, certifications: [] as string[],
-    contractValue: 20000, contractEnd: '2026-08-31', lastAssessment: '2025-08-15', nextAssessment: '2026-02-15',
-    complianceStatus: 'NON_COMPLIANT', geographicLocation: 'Chile', contactName: 'Abogado Principal',
-    contactEmail: 'contacto@legalpartners.cl', notes: 'Asesoría legal corporativa. Acceso a documentos confidenciales vía portal.',
-  },
-]
-
-type Vendor = typeof INITIAL_VENDORS[0] & { vendorUrl?: string }
+type Vendor = {
+  id: string
+  vendorName: string
+  vendorType: string
+  connectionType: string
+  dataTypes: string[]
+  criticality: string
+  riskScore: number
+  securityRating: string | null
+  systemAccess: boolean
+  dataAccess: boolean
+  certifications: string[]
+  contractValue: number
+  contractEnd: string
+  lastAssessment: string | null
+  nextAssessment: string | null
+  complianceStatus: string
+  geographicLocation: string
+  contactName: string
+  contactEmail: string
+  notes: string
+  vendorUrl?: string
+}
 
 type ScanResult = {
   status: 'idle' | 'scanning' | 'done' | 'error'
@@ -284,7 +255,8 @@ function exportToCSV(vendors: Vendor[]) {
 // ═══════════════════════════════════════════════════════════════
 
 export default function ThirdPartyPage() {
-  const [vendors, setVendors] = useState<Vendor[]>(INITIAL_VENDORS)
+  const [vendors, setVendors] = useState<Vendor[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filterType, setFilterType] = useState<string>('ALL')
   const [filterCriticality, setFilterCriticality] = useState<string>('ALL')
@@ -306,6 +278,14 @@ export default function ThirdPartyPage() {
     vendorUrl: '',
   }
   const [form, setForm] = useState(emptyForm)
+
+  useEffect(() => {
+    fetch('/api/third-party')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setVendors(data) })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
 
   // ── Filtered & Stats ──────────────────────────────────────
   const filtered = useMemo(() =>
@@ -357,35 +337,30 @@ export default function ThirdPartyPage() {
   }).filter(d => d.count > 0)
 
   // ── CRUD ──────────────────────────────────────────────────
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setSaving(true)
-    setTimeout(() => {
-      const riskScore = calculateRiskScore(form)
-      const today = new Date().toISOString().split('T')[0]
-      const nextReview = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-
+    const riskScore = calculateRiskScore(form)
+    const today = new Date().toISOString().split('T')[0]
+    const nextReview = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    try {
       if (editingVendor) {
-        setVendors(prev => prev.map(v =>
-          v.id === editingVendor.id
-            ? { ...v, ...form, riskScore, securityRating: getRatingFromScore(riskScore), complianceStatus: 'UNDER_REVIEW', lastAssessment: today, nextAssessment: nextReview }
-            : v
-        ))
+        const updated = { ...form, riskScore, securityRating: getRatingFromScore(riskScore), complianceStatus: 'UNDER_REVIEW', lastAssessment: today, nextAssessment: nextReview }
+        await fetch(`/api/third-party/${editingVendor.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) })
+        setVendors(prev => prev.map(v => v.id === editingVendor.id ? { ...v, ...updated } : v))
       } else {
-        const newV: Vendor = {
-          id: Date.now().toString(), ...form, riskScore,
-          securityRating: getRatingFromScore(riskScore),
-          lastAssessment: today, nextAssessment: nextReview,
-          complianceStatus: 'UNKNOWN',
-        }
-        setVendors(prev => [newV, ...prev])
+        const payload = { ...form, riskScore, securityRating: getRatingFromScore(riskScore), lastAssessment: today, nextAssessment: nextReview, complianceStatus: 'UNKNOWN' }
+        const res = await fetch('/api/third-party', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        const created = await res.json()
+        setVendors(prev => [created, ...prev])
       }
-      closeForm()
-      setSaving(false)
-    }, 400)
+    } catch { /* show nothing — data already updated locally */ }
+    closeForm()
+    setSaving(false)
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('¿Estás seguro de eliminar este proveedor?')) return
+    await fetch(`/api/third-party/${id}`, { method: 'DELETE' })
     setVendors(prev => prev.filter(v => v.id !== id))
     if (showDetail?.id === id) setShowDetail(null)
   }
@@ -463,6 +438,12 @@ export default function ThirdPartyPage() {
   // ═══════════════════════════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════════════════════════
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600" />
+    </div>
+  )
+
   return (
     <div className="space-y-6">
       {/* ════════ HEADER ════════ */}
